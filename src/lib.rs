@@ -1,55 +1,109 @@
-#[allow(dead_code)]
+extern crate nalgebra as na;
+
+
+enum Sensor{
+    Rectangle(Rectangle),
+    Trapezoid(Trapezoid),
+}
+
 
 pub enum SensorType{
     Rectangle,
     Trapezoid,
 }
 
-pub struct Point{
-    x: f32,
-    y: f32,
-    z: f32,
-}
+#[allow(dead_code)]
 
-pub struct GenericSensor{
-    p1: f32,
-    p2: f32,
-    p3: f32,
-    p4: f32,
-    sensor_type: SensorType,
-}
 pub struct Rectangle {
-    length_x: f32,
-    length_y: f32,
+    points : [na::Point3<f32>; 4],
+    tfm: na::Affine3<f32>
 }
 
-impl Rectangle {
-    pub fn new(length_x:f32, length_y:f32) -> Rectangle{
-        return Rectangle{
-            length_x: length_x,
-            length_y: length_y,
-        }
-    }
-}
 
 pub struct Trapezoid{
-    length_base_1: f32,
-    length_base_2: f32,
-    length_height: f32,
-    alpha_angle: f32,
-    beta_angle: f32,
+    points : [na::Point3<f32>; 4],
+    tfm: na::Affine3<f32>
 }
 
+//Todo: constructors and structs for rectangle and trapezoid are almost identical. should be wrapped in a macro to reduce repetition
+//      It is currently not in macro form for readability / easy addition of features
+
+// should add affine transformation matrix to this 
+impl Rectangle {
+    pub  fn new(point_array: [na::Point3<f32>; 4], transformation_matrix: na::Matrix4<f32>) -> Result<Rectangle, &'static str>{
+
+        let affine_transform = na::Affine3::from_matrix_unchecked(transformation_matrix);
+
+        match affine_transform.try_inverse(){
+            Some(x) => return Ok(Rectangle{points: point_array, tfm: affine_transform}),
+            None => return Err("matrix was not invertable")
+
+        }
+
+    }
+
+}
+
+// should add affine transformation matrix to this 
 impl Trapezoid {
-    pub fn new(base_1: f32, base_2:f32, height:f32, alpha:f32, beta:f32) -> Trapezoid {
-        return Trapezoid{length_base_1: base_1,
-                        length_base_2: base_2,
-                        length_height: height,
-                        alpha_angle: alpha,
-                        beta_angle: beta }
+    pub  fn new(point_array: [na::Point3<f32>; 4], transformation_matrix: na::Matrix4<f32>) -> Result<Trapezoid, &'static str>{
+
+        let affine_transform = na::Affine3::from_matrix_unchecked(transformation_matrix);
+
+        match affine_transform.try_inverse(){
+            Some(x) => return Ok(Trapezoid{points: point_array, tfm: affine_transform}),
+            None => return Err("matrix was not invertable")
+
+        }
+
+    }
+
+}
+
+impl Transform for Rectangle{
+    fn to_global(&self, input_point: na::Point3<f32>)-> na::Point3<f32>{
+        return self.tfm * input_point;
+    }
+    fn to_local(&self, input_point: na::Point3<f32>) -> na::Point3<f32>{
+        self.tfm.inverse() * input_point
+
+    }
+
+    fn contains_from_global(&self, input_point: na::Point3<f32>) -> bool{
+        let local_point = self.to_local(input_point);
+        self.contains_from_local(local_point)
+    }
+
+    fn contains_from_local(&self, input: na::Point3<f32>) ->bool{
+    return true
     }
 }
 
-trait fetch_data {
-    fn data <T> (&self) -> T;
+impl Transform for Trapezoid{
+    fn to_global(&self, input_point: na::Point3<f32>)-> na::Point3<f32>{
+        return self.tfm * input_point;
+    }
+    fn to_local(&self, input_point: na::Point3<f32>) -> na::Point3<f32>{
+        self.tfm.inverse() * input_point
+
+    }
+
+    fn contains_from_global(&self, input_point: na::Point3<f32>) -> bool{
+        let local_point = self.to_local(input_point);
+        self.contains_from_local(local_point)
+    }
+
+    fn contains_from_local(&self, input: na::Point3<f32>) ->bool{
+    return true
+    }
+}
+
+trait Transform{
+    fn to_global(&self, input_point: na::Point3<f32>) -> na::Point3<f32>;
+
+    fn to_local(&self, input_point: na::Point3<f32>) -> na::Point3<f32>;
+
+    fn contains_from_global(&self, input_point: na::Point3<f32>) -> bool;
+
+    fn contains_from_local(&self, input: na::Point3<f32>) ->bool;
 }
