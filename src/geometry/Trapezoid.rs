@@ -4,7 +4,7 @@ use super::traits::{self, Transform, Plane};
 
 pub struct Trapezoid{
     points : [na::Point3<f32>; 4],
-    normal: Option<Vector<f32>>,
+    normal: Option<Vector<f32>>, // the normal vector is not initially calculated
     tfm: na::Affine3<f32>
 }
 
