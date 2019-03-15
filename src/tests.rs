@@ -99,7 +99,7 @@ mod traits_test{
 // it checks the geometry::traits::Plane implementation (this complements traits::quadralateral_contains)
 #[cfg(test)]
 mod plane_tests{
-    use nalgebra::{Point3, Matrix4};
+    use nalgebra::{Point3};
     use super::super::geometry;
     use crate::geometry::traits::Plane;
 
