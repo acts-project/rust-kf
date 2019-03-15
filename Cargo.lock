@@ -52,7 +52,7 @@ dependencies = [
 
 [[package]]
 name = "kalman_rs"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "nalgebra 0.17.2 (registry+https://github.com/rust-lang/crates.io-index)",
 ]

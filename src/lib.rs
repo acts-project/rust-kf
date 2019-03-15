@@ -5,7 +5,7 @@
 
 
 mod geometry;
+
 pub use geometry::rectangle::Rectangle;
 pub use geometry::trapezoid::Trapezoid;
-pub use geometry::traits;
-
+pub use geometry::traits as sensor_traits;

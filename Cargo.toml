@@ -1,6 +1,6 @@
 [package]
 name = "kalman_rs"
-version = "0.1.1"
+version = "0.1.2"
 authors = ["VanillaBrooks <brookskarlik@gmail.com>"]
 edition = "2018"
 license = "MIT"
@@ -11,5 +11,3 @@ nalgebra = "0.17.2"
 
 
 #![allow(dead_code)]
-#![allow(unused_imports)]
-#[allow(unused_imports)]
