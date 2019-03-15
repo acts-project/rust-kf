@@ -23,15 +23,16 @@ impl Trapezoid{
     ///                         Point3::new(5.0, 9.0,0.0), 
     ///                         Point3::new(0.0,10.0,0.0)];
     /// let tfm_matrix : na::Matrix4<f32>= na::Matrix4::new(1.0,5.0,7.0,2.0,  3.0,5.0,7.0,4.0,  8.0,4.0,1.0,9.0, 2.0,6.0,4.0,8.0);
-    /// let mut trap_sensor = Trapezoid::new(trapezoid_points, tfm_matrix).unwrap();
+    /// let mut trap_sensor = kalman_rs::Trapezoid::new(trapezoid_points, tfm_matrix).unwrap();
     /// ```
-    pub fn new(points: [Point3<f32>; 4], tfm_matrix: Matrix<f32>) -> Result<Trapezoid, &'static str>{
+    pub fn new(mut points: [Point3<f32>; 4], tfm_matrix: Matrix<f32>) -> Result<Trapezoid, &'static str>{
         
         let affine_transform = na::Affine3::from_matrix_unchecked(tfm_matrix);
 
         match affine_transform.try_inverse(){
             Some(_x) => {
-                Ok(Trapezoid{points: points, normal:None, tfm: affine_transform})},
+                let points = traits::organize_points(&mut points);
+                Ok(Trapezoid{points: *points, normal:None, tfm: affine_transform})},
             None => return Err("matrix was not invertable")
 
         }
@@ -46,12 +47,13 @@ impl Transform for Trapezoid{
     /// ```
     /// use nalgebra as na;
     /// use na::Point3;
+    /// use kalman_rs::traits::Transform;
     /// let trapezoid_points = [Point3::new(0.0, 0.0, 0.0), 
     ///                         Point3::new(5.0,1.0,0.0), 
     ///                         Point3::new(5.0, 9.0,0.0), 
     ///                         Point3::new(0.0,10.0,0.0)];
     /// let tfm_matrix : na::Matrix4<f32>= na::Matrix4::new(1.0,5.0,7.0,2.0,  3.0,5.0,7.0,4.0,  8.0,4.0,1.0,9.0, 2.0,6.0,4.0,8.0);
-    /// let mut trap_sensor = Trapezoid::new(trapezoid_points, tfm_matrix).unwrap();
+    /// let mut trap_sensor = kalman_rs::Trapezoid::new(trapezoid_points, tfm_matrix).unwrap();
     /// 
     /// let global_point = trap_sensor.to_global(na::Point3::new(1.0, 2.0, 0.0));
     /// ```
@@ -66,13 +68,14 @@ impl Transform for Trapezoid{
     /// ```
     /// use nalgebra as na;
     /// use na::Point3;
+    /// use kalman_rs::traits::Transform;
     /// 
     /// let trapezoid_points = [Point3::new(0.0, 0.0, 0.0), 
     ///                         Point3::new(5.0,1.0,0.0), 
     ///                         Point3::new(5.0, 9.0,0.0), 
     ///                         Point3::new(0.0,10.0,0.0)];
     /// let tfm_matrix : na::Matrix4<f32>= na::Matrix4::new(1.0,5.0,7.0,2.0,  3.0,5.0,7.0,4.0,  8.0,4.0,1.0,9.0, 2.0,6.0,4.0,8.0);
-    /// let mut trap_sensor = Trapezoid::new(trapezoid_points, tfm_matrix).unwrap();
+    /// let mut trap_sensor = kalman_rs::Trapezoid::new(trapezoid_points, tfm_matrix).unwrap();
     /// 
     /// let local_point = trap_sensor.to_local(na::Point3::new(4.0, 5.0, 6.0));
     /// ```
@@ -89,15 +92,16 @@ impl Transform for Trapezoid{
     /// ```
     /// use nalgebra as na;
     /// use na::Point3;
+    /// use kalman_rs::traits::Transform;
     /// 
     /// let trapezoid_points = [Point3::new(0.0, 0.0, 0.0), 
     ///                         Point3::new(5.0,1.0,0.0), 
     ///                         Point3::new(5.0, 9.0,0.0), 
     ///                         Point3::new(0.0,10.0,0.0)];
     /// let tfm_matrix : na::Matrix4<f32>= na::Matrix4::new(1.0,5.0,7.0,2.0,  3.0,5.0,7.0,4.0,  8.0,4.0,1.0,9.0, 2.0,6.0,4.0,8.0);
-    /// let mut trap_sensor = Rectangle::new(trapezoid_points, tfm_matrix).unwrap();
+    /// let mut trap_sensor = kalman_rs::Trapezoid::new(trapezoid_points, tfm_matrix).unwrap();
     /// 
-    /// let is_point_on_sensor = trap_sensor.contains_from_local(na::Point3::new(1.0, 6.0, 0.0))
+    /// let is_point_on_sensor = trap_sensor.contains_from_local(&na::Point3::new(1.0, 6.0, 0.0));
     /// ```
     fn contains_from_local(&self, input: &Point3<f32>) ->Result<bool, &'static str> {
         let xy_contains = traits::quadralateral_contains(&self.points, &input);
@@ -123,13 +127,14 @@ impl Plane for Trapezoid{
     /// ```
     /// use nalgebra as na;
     /// use na::Point3;
+    /// use kalman_rs::traits::Plane;
     /// 
     /// let trapezoid_points = [Point3::new(0.0, 0.0, 0.0), 
     ///                         Point3::new(5.0,1.0,0.0), 
     ///                         Point3::new(5.0, 9.0,0.0), 
     ///                         Point3::new(0.0,10.0,0.0)];
     /// let tfm_matrix : na::Matrix4<f32>= na::Matrix4::new(1.0,5.0,7.0,2.0,  3.0,5.0,7.0,4.0,  8.0,4.0,1.0,9.0, 2.0,6.0,4.0,8.0);
-    /// let mut trap_sensor = Rectangle::new(trapezoid_points, tfm_matrix).unwrap();
+    /// let mut trap_sensor = kalman_rs::Trapezoid::new(trapezoid_points, tfm_matrix).unwrap();
     /// 
     /// let normal_vector = trap_sensor.plane();
     /// ```
@@ -152,15 +157,16 @@ impl Plane for Trapezoid{
     /// ```
     /// use nalgebra as na;
     /// use na::Point3;
+    /// use kalman_rs::traits::Plane;
     /// 
     /// let trapezoid_points = [Point3::new(0.0, 0.0, 0.0), 
     ///                         Point3::new(5.0,1.0,0.0), 
     ///                         Point3::new(5.0, 9.0,0.0), 
     ///                         Point3::new(0.0,10.0,0.0)];
     /// let tfm_matrix : na::Matrix4<f32>= na::Matrix4::new(1.0,5.0,7.0,2.0,  3.0,5.0,7.0,4.0,  8.0,4.0,1.0,9.0, 2.0,6.0,4.0,8.0);
-    /// let mut trap_sensor = Rectangle::new(trapezoid_points, tfm_matrix).unwrap();
+    /// let mut trap_sensor =kalman_rs::Trapezoid::new(trapezoid_points, tfm_matrix).unwrap();
     /// 
-    /// let on_sensor_plane = trap_sensor.on_plane(Point3::new(1.0, 1.0, 0)); //true
+    /// let on_sensor_plane = trap_sensor.on_plane(&Point3::new(1.0, 1.0, 0.0)); //true
     /// ```
     fn on_plane(&self, input_point: &Point3<f32>) -> Result<bool, &'static str> {
         let pv = traits::vector3_from_points(&self.points[0], &input_point);
