@@ -1,3 +1,3 @@
-pub mod Trapezoid;
-pub mod Rectangle;
-pub mod Traits;
+pub mod trapezoid;
+pub mod rectangle;
+pub mod traits;
