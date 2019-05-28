@@ -1,6 +1,7 @@
 extern crate nalgebra as na;
 use na::{Point3, Matrix4 as Matrix, Vector3 as Vector};
 use super::traits::{self, Transform, Plane};
+use super::utils;
 
 /// A struct for sensors of trapezoidal geometry
 pub struct Trapezoid{
@@ -31,7 +32,7 @@ impl Trapezoid{
 
         match affine_transform.try_inverse(){
             Some(_x) => {
-                let points = traits::organize_points(&mut points);
+                let points = utils::organize_points(&mut points);
                 Ok(Trapezoid{points: *points, normal:None, tfm: affine_transform})},
             None => return Err("matrix was not invertable")
 
@@ -104,7 +105,7 @@ impl Transform for Trapezoid{
     /// let is_point_on_sensor = trap_sensor.contains_from_local(&na::Point3::new(1.0, 6.0, 0.0));
     /// ```
     fn contains_from_local(&self, input: &Point3<f32>) ->Result<bool, &'static str> {
-        let xy_contains = traits::quadralateral_contains(&self.points, &input);
+        let xy_contains = utils::quadralateral_contains(&self.points, &input);
         let z_contains = self.on_plane(&input); 
 
         match z_contains{
@@ -145,7 +146,7 @@ impl Plane for Trapezoid{
         match self.normal{
             Some(x)=>x,
             None =>{
-                let normal_vector = traits::plane_normal_vector(&self.points[0], &self.points[1], &self.points[2]);
+                let normal_vector = utils::plane_normal_vector(&self.points[0], &self.points[1], &self.points[2]);
                 self.normal = Some(normal_vector);
                 normal_vector
             },
@@ -169,7 +170,7 @@ impl Plane for Trapezoid{
     /// let on_sensor_plane = trap_sensor.on_plane(&Point3::new(1.0, 1.0, 0.0)); //true
     /// ```
     fn on_plane(&self, input_point: &Point3<f32>) -> Result<bool, &'static str> {
-        let pv = traits::vector3_from_points(&self.points[0], &input_point);
+        let pv = utils::vector3_from_points(&self.points[0], &input_point);
         match self.normal{
             Some(x) => {
                 if x.dot(&pv) ==0.0 {
