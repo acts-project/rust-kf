@@ -4,7 +4,7 @@
 //! 
 
 
-mod geometry;
+pub mod geometry;
 
 pub use geometry::rectangle::Rectangle;
 pub use geometry::trapezoid::Trapezoid;
