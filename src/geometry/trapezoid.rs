@@ -5,6 +5,20 @@ use super::utils;
 
 use super::super::config::*;
 
+/*
+
+
+    NOTE: this file is incomplete since I shifted the implementation to
+    bounds checking based on half lengths + angles. 
+
+    Trapezoidal bounds checking with the complex angles has not been implemented 
+    yet. 
+
+
+*/
+
+
+
 /// A struct for sensors of trapezoidal geometry
 pub struct Trapezoid{
     top_base_half : Real,
