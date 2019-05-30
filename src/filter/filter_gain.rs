@@ -44,7 +44,7 @@ fn update_covariance( // C
 
 //TODO add lazy static for identity
 #[allow(dead_code)]
-fn filter_residuals(  //r
+fn residual_vector(  //r
     H : &Mat5,
     K : &Mat5,
     residual_preiction : &Mat5) -> Mat5 {
