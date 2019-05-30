@@ -16,7 +16,6 @@ fn update_state_vector(
     let product_two = H.transpose() * G * m_k;
 
     return C_k * (product_one + product_two)
-
 }
 
 //TODO : fix unwrap
