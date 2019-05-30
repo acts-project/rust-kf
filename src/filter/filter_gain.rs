@@ -1,6 +1,6 @@
 use nalgebra as na;
-// use super::super::config::*;
-use super::super::config::{Vec5,Mat5};
+use super::super::config::*;
+
 
 #[allow(dead_code)]
 fn update_state_vector( // x
@@ -44,7 +44,7 @@ fn update_covariance( // C
 
 //TODO add lazy static for identity
 #[allow(dead_code)]
-fn filter_residuals(  //r
+fn residual_vector(  //r
     H : &Mat5,
     K : &Mat5,
     residual_preiction : &Mat5) -> Mat5 {
@@ -67,16 +67,17 @@ fn residual_covariance_matrix( //R
 
 #[allow(dead_code)]
 fn chi_squared_increment(
-    residuals : &Mat5,
-    residual_covariance : &Mat5 ) -> Mat5 {
+    residual_vec : &Vec5,
+    residual_covariance : &Mat5 ) -> Real {
     
-    residuals.transpose() * residual_covariance.try_inverse().unwrap() * residuals
+    let prod = residual_vec.transpose() * residual_covariance.try_inverse().unwrap() * residual_vec;
+    return prod[0]
 }
 
 #[allow(dead_code)]
 fn update_chi_squared(
-    previous_chi_squaread: &Mat5,
-    increment: &Mat5) -> Mat5 {
+    previous_chi_squaread: Real,
+    increment: Real) -> Real {
     
     previous_chi_squaread + increment
 }
