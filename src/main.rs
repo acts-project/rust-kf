@@ -12,6 +12,7 @@ use config::*;
 
 
 fn main() {
+    #![allow(warnings)]
     // let k = filter::utils::seed_covariance();
     // dbg!{k};
     let mat = Mat4::identity();

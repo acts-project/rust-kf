@@ -1,9 +1,13 @@
 use nalgebra as na;
 use super::super::config::*;
 
+pub fn measurement_vector(
+    jacobian: &Mat5,
+    previous_state_vec: &Vec5) -> Vec5{
+    return jacobian * previous_state_vec
+}
 
-#[allow(dead_code)]
-fn update_state_vector( // x
+pub fn update_state_vector( // x
     extrap_state_vector: &Vec5, 
     kalman_gain: &Mat5, 
     measurement : &Vec5, 
@@ -16,7 +20,7 @@ fn update_state_vector( // x
 
 //TODO: remove `unwrap` on the inverse
 #[allow(dead_code)]
-fn calculate_kalman_gain ( // K
+pub fn kalman_gain ( // K
     C : &Mat5,
     H : &Mat5,
     V : &Mat5) -> Mat5 {
@@ -29,8 +33,7 @@ fn calculate_kalman_gain ( // K
 
 //TODO add lazy static for identity
 //update covariance matrix C
-#[allow(dead_code)]
-fn update_covariance( // C
+pub fn covariance_matrix( // C
     K : &Mat5,
     H : &Mat5,
     C : &Mat5) -> Mat5 {
@@ -43,8 +46,7 @@ fn update_covariance( // C
 //      since the second one looks to have less matmul
 
 //TODO add lazy static for identity
-#[allow(dead_code)]
-fn residual_vector(  //r
+pub fn residual_vector(  //r
     H : &Mat5,
     K : &Mat5,
     residual_preiction : &Mat5) -> Mat5 {
@@ -55,8 +57,7 @@ fn residual_vector(  //r
     return residual_preiction * parens;
 }
 
-#[allow(dead_code)]
-fn residual_covariance_matrix( //R
+pub fn residual_covariance_matrix( //R
     V : &Mat5,
     H : &Mat5,
     C : &Mat5) -> Mat5{
@@ -65,8 +66,8 @@ fn residual_covariance_matrix( //R
     return V - product;
 }
 
-#[allow(dead_code)]
-fn chi_squared_increment(
+
+pub fn chi_squared_increment(
     residual_vec : &Vec5,
     residual_covariance : &Mat5 ) -> Real {
     
@@ -74,8 +75,8 @@ fn chi_squared_increment(
     return prod[0]
 }
 
-#[allow(dead_code)]
-fn update_chi_squared(
+
+pub fn update_chi_squared(
     previous_chi_squaread: Real,
     increment: Real) -> Real {
     

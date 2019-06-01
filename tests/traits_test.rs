@@ -39,7 +39,7 @@ mod _organize_points{
 #[cfg(test)]
 mod _quadralateral_contains {
 
-    use nalgebra::Point3 ;
+    use nalgebra::Point3;
     use kalman_rs::geometry::utils::quadralateral_contains;
     use kalman_rs::config::*;
     use kalman_rs::geometry::traits::Transform;
