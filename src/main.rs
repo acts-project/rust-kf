@@ -12,10 +12,9 @@ use config::*;
 
 
 fn main() {
-    #![allow(warnings)]
-    // let k = filter::utils::seed_covariance();
+    // let k = filter::utils::seed_state_vec();
     // dbg!{k};
-    let mat = Mat4::identity();
-    dbg!{mat};
+    // let mat = Mat4::identity();
+    // dbg!{mat};
     
 }

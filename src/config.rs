@@ -4,14 +4,14 @@ use nalgebra as na;
 pub type Real = f64;
 
 pub type Vec3 = na::Vector3<Real>;
-pub type Vec5 = na::Vector4<Real>;
+pub type Vec5 = na::Vector5<Real>;
 
 pub type P2 = na::Point2<Real>;
 pub type P3 = na::Point3<Real>;
 
 pub type Mat3 = na::Matrix3<Real>;
 pub type Mat4 = na::Matrix4<Real>;
-pub type Mat5 = na::Matrix4<Real>;
+pub type Mat5 = na::Matrix5<Real>;
 
 pub type Trf3 = na::Transform3<Real>;
 pub type Trl3 = na::Translation3<Real>;

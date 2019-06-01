@@ -49,12 +49,12 @@ pub fn covariance_matrix( // C
 pub fn residual_vector(  //r
     H : &Mat5,
     K : &Mat5,
-    residual_preiction : &Mat5) -> Mat5 {
+    residual_preiction : &Vec5) -> Vec5 {
 
     let ident = Mat5::identity();
     let parens = ident - (H * K);
 
-    return residual_preiction * parens;
+    return  parens * residual_preiction;
 }
 
 pub fn residual_covariance_matrix( //R
