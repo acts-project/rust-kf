@@ -3,12 +3,23 @@ use super::super::config::*;
 use super::prediction;
 use super::filter_gain;
 
+// macro to initialize vectors with a given capacity to reduce copy / paste
+macro_rules! store_vec {
+    // $name: the name of the variable
+    // $type: Type of data stored in vector (Mat5 / Vec5)
+    // $capacity: How much space to allocate
+    ($name:ident, $type:ty, $capacity:expr) => {
+        let mut $name: Vec<$type> = Vec::with_capacity($capacity);
+    };
+}
+
+
 #[allow(dead_code)]
 pub fn run(
     V_vec: &Vec<Mat5>, 
     H_vec: &Vec<Mat5>,
     m_k_vec: &Vec<Vec5>,
-    ) {
+) {
     
     if (V_vec.len() == H_vec.len()) && (H_vec.len() == m_k_vec.len()) {}
     else {
@@ -20,16 +31,30 @@ pub fn run(
 
     let L = V_vec.len();
     
-    let mut state_vector_pred_vec : Vec<Vec5> = Vec::with_capacity(L);
-    let mut jacobian_vec : Vec<Mat5> = Vec::with_capacity(L);
-    let mut cov_pred_vec: Vec<Mat5> = Vec::with_capacity(L);
-    let mut res_cov_mat_vec : Vec<Mat5> = Vec::with_capacity(L);
-    let mut res_vector_vec : Vec<Vec5> = Vec::with_capacity(L);
+    // predictions
+    store_vec!(jacobian_vec, Mat5,L);
+    store_vec!(pred_state_vec_vec, Vec5, L);
+    store_vec!(pred_cov_vec, Mat5, L);
+    store_vec!(pred_residual_mat_vec, Mat5, L);
+    store_vec!(pred_residual_vec_vec, Vec5, L);
 
-    state_vector_pred_vec.push(initial_state_vec);
-    cov_pred_vec.push(initial_covariance);
+    //filters
+    store_vec!(jacobian_vec, Mat5,L);
+    store_vec!(filter_state_vec_vec, Vec5, L);
+    store_vec!(filter_cov_vec, Mat5, L);
+    store_vec!(filter_residual_mat_vec, Mat5, L);
+    store_vec!(filter_residual_vec_vec, Vec5, L);
+    store_vec!(chi_squared_vec, Real, L);
 
-    for i in 0..V_vec.len() {
+    //smoothed vectors
+
+
+    // store initial seeded values
+    filter_state_vec_vec.push(initial_state_vec);
+    filter_cov_vec.push(initial_covariance);
+
+
+    for i in 0..L{
         let jacobian = linear_jacobian();
 
         let H = &H_vec[i];
@@ -38,8 +63,8 @@ pub fn run(
 
 
         //predictions
-        let pred_state_vec = prediction::state_vector(&jacobian, &state_vector_pred_vec[i]);
-        let pred_cov_mat = prediction::covariance_matrix(&jacobian, &cov_pred_vec[i]);
+        let pred_state_vec = prediction::state_vector(&jacobian, &filter_state_vec_vec[i]);
+        let pred_cov_mat = prediction::covariance_matrix(&jacobian, &filter_cov_vec[i]);
         let pred_residual_mat = prediction::residual_covariance(&V, &H, &pred_cov_mat);
         let pred_residual_vec = prediction::residual_vec(&m_k, &H, &pred_state_vec);
 
@@ -53,14 +78,23 @@ pub fn run(
 
 
         //storage
-        state_vector_pred_vec.push(pred_state_vec);
+        filter_state_vec_vec.push(filter_state_vec);
         jacobian_vec.push(jacobian);
-        cov_pred_vec.push(pred_cov_mat);
-        res_cov_mat_vec.push(pred_residual_mat);
-        res_vector_vec.push(pred_residual_vec);
-
-
+        filter_cov_vec.push(filter_cov_mat);
+        filter_residual_mat_vec.push(filter_residual_mat);
+        filter_residual_vec_vec.push(filter_residual_vec);
+        chi_squared_vec.push(chi_squared_inc);
     }
+
+    // smoothing
+    // cycle through the sensors from highest index to lowest index
+    for i in (1..L).into_iter().rev(){
+        let current = i;
+        let next = i-1;
+        
+        let smooth_state_vec = smoothing::state_vector()
+    }
+    println!{"and after"}
 
 }
 
