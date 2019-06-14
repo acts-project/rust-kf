@@ -7,7 +7,7 @@ pub fn measurement_vector(
     return jacobian * previous_state_vec
 }
 
-pub fn update_state_vector( // x
+pub fn state_vector( // x
     extrap_state_vector: &Vec5, 
     kalman_gain: &Mat5, 
     measurement : &Vec5, 
@@ -46,7 +46,7 @@ pub fn covariance_matrix( // C
 //      since the second one looks to have less matmul
 
 //TODO add lazy static for identity
-pub fn residual_vector(  //r
+pub fn residual_vec(  //r
     H : &Mat5,
     K : &Mat5,
     residual_preiction : &Vec5) -> Vec5 {
@@ -57,7 +57,7 @@ pub fn residual_vector(  //r
     return  parens * residual_preiction;
 }
 
-pub fn residual_covariance_matrix( //R
+pub fn residual_mat( //R
     V : &Mat5,
     H : &Mat5,
     C : &Mat5) -> Mat5{

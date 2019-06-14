@@ -12,7 +12,8 @@ pub struct Rectangle {
     normal : Vec3,
     global_center: P3,
     to_global: Aff3,
-    to_local: Aff3
+    to_local: Aff3,
+    measurement_to_state_vector: na::Matrix5x2<Real>
 }
 
 impl Rectangle {
@@ -31,7 +32,7 @@ impl Rectangle {
     /// let tfm_matrix : na::Matrix4<f64>= na::Matrix4::new(1.0,0.0,0.0,0.0,  0.0,1.0,0.0,0.0,  0.0,0.0,1.0,0.0, 0.0,0.0,0.0,1.0);
     /// let mut rectangle_sensor = Rectangle::new(base, height, tfm_matrix).unwrap();
     /// ```
-    pub fn new(base: Real, height: Real, to_global_tfm_matrix: na::Matrix4<Real>) -> Result<Rectangle, &'static str>{
+    pub fn new(base: Real, height: Real, to_global_tfm_matrix: Mat4, projection_mat: na::Matrix5x2<Real>) -> Result<Rectangle, &'static str>{
     
         let to_global_transform = Aff3::from_matrix_unchecked(to_global_tfm_matrix);
 
@@ -53,7 +54,8 @@ impl Rectangle {
                              normal: normal_vector,
                              global_center : P3::new(0.0, 0.0, 0.0),
                              to_global: to_global_transform,
-                             to_local: to_local_transform};
+                             to_local: to_local_transform,
+                             measurement_to_state_vector: projection_mat};
                              
                 dbg!{&rect};
                 Ok(rect)

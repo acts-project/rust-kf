@@ -4,9 +4,12 @@ use super::super::config::*;
 pub fn gain_matrix( //A_k
     C_k: &Mat5, 
     F_k: &Mat5,
-    C_k_next: &Mat5) -> Mat5 {
+    C_k_prev: &Mat5) -> Mat5 {      // TODO: Make sure that the C_k+1 here does indeed mean
+                                    // that we use the covariance from the sensor 
+                                    // that is chronologically after the current sensor in
+                                    // the pred / filter phase
 
-    C_k * F_k.transpose() * C_k_next.try_inverse().unwrap()
+    C_k * F_k.transpose() * C_k_prev.try_inverse().unwrap()
 }  
 
 pub fn state_vector(
@@ -46,7 +49,7 @@ pub fn residual_vec(
     return sum;
 }
 
-pub fn residual_covariance_matrix(
+pub fn residual_mat(
     V_k: &Mat5,
     H_k: &Mat5,
     C_n_k: &Mat5) -> Mat5 {

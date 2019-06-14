@@ -13,7 +13,7 @@ pub fn covariance_matrix(jacobian: &Mat5, previous_covariance: &Mat5)-> Mat5{
 
 // just below eq. 7
 // covariance of predicted results
-pub fn residual_covariance(V: &Mat5, H: &Mat5, C: &Mat5) -> Mat5 {
+pub fn residual_mat(V: &Mat5, H: &Mat5, C: &Mat5) -> Mat5 {
     return V + (H*C * H.transpose())
 }
 

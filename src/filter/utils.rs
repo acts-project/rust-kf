@@ -32,3 +32,27 @@ pub fn vec_of_vec(num: usize) -> Vec<Vec5> {
     
     return return_vec
 }
+
+
+pub struct SmoothedData {
+    state_vec: Vec<Vec5>,
+    cov_mat: Vec<Mat5>,
+    res_mat: Vec<Mat5>,
+    res_vec: Vec<Vec5>
+}
+
+impl SmoothedData{
+    pub fn new(state_vec: Vec<Vec5>,
+            cov_mat: Vec<Mat5>,
+            res_mat: Vec<Mat5>,
+            res_vec: Vec<Vec5>) -> Self {
+
+        return SmoothedData{state_vec: state_vec, 
+                            cov_mat: cov_mat, 
+                            res_mat: res_mat, 
+                            res_vec:res_vec}
+    }
+    pub fn FFI_return() {
+        unimplemented!()
+    }
+}

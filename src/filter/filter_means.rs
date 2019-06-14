@@ -4,7 +4,7 @@ use super::super::config::*;
 
 // TODO: fix unwrap
 #[allow(dead_code)]
-fn update_state_vector(
+fn state_vector(
     C_k : &Mat5,
     C_prediction : &Mat5,
     extrap_state_vector: &Vec5,
@@ -20,7 +20,7 @@ fn update_state_vector(
 
 //TODO : fix unwrap
 #[allow(dead_code)]
-fn update_covariance_matrix ( // C_k
+fn covariance_mat ( // C_k
     C_prediction: &Mat5,
     H : &Mat5,
     G : &Mat5) -> Mat5 {
