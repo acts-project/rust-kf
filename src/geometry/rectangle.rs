@@ -9,8 +9,7 @@ use super::super::config::*;
 pub struct Rectangle {
     half_base: Real,
     half_height: Real,
-    normal : Vec3,
-    global_center: P3,
+    normal : Vec2,
     to_global: Aff3,
     to_local: Aff3,
     measurement_to_state_vector: na::Matrix5x2<Real>
@@ -43,16 +42,15 @@ impl Rectangle {
                 let half_base = base/(2 as Real);
                 let half_height = height/(2 as Real);
 
-                let orig = P3::new(0.0, 0.0, 0.0);
-                let v1 = orig - P3::new(half_base, 0.0, 0.0);
-                let v2 = orig -  P3::new(0.0, half_height, 0.0);
+                let orig = P2::new(0.0, 0.0);
+                let v1 = orig - P2::new(half_base, 0.0);
+                let v2 = orig -  P2::new(0.0, half_height);
                 let normal_vector = v1.cross(&v2);
 
 
                 let rect = Rectangle{half_base: half_base, 
                              half_height: half_height,
                              normal: normal_vector,
-                             global_center : P3::new(0.0, 0.0, 0.0),
                              to_global: to_global_transform,
                              to_local: to_local_transform,
                              measurement_to_state_vector: projection_mat};
@@ -107,7 +105,6 @@ impl Transform for Rectangle{
     fn to_local(&self, input_point: P3) -> P2{
         let local = self.to_local * input_point;
         return P2::new(local.x, local.y)
-
     }
 
 
@@ -160,8 +157,8 @@ impl Plane for Rectangle{
     /// 
     /// let on_plane = rectangle_sensor.on_plane(&na::Point3::new(1.0, 3.0, 0.0)); //true
     /// ```
-    fn on_plane(&self, input_point: &P3) -> Result<bool, &'static str> {
-        let pv = utils::vector3_from_points(&self.global_center, &input_point);
+    fn on_plane(&self, input_point: &P2) -> Result<bool, &'static str> {
+        let pv = P2::new(0.0, 0.0) - input_point;
         //TODO : this function should probably not return result
         if self.normal.dot(&pv) == 0.0 {
             Ok(true)
@@ -169,6 +166,5 @@ impl Plane for Rectangle{
         else{
             Ok(false)
         }
-        
     }
 }

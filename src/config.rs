@@ -3,6 +3,7 @@
 use nalgebra as na;
 pub type Real = f64;
 
+pub type Vec2 = na::Vector2<Real>;
 pub type Vec3 = na::Vector3<Real>;
 pub type Vec5 = na::Vector5<Real>;
 
