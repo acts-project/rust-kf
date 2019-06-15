@@ -1,102 +1,173 @@
 
+use kalman_rs::{self, geometry};
 
-#[cfg(test)]
-mod _organize_points{
+use geometry::{Rectangle, Trapezoid};
+use geometry::traits::Transform;
+use kalman_rs::config::*;
 
-    use nalgebra::Point3 ;
-    use kalman_rs::geometry;
 
-    #[test]
-    // it would seem that there might be an edge case in which the height of the trapezoid is very small
-    fn test_trapezoid () -> () {
-        // distances from  index 0:               0                     5.09                 10.2                         10.0
-        let point_array = [Point3::new(0.0, 0.0, 0.0), Point3::new(5.0,1.0,0.0), Point3::new(5.0, 9.0,0.0), Point3::new(0.0,10.0,0.0)];
-        //therefore we expect the last point to be the one from index 2
+// default rectangle to reduce boilerplate of each test
+fn initialize_rect() -> Rectangle {
+    let base_len = 3 as Real;
+    let height_len = 3 as Real;
 
-        assert_eq!(point_array[2], geometry::utils::organize_points(&mut point_array.clone())[3]);
-    }
+    let tfm_matrix= Mat4::identity(); //arbitrary transform matrix
+    let projection = Mat5x2::zeros();
 
-    #[test] //rhombus
-    fn test_trapezoid_2(){ 
+    Rectangle::new(base_len, height_len, tfm_matrix, projection).unwrap()
+}
 
-        let point_array = [Point3::new(0.0, 0.0, 0.0), Point3::new(3.0,4.0,0.0), Point3::new(0.0, 5.0,0.0), Point3::new(-2.0,4.0,0.0)];
+// default trapezoid for testing
+fn initialize_trap() -> Trapezoid {
+    let top_base = 2 as Real;
+    let bottom_base = 5 as Real;
+    let height = 2 as Real;
 
-        assert_eq!(point_array[1], geometry::utils::organize_points(&mut point_array.clone())[3]);
-    }
-    #[test]
-    fn test_rectange(){
-        // Rectangle
-        //distances:                  0                             5                          7.07                        7.07 
-        let point_array_2 = [Point3::new(0.0, 0.0, 0.0), Point3::new(5.0,0.0,0.0), Point3::new(0.0,5.0,0.0), Point3::new(5.0,5.0,0.0)];
-        // we expect index 3 to be the max distance 
+    let tfm = Mat4::identity();     
 
-        assert_eq!(point_array_2[3], geometry::utils::organize_points(&mut point_array_2.clone())[3]);
-    }
-}//organize points end
+    Trapezoid::new(top_base, bottom_base, tfm, height).unwrap()
+}
+
 
 // testing src::geometry::traits::quadralateral_contains to make sure it detects points inside 
 // the boundary correctly (no respect for z)
 #[cfg(test)]
 mod _quadralateral_contains {
 
-    use nalgebra::Point3;
-    use kalman_rs::geometry::utils::quadralateral_contains;
+    use super::{Trapezoid, Rectangle, Transform, initialize_rect, initialize_trap};
     use kalman_rs::config::*;
-    use kalman_rs::geometry::traits::Transform;
-    use kalman_rs::geometry::rectangle::Rectangle;
-    // use geometry::trapezoid::Trapezoid;
 
     #[test]
-    fn rectangle_outside () {
-        let base_len = 3 as Real;
-        let height_len = 3 as Real;
-        let tfm_matrix= Mat4::new(1.0,0.0,0.0,0.0,  0.0,1.0,0.0,0.0,  0.0,0.0,1.0,0.0, 0.0,0.0,0.0,1.0); //arbitrary transform matrix
-        let mut rect = Rectangle::new(base_len, height_len, tfm_matrix).unwrap();
+    fn rectangle_outside_1 () {
+        let rect = initialize_rect();
 
-        assert_eq!(rect.contains_from_local(&P2::new(5.0, 5.0)), false)
+        let test_point = P2::new(1.51, 1.51);
+
+        assert_eq!(rect.contains_from_local(&test_point), false)
     }
 
     #[test]
-    fn rectangle_inside () {
-        let base_len = 3 as Real;
-        let height_len = 3 as Real;
-        let tfm_matrix= Mat4::new(1.0,0.0,0.0,0.0,  0.0,1.0,0.0,0.0,  0.0,0.0,1.0,0.0, 0.0,0.0,0.0,1.0); //arbitrary transform matrix
-        let mut rect = Rectangle::new(base_len, height_len, tfm_matrix).unwrap();
+    fn rectangle_outside_2 () {
+        let rect = initialize_rect();
 
-        assert_eq!(rect.contains_from_local(&P2::new(1.0, 1.0)), true)
+        let test_point = P2::new(-3.0, 0.0);
+
+        assert_eq!(rect.contains_from_local(&test_point), false)
     }
 
-    // #[test] // standarad trapezoid
-    // fn trapezoid_outside (){
-    //     let point_array = [Point3::new(0.0, 0.0, 0.0), Point3::new(5.0,1.0,0.0), Point3::new(0.0,10.0,0.0) ,Point3::new(5.0, 9.0,0.0)];
-    //     let outside_point = Point3::new(-1.0, 0.0, 0.0);
+    #[test]
+    fn rectangle_inside_1 () {
+        let rect = initialize_rect();
 
-    //     assert_eq!(quadralateral_contains(&point_array, &outside_point), false)
-    // }
+        let test_point = P2::new(1.49, 1.49);
 
-    // #[test] // standard trapezoid
-    // fn trapezoid_inside() {
-    //     let point_array = [Point3::new(0.0, 0.0, 0.0), Point3::new(5.0,1.0,0.0), Point3::new(0.0,10.0,0.0), Point3::new(5.0, 9.0,0.0)];
-    //     let outside_point = Point3::new(1.0, 0.5, 0.0);
+        assert_eq!(rect.contains_from_local(&test_point), true)
+    }
 
-    //     assert_eq!(quadralateral_contains(&point_array, &outside_point), true)
-    // }
+    #[test]
+    fn rectangle_inside_2 () {
+        let rect = initialize_rect();
 
-    // #[test] //rhombus
-    // fn trapezoid_outside_2() {
-    //     let point_array = [Point3::new(0.0, 0.0, 0.0),  Point3::new(0.0, 5.0,0.0), Point3::new(-2.0,4.0,0.0), Point3::new(3.0,5.0,0.0)];
-    //     let outside_point = Point3::new(-1.0, -1.0, -1.0);
+        let test_point = P2::new(-1.0, 1.0);
 
-    //     assert_eq!(quadralateral_contains(&point_array, &outside_point), false)
-    // }
+        assert_eq!(rect.contains_from_local(&test_point), true)
+    }
 
-    // #[test] //rhombus
-    // fn trapezoid_inside_2() {
-    //     let point_array = [Point3::new(0.0, 0.0, 1.0),  Point3::new(0.0, 5.0,1.0), Point3::new(-2.0,4.0,1.0), Point3::new(3.0,5.0,1.0)];
-    //     let inside_point = Point3::new(1.0, 1.0, 1.0);
+    #[test]
+    fn trapezoid_outside (){
+        let trap = initialize_trap();
 
-    //     assert_eq!(quadralateral_contains(&point_array, &inside_point), true)
-    // }
+        let test_point = P2::new(-1.0, 2.6);
+
+        assert_eq!(trap.contains_from_local(&test_point), false)
+    }
+
+    
+    #[test]
+    fn trapezoid_outside_2 (){
+        let trap = initialize_trap();
+
+        let test_point = P2::new(-1.0, 1.01);
+
+        assert_eq!(trap.contains_from_local(&test_point), false)
+    }
+
+    #[test]
+    fn trapezoid_outside_3 (){
+        let trap = initialize_trap();
+
+        let test_point = P2::new(0.0, 2.0);
+
+        assert_eq!(trap.contains_from_local(&test_point), false)
+    }
+
+    #[test]
+    fn trapezoid_outside_4 (){
+        let trap = initialize_trap();
+
+        let test_point = P2::new(0.0, -2.0);
+
+        assert_eq!(trap.contains_from_local(&test_point), false)
+    }
+
+    #[test]
+    fn trapezoid_outside_5 (){
+        let trap = initialize_trap();
+
+        let test_point = P2::new(-1.0, 1.1);
+
+        assert_eq!(trap.contains_from_local(&test_point), false)
+    }
+
+    #[test]
+    fn trapezoid_outside_6 (){
+        let trap = initialize_trap();
+
+        let test_point = P2::new(0.0, -5.0);
+
+        assert_eq!(trap.contains_from_local(&test_point), false)
+    }
+
+    #[test]
+    fn trapezoid_inside_1 (){
+        let trap = initialize_trap();
+
+        let test_point = P2::new(0.0, 0.0);
+
+        assert_eq!(trap.contains_from_local(&test_point), true)
+    }
+    #[test]
+    fn trapezoid_inside_2 (){
+        let trap = initialize_trap();
+
+        let test_point = P2::new(1.0, 0.0);
+
+        assert_eq!(trap.contains_from_local(&test_point), true)
+    }
+    #[test]
+    fn trapezoid_inside_3 (){
+        let trap = initialize_trap();       //////////////////////////
+
+        let test_point = P2::new(-1.0, 0.0);
+
+        assert_eq!(trap.contains_from_local(&test_point), true)
+    }
+    #[test]
+    fn trapezoid_inside_4 (){
+        let trap = initialize_trap();
+
+        let test_point = P2::new(1.5, 0.0);
+
+        assert_eq!(trap.contains_from_local(&test_point), true)
+    }
+    #[test]
+    fn trapezoid_inside_5 (){
+        let trap = initialize_trap();
+
+        let test_point = P2::new(4.0, 0.0);
+
+        assert_eq!(trap.contains_from_local(&test_point), false)
+    }
 }
 
 

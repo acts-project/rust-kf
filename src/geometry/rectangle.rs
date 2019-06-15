@@ -1,7 +1,5 @@
-extern crate nalgebra as na;
-// use na::{Point3, Matrix4 as Matrix, Vector3 as Vector};
-use super::traits::{self, Transform, Plane};
-use super::utils;
+use nalgebra as na;
+use super::traits::{Transform, Plane};
 use super::super::config::*;
 
 /// A struct for sensors of rectangular geometry
@@ -9,7 +7,7 @@ use super::super::config::*;
 pub struct Rectangle {
     half_base: Real,
     half_height: Real,
-    normal : Vec2,
+    normal : Vec3,
     to_global: Aff3,
     to_local: Aff3,
     measurement_to_state_vector: na::Matrix5x2<Real>
@@ -42,9 +40,9 @@ impl Rectangle {
                 let half_base = base/(2 as Real);
                 let half_height = height/(2 as Real);
 
-                let orig = P2::new(0.0, 0.0);
-                let v1 = orig - P2::new(half_base, 0.0);
-                let v2 = orig -  P2::new(0.0, half_height);
+                let orig = P3::new(0.0, 0.0, 0.0);
+                let v1 = orig - P3::new(half_base, 0.0,0.0);
+                let v2 = orig -  P3::new(0.0, half_height, 0.0);
                 let normal_vector = v1.cross(&v2);
 
 
@@ -128,7 +126,7 @@ impl Transform for Rectangle{
     /// ```
     fn contains_from_local(&self, input: &P2) -> bool {
         
-        if (input.x < self.half_base) && (input.y < self.half_height) {
+        if (input.x.abs() < self.half_base.abs()) && (input.y.abs() < self.half_height.abs()) {
             true
         }
         else {
@@ -157,14 +155,14 @@ impl Plane for Rectangle{
     /// 
     /// let on_plane = rectangle_sensor.on_plane(&na::Point3::new(1.0, 3.0, 0.0)); //true
     /// ```
-    fn on_plane(&self, input_point: &P2) -> Result<bool, &'static str> {
-        let pv = P2::new(0.0, 0.0) - input_point;
+    fn on_plane(&self, input_point: &P3) -> bool {
+        let pv : Vec3= P3::new(0.0, 0.0, 0.0) - input_point;
         //TODO : this function should probably not return result
         if self.normal.dot(&pv) == 0.0 {
-            Ok(true)
+            true
         }
         else{
-            Ok(false)
+            false
         }
     }
 }

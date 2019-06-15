@@ -1,24 +1,9 @@
 extern crate nalgebra as na;
-use na::{Point3, Matrix4 as Matrix, Vector3 as Vector};
-use super::traits::{self, Transform, Plane};
-use super::utils;
 
-use std::cmp::{self, Ordering};
+use super::traits::{Transform, Plane};
+// use super::utils;
 
 use super::super::config::*;
-
-/*
-
-
-    NOTE: this file is incomplete since I shifted the implementation to
-    bounds checking based on half lengths + angles. 
-
-    Trapezoidal bounds checking with the complex angles has not been implemented 
-    yet. 
-
-
-*/
-
 
 // Struct to calculate the y value at any given x
 // This is used instead of a closure since closures require 
@@ -49,8 +34,12 @@ impl Line {//
         Line{yint: line.yint , slope: new_slope }
     }
 
-    fn call(&self, point: &Real) -> Real {
-        (self.slope * point) + self.yint
+    fn call(&self, point: &P2) -> P2 {
+        // "the maximum height we can have with that x value"
+        let y = (self.slope * point.x) + self.yint;
+        // "the maximum x value we can have when we have that y value"
+        let x = (point.y - self.yint)/self.slope;
+        P2::new(x, y)
     }
 }
 
@@ -58,11 +47,13 @@ impl Line {//
 #[derive(Debug)]
 pub struct Trapezoid{
     half_height: Real,
-    normal: Vec2,
+    normal: Vec3,
     to_global: Aff3,
     to_local : Aff3,
     left_line: Line,    // equation of line used for bounds checking 
     right_line: Line,  //   ''
+    max_half_width: Real,
+    min_half_width: Real
 }
 
 impl Trapezoid{
@@ -100,22 +91,18 @@ impl Trapezoid{
                 let half_height = height / (2 as Real);
 
                 // normal vector calculation
-                let orig = P2::new(0.0, 0.0);
+                let orig = P3::new(0.0, 0.0, 0.0);
                 // points on the trapezoid used for normal vector & line eq. calc
-                let point_1 = P2::new(half_b1, 0.0); // top right corner
-                let point_2 = P2::new(0.0, half_b2); // not on surface, used for normal vec
-                let point_3 = P2::new(half_b2, 0.0); // bottom right corner
-                
+
                 //normal vector
-                let v1 = orig - point_1;
-                let v2 = orig -  point_2;
+                let v1 = orig - P3::new(half_b1, 0.0, 0.0);;
+                let v2 = orig -  P3::new(0.0, half_b2, 0.0);;
                 let normal_vector = v1.cross(&v2);
                 
-
-                // NOTE: we flip the slopes here since we assume the trapezoid is symmetrical
-                // line following the slanted right side of the trapezoid
-                let right_line_eq = Line::new_from_points(&point_1, &point_2);
-                // line following the slanted left edge of the trapezoid
+                // equations of lines along slope of trapezoid for bounding checks
+                let top_right_corner = P2::new(half_b1, half_height);
+                let bottom_right_corner = P2::new(half_b2, -half_height);
+                let right_line_eq = Line::new_from_points(&top_right_corner, &bottom_right_corner);
                 let left_line_eq = Line::new_from_y_axis_reflection(&right_line_eq);
 
                 let trap = Trapezoid{
@@ -124,7 +111,9 @@ impl Trapezoid{
                             to_global: to_global_transform,
                             to_local: to_local_transform,
                             left_line: left_line_eq,
-                            right_line: right_line_eq};
+                            right_line: right_line_eq,
+                            max_half_width: half_b1.max(half_b2),
+                            min_half_width: half_b1.min(half_b2)};
                              
                 Ok(trap)
 
@@ -201,21 +190,34 @@ impl Transform for Trapezoid{
     /// ```
     fn contains_from_local(&self, input: &P2) -> bool {
 
-        if input.y < self.half_height{ // bound check the top
-            if (0 as Real) > input.x { // bound check right
-                let value = self.right_line.call(&input.x);
+        let line = 
+            if (0 as Real) <= input.x {&self.right_line}
+            else {&self.left_line};
 
-                if value < input.x {true} // make sure we are to the left of right bound
-                else{false}
-            }
-            else { // bounds check the left
-                let value = self.left_line.call(&input.x);
+        let new_point = line.call(&input);
 
-                if value > input.x {true} // make sure we ar eto the right of the left bound
-                else {false}
-            }
+        let max_height = new_point.y.abs().min(self.half_height);
+        let x_abs = new_point.x.abs();
+
+        let max_width =  
+            if x_abs <= self.min_half_width {self.min_half_width}
+            else if x_abs >= self.max_half_width{self.max_half_width}
+            else if (x_abs >= self.min_half_width) && (x_abs <= self.max_half_width) {x_abs}
+            else{panic!("problem with bounds checking trapezoid")}; //TODO: fix this panic 
+
+        // let dbg_h = format!{"max height:  {}   actual   {}", &max_height, &$point.y};
+        // let dbg_w = format!{"max width:   {}   min width   {} x_abs value:   {}   input value:   {} \
+        //             choosen maxium   {}", $max_w, $min_w, x_abs, &$point.x, max_width};
+        // dbg!{dbg_h};
+        // dbg!{dbg_w};
+
+        if input.y.abs() <= max_height {
+            if input.x.abs() <= max_width {return true}
+            else{return false}
         }
-        else{false}
+        else{
+            return false
+        }
 
     }
 }
@@ -239,14 +241,15 @@ impl Plane for Trapezoid{
     /// 
     /// let on_sensor_plane = trap_sensor.on_plane(&Point3::new(1.0, 1.0, 0.0)); //true
     /// ```
-    fn on_plane(&self, input_point: &P2) -> Result<bool, &'static str> {
-        let pv = P2::new(0.0, 0.0) - input_point;
+    fn on_plane(&self, input_point: &P3) -> bool {
+        let pv = P3::new(0.0, 0.0, 0.0) - input_point;
         //TODO : this function should probably not return result
         if self.normal.dot(&pv) == 0.0 {
-            Ok(true)
+            // bounds_check!();
+            true
         }
         else{
-            Ok(false)
+            false
         }
 
     }

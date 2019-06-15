@@ -7,7 +7,7 @@ pub trait Plane {
     // needs to be & mut since it will call plane() which expects 
     // mutable access
     /// Checks that a given point is located on a plane
-    fn on_plane(&self, input_point: &P2) -> Result<bool, &'static str>;
+    fn on_plane(&self, input_point: &P3) -> bool;
 }
 
 /// Transformations between global and local reference frames. Additionally, It can be used to check if a 

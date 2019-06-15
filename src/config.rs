@@ -14,6 +14,8 @@ pub type Mat3 = na::Matrix3<Real>;
 pub type Mat4 = na::Matrix4<Real>;
 pub type Mat5 = na::Matrix5<Real>;
 
+pub type Mat5x2 =na::Matrix5x2<Real>;
+
 pub type Trf3 = na::Transform3<Real>;
 pub type Trl3 = na::Translation3<Real>;
 pub type Rot3 = na::Rotation3<Real>;
