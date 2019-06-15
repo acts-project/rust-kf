@@ -1,17 +1,20 @@
 
 use nalgebra as na;
 use nalgebra :: {Point3, Vector3};
-use super::super::config::{Real, Vec3, P3, P2, Trf3, Mat3, Trl3, Rot3};
+use super::super::config::*;
 
+// NOTE: since the (slow) math beind this function is 100% certain for symmetric quadralaterals
+// I am leaving it in for testing purposes against the currnet (more efficient) bounds checks
 
 /// Checks if an input point is contained within the within the XY bounds of the sensor. A point with 
 /// any nonzero Z value needs to also use `traits::Plane::on_plane` to ensure that the point falls
 /// on the same plane as the sensor. 
 pub fn quadralateral_contains(points: &[P3;4], check_point: &P3)->bool{
     // subtract points so we can make position vectors
-    let am_vec =  vector3_from_points(&points[0] , &check_point);
-    let ab_vec = vector3_from_points(&points[0], &points[1]);
-    let ad_vec = vector3_from_points(&points[0] , &points[3]);
+    let am_vec = points[0] - check_point;
+    let ab_vec = points[0] - points[1];
+    let ad_vec = points[0] - points[3];
+
 
     // 0 < AM * AB < AB*AB and
     // 0 < AM * AD < AD*AD means 
@@ -33,39 +36,34 @@ pub fn quadralateral_contains(points: &[P3;4], check_point: &P3)->bool{
     return false
 }
 
-/// Calcuate a `nalgebra::Vector3<f32>` position vector from two input `nalgebra::Point3<f32>`
-pub fn vector3_from_points(p1: &P3, p2: &P3) -> Vec3 {
-    let pv = p1 - p2; // difference between points
-    
-    Vector3::new(pv.x, pv.y, pv.z)
-}
 
 /// Calculates the vector normal to three input points
-pub fn plane_normal_vector(p1: &P3, p2: &P3 ,p3: &P3) -> Vec3 {
-    let v1 = vector3_from_points(&p1, &p2); //vector 1 located on the plane
-    let v2 = vector3_from_points(&p1, &p3); // vector 2 located on the plane
+pub fn plane_normal_vector(side_1: Real, side_2: Real) -> Vec3 {
+    let point_1 = P3::new(side_1, 0.0, 0.0);
+    let point_2 = P3::new(0.0, side_2, 0.0);
+    let point_3 = P3::new(0.0, 0.0, 0.0);
+
+    let v1 = point_1 -point_2;
+    let v2 = point_1 - point_3;
 
     v1.cross(&v2) //cross product yields normal vector of the plane
 }
 
-/// Find the distance between two `nalgebra::Point3<f32>`s
-fn distance(p1: &P3, p2:&P3)->Real{
-    let pv = p1 - p2; // find the distance between x / y / z values
 
-    return (pv.x.powf(2.0) + pv.y.powf(2.0) + pv.z.powf(2.0))
-}
-
+// NOTE: since the (slow) math beind this function is 100% certain for symmetric quadralaterals
+// I am leaving it in for testing purposes against the currnet (more efficient) bounds checks
 
 /// This function organizes the input points of a sensor into a known order so that `quadralateral_contains`
 /// will correctly function. There is a known edge in which a trapezoid with an extremely low height will choose
 /// the wrong order of points. This is relatively easy to fix but quadruples the total number of comparissons needed.
+#[allow(dead_code)]
 pub fn organize_points<'a>(input_points: &'a mut [P3;4]) -> &'a [P3;4]{
 
     // we collect into a vec here since FromIterator is not implemented for 
     // arrays (unknown size)
     let distances : Vec<_> = input_points[1..4].iter()
                                         .zip([input_points[0];4].iter())
-                                        .map(|(x,y)| distance(x,y))
+                                        .map(|(x,y)| (x-y).norm_squared())
                                         .collect();
     println!{"the distances are : {:?}", distances}
     let mut max_ = distances[0];

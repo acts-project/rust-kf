@@ -11,14 +11,14 @@ macro_rules! impl_from {
     // catch to expand to a function-like enum
     (empty: $from_type:ident, $to_type:ty, $subtype:expr) => {
         impl_from!(full: $from_type, $to_type, $subtype, exp_empty)
-    };
+    };// will expand to call impl_from!(exp_empty: ...)  ^^^^^^^
 
     // catch for C-like enums
     ($from_type:ident, $to_type:ty, $subtype:expr) => {
         impl_from!(full: $from_type, $to_type, $subtype, exp_full)
-    };
+    };// will expand to call impl_from!(exp_full: ...)   ^^^^^^^
 
-    // this branch will be called regardless. interior macro will expand 
+    // this branch will be called always. interior macro will expand 
     // depending on if the implementing type expects a C-link enum or not
     (full: $from_type:ident, $to_type:ty, $subtype:expr, $expansion:ident) => {
         impl From<$from_type> for $to_type {
@@ -40,11 +40,12 @@ macro_rules! impl_from {
     };
 }
 
-
+#[derive(Debug)]
 pub enum Error{
     Matrix(MatrixError)
 }
 
+#[derive(Debug)]
 pub enum MatrixError {
     NonInvertible,
 }

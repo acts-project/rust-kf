@@ -1,6 +1,8 @@
 use nalgebra as na;
 use super::traits::{Transform, Plane};
 use super::super::config::*;
+use super::super::error::*;
+use super::utils;
 
 /// A struct for sensors of rectangular geometry
 #[derive(Debug)]
@@ -29,7 +31,7 @@ impl Rectangle {
     /// let tfm_matrix : na::Matrix4<f64>= na::Matrix4::new(1.0,0.0,0.0,0.0,  0.0,1.0,0.0,0.0,  0.0,0.0,1.0,0.0, 0.0,0.0,0.0,1.0);
     /// let mut rectangle_sensor = Rectangle::new(base, height, tfm_matrix).unwrap();
     /// ```
-    pub fn new(base: Real, height: Real, to_global_tfm_matrix: Mat4, projection_mat: na::Matrix5x2<Real>) -> Result<Rectangle, &'static str>{
+    pub fn new(base: Real, height: Real, to_global_tfm_matrix: Mat4, projection_mat: na::Matrix5x2<Real>) -> Result<Rectangle, MatrixError>{
     
         let to_global_transform = Aff3::from_matrix_unchecked(to_global_tfm_matrix);
 
@@ -37,13 +39,13 @@ impl Rectangle {
             
             Some(to_local_transform) => {
 
-                let half_base = base/(2 as Real);
-                let half_height = height/(2 as Real);
+                let half_base = base/(2.0);
+                let half_height = height/(2.0);
 
                 let orig = P3::new(0.0, 0.0, 0.0);
-                let v1 = orig - P3::new(half_base, 0.0,0.0);
-                let v2 = orig -  P3::new(0.0, half_height, 0.0);
-                let normal_vector = v1.cross(&v2);
+                let p1 = P3::new(half_base, 0.0,0.0);
+                let p2 = P3::new(0.0, half_height, 0.0);
+                let normal_vector = utils::plane_normal_vector(half_base, half_height);
 
 
                 let rect = Rectangle{half_base: half_base, 
@@ -56,7 +58,7 @@ impl Rectangle {
                 dbg!{&rect};
                 Ok(rect)
                 },
-            None => return Err("matrix was not invertable")
+            None => return Err(MatrixError::NonInvertible)
 
         }
     }

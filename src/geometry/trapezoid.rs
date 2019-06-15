@@ -1,20 +1,21 @@
 extern crate nalgebra as na;
 
 use super::traits::{Transform, Plane};
-// use super::utils;
+use super::utils;
 
 use super::super::config::*;
+use super::super::error::*;
 
 // Struct to calculate the y value at any given x
 // This is used instead of a closure since closures require 
 // heap allocation w/ trait objects (dynamic dispatch)
 #[derive(Debug)]
-struct Line {
+pub struct Line {
     pub yint: Real,
     pub slope: Real
 }
 impl Line {//
-    fn new_from_points(p1: &P2, p2: &P2) -> Self{
+    pub fn new_from_points(p1: &P2, p2: &P2) -> Self{
         let slope = (p2.y - p1.y)/ (p2.x - p1.x);
 
         // y = m*x + [-m*x_0 + y_0] <- yint
@@ -25,16 +26,16 @@ impl Line {//
     }
 
     // a known y intercept / slope
-    fn new_from_values(yint: Real, slope: Real) -> Self {
+    pub fn new_from_values(yint: Real, slope: Real) -> Self {
         Line{yint: yint, slope: slope}
     }
 
-    fn new_from_y_axis_reflection(line: &Line) -> Self{
+    pub fn new_from_y_axis_reflection(line: &Line) -> Self{
         let new_slope = (-1 as Real) * line.slope;
         Line{yint: line.yint , slope: new_slope }
     }
 
-    fn call(&self, point: &P2) -> P2 {
+    pub fn call(&self, point: &P2) -> P2 {
         // "the maximum height we can have with that x value"
         let y = (self.slope * point.x) + self.yint;
         // "the maximum x value we can have when we have that y value"
@@ -75,7 +76,7 @@ impl Trapezoid{
     pub fn new(base_top: Real, 
             base_bot: Real, 
             to_global_tfm_matrix: Mat4, 
-            height: Real) -> Result<Trapezoid, &'static str> {
+            height: Real) -> Result<Trapezoid, MatrixError> {
         
         let to_global_transform = Aff3::from_matrix_unchecked(to_global_tfm_matrix);
 
@@ -91,13 +92,7 @@ impl Trapezoid{
                 let half_height = height / (2 as Real);
 
                 // normal vector calculation
-                let orig = P3::new(0.0, 0.0, 0.0);
-                // points on the trapezoid used for normal vector & line eq. calc
-
-                //normal vector
-                let v1 = orig - P3::new(half_b1, 0.0, 0.0);;
-                let v2 = orig -  P3::new(0.0, half_b2, 0.0);;
-                let normal_vector = v1.cross(&v2);
+                let normal_vector = utils::plane_normal_vector(half_b1, half_height);
                 
                 // equations of lines along slope of trapezoid for bounding checks
                 let top_right_corner = P2::new(half_b1, half_height);
@@ -118,7 +113,7 @@ impl Trapezoid{
                 Ok(trap)
 
                 },
-            None => return Err("matrix was not invertable")
+            None => return Err(MatrixError::NonInvertible)
 
         }
     }

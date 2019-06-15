@@ -4,6 +4,7 @@ use kalman_rs::{self, geometry};
 use geometry::{Rectangle, Trapezoid};
 use geometry::traits::Transform;
 use kalman_rs::config::*;
+use kalman_rs::error::*;
 
 
 // default rectangle to reduce boilerplate of each test
