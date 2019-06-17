@@ -16,6 +16,7 @@ pub struct Rectangle {
 }
 
 impl Rectangle {
+    /*
     /// This is the constructor for the rectangular geometry. It expects a 4x4 `nalgebra::Matrix4<f32>` that is invertible 
     /// and a 4 element array of `nalgebra::Point3<f32>`. If the matrix is not invertible it will return `Err(&str)`.
     /// The provided matrix should be an affine transformation for converting from R2->R3
@@ -23,14 +24,17 @@ impl Rectangle {
     ///  # Examples
     /// ```
     /// use nalgebra as na;
-    /// use na::Point3;
-    /// use kalman_rs::geometry::rectangle::Rectangle;
+    /// use kalman_rs::geometry::Rectangle;
     /// 
-    /// let base = 3.0;
-    /// let height = 3.0;
-    /// let tfm_matrix : na::Matrix4<f64>= na::Matrix4::new(1.0,0.0,0.0,0.0,  0.0,1.0,0.0,0.0,  0.0,0.0,1.0,0.0, 0.0,0.0,0.0,1.0);
-    /// let mut rectangle_sensor = Rectangle::new(base, height, tfm_matrix).unwrap();
+    ///let base_len = 3.0;
+    ///let height_len = 3.0;
+    ///let tfm_matrix= na::Matrix4::<f64>::identity(); //arbitrary transform matrix
+    ///let projection = na::Matrix5x2::<f64>::zeros();
+    ///Rectangle::new(base_len, height_len, tfm_matrix, projection);
+    /// 
+    /// 
     /// ```
+    /// */
     pub fn new(base: Real, height: Real, to_global_tfm_matrix: Mat4, projection_mat: na::Matrix5x2<Real>) -> Result<Rectangle, MatrixError>{
     
         let to_global_transform = Aff3::from_matrix_unchecked(to_global_tfm_matrix);
@@ -65,26 +69,29 @@ impl Rectangle {
 
 }
 impl Transform for Rectangle{
+    /*
     /// Converts a point in the global reference frame to a point in the local reference frame of the sensor.
     /// 
     /// # Examples
     /// ```
     /// use nalgebra as na;
     /// use na::Point3;
-    /// use kalman_rs::geometry::rectangle::Rectangle;
-    /// use kalman_rs::sensor_traits::Transform;
+    /// use nalgebra as na;
+    /// use kalman_rs::geometry::Rectangle;
     /// 
-    /// let base = 3.0;
-    /// let height = 3.0;
-    /// let tfm_matrix : na::Matrix4<f64>= na::Matrix4::new(1.0,0.0,0.0,0.0,  0.0,1.0,0.0,0.0,  0.0,0.0,1.0,0.0, 0.0,0.0,0.0,1.0);
-    /// let mut rectangle_sensor = Rectangle::new(base, height, tfm_matrix).unwrap();
+    /// let base_len = 3.0;
+    /// let height_len = 3.0;
+    /// let tfm_matrix= na::Matrix4::<f64>::identity(); //arbitrary transform matrix
+    /// let projection = na::Matrix5x2::<f64>::zeros();
+    /// Rectangle::new(base_len, height_len, tfm_matrix, projection).unwrap();
     /// 
     /// let global_point = rectangle_sensor.to_global(na::Point3::new(1.0, 2.0, 0.0));
-    /// ```
+    /// ```*/
     fn to_global(&self, input_point: P3)-> P3{
         self.to_global * input_point
     }
     
+    /*
     /// Converts a point in the local refernce frame of the sensor to the global reference frame.
     /// 
     /// # Examples
@@ -101,16 +108,14 @@ impl Transform for Rectangle{
     /// let mut rectangle_sensor = Rectangle::new(base, height, tfm_matrix).unwrap();
     /// 
     /// let global_point = rectangle_sensor.to_local(na::Point3::new(6.0, 3.0, 5.0));
-    /// ```
+    /// ```*/
     fn to_local(&self, input_point: P3) -> P2{
         let local = self.to_local * input_point;
         return P2::new(local.x, local.y)
     }
 
-
+    /*
     /// Checks if a local point is contained within the bounds of a sensor.
-    /// NOTE: `plane()` must be called before checking for bounds of the sensor since the normal 
-    /// vector must be calculated first. 
     /// 
     /// # Examples
     /// ```
@@ -125,7 +130,7 @@ impl Transform for Rectangle{
     /// let mut rectangle_sensor = Rectangle::new(base, height, tfm_matrix).unwrap();
     /// 
     /// let is_point_on_sensor = rectangle_sensor.contains_from_local(&na::Point2::new(1.0, 6.0));
-    /// ```
+    /// ```*/
     fn contains_from_local(&self, input: &P2) -> bool {
         
         if (input.x.abs() < self.half_base.abs()) && (input.y.abs() < self.half_height.abs()) {
@@ -140,6 +145,7 @@ impl Transform for Rectangle{
 
 impl Plane for Rectangle{
 
+    /*
     /// Check if a given point is located on the same plane as the sensor
     /// NOTE: `plane()` must be called becuase the normal vector is not currently known
     /// # Examples
@@ -156,7 +162,7 @@ impl Plane for Rectangle{
     /// let mut rectangle_sensor = Rectangle::new(base, height, tfm_matrix).unwrap();
     /// 
     /// let on_plane = rectangle_sensor.on_plane(&na::Point3::new(1.0, 3.0, 0.0)); //true
-    /// ```
+    /// ```*/
     fn on_plane(&self, input_point: &P3) -> bool {
         let pv : Vec3= P3::new(0.0, 0.0, 0.0) - input_point;
         //TODO : this function should probably not return result

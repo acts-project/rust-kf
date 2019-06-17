@@ -58,6 +58,7 @@ pub struct Trapezoid{
 }
 
 impl Trapezoid{
+    /*
     /// This is the constructor for the rectangular geometry. It expects a 4x4 `nalgebra::Matrix4<f64>` that is invertible 
     /// and a 4 element array of `nalgebra::Point3<f64>`. If the matrix is not invertible it will return `Err(&str)`.
     /// The provided matrix should be an affine transformation for converting from R2->R3
@@ -72,7 +73,7 @@ impl Trapezoid{
     ///                         Point3::new(0.0,10.0,0.0)];
     /// let tfm_matrix : na::Matrix4<f64>= na::Matrix4::new(1.0,5.0,7.0,2.0,  3.0,5.0,7.0,4.0,  8.0,4.0,1.0,9.0, 2.0,6.0,4.0,8.0);
     /// let mut trap_sensor = kalman_rs::Trapezoid::new(trapezoid_points, tfm_matrix).unwrap();
-    /// ```
+    /// ```*/
     pub fn new(base_top: Real, 
             base_bot: Real, 
             to_global_tfm_matrix: Mat4, 
@@ -121,6 +122,7 @@ impl Trapezoid{
 
 
 impl Transform for Trapezoid{
+    /*
     /// Converts a point in the global reference frame to a point in the local reference frame of the sensor.
     /// 
     /// # Examples
@@ -136,11 +138,13 @@ impl Transform for Trapezoid{
     /// let mut trap_sensor = kalman_rs::Trapezoid::new(trapezoid_points, tfm_matrix).unwrap();
     /// 
     /// let global_point = trap_sensor.to_global(na::Point3::new(1.0, 2.0, 0.0));
-    /// ```
+    /// ```*/
     fn to_global(&self, input_point: P3)-> P3{
         self.to_global * input_point
     }
     
+
+    /*
     /// Converts a point in the local refernce frame of the sensor to the global reference frame.
     /// 
     /// # Examples
@@ -158,13 +162,14 @@ impl Transform for Trapezoid{
     /// let mut trap_sensor = kalman_rs::Trapezoid::new(trapezoid_points, tfm_matrix).unwrap();
     /// 
     /// let local_point = trap_sensor.to_local(na::Point3::new(4.0, 5.0, 6.0));
-    /// ```
+    /// ```*/
     fn to_local(&self, input_point: P3) -> P2{
         let local = self.to_local * input_point;
         return P2::new(local.x, local.y)
     }
 
-
+    
+    /*
     /// Checks if a local point is contained within the bounds of a sensor.
     /// NOTE: `plane()` must be called before checking for bounds of the sensor since the normal 
     /// vector must be calculated first. 
@@ -182,7 +187,7 @@ impl Transform for Trapezoid{
     /// let mut trap_sensor = kalman_rs::Trapezoid::new(trapezoid_points, tfm_matrix).unwrap();
     /// 
     /// let is_point_on_sensor = trap_sensor.contains_from_local(&na::Point2::new(1.0, 6.0));
-    /// ```
+    /// ```*/
     fn contains_from_local(&self, input: &P2) -> bool {
 
         let line = 
@@ -219,6 +224,7 @@ impl Transform for Trapezoid{
 
 impl Plane for Trapezoid{
 
+    /*
     /// Check if a given point is located on the same plane as the sensor
     /// NOTE: `plane()` must be called becuase the normal vector is not currently known
     /// # Examples
@@ -235,7 +241,7 @@ impl Plane for Trapezoid{
     /// let mut trap_sensor =kalman_rs::Trapezoid::new(trapezoid_points, tfm_matrix).unwrap();
     /// 
     /// let on_sensor_plane = trap_sensor.on_plane(&Point3::new(1.0, 1.0, 0.0)); //true
-    /// ```
+    /// ```*/
     fn on_plane(&self, input_point: &P3) -> bool {
         let pv = P3::new(0.0, 0.0, 0.0) - input_point;
         //TODO : this function should probably not return result
