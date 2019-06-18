@@ -21,11 +21,9 @@ macro_rules! store_vec {
     };
 }
 
-/// This macro is used to chain a value to an iterator. It is primarily used to chain
-/// matricies / vectors to their respective iterators while reducing code duplication.
-/// Not using this macro would mean we do something like this for every single iterator: 
-/// `iterable.chain(std::iter::repeat(value).take(1))`
 
+/// Push a value into an iterator. Saves repeating vec.push(asdad)
+/// Easier to read this way.
 macro_rules! push {
     ($($item:expr => $location:ident),*) => {
         $(
@@ -34,6 +32,8 @@ macro_rules! push {
     };
 }
 
+
+/// Fetch the lengths of all iterators passed in. Used for debug
 macro_rules! length {
     ($($var:ident),+) => {
          $(
@@ -134,42 +134,24 @@ pub fn run(
     let input_length = V_vec.len();
 
     store_vec!{
-        input_length;
+        input_length + 1; // length all vectors will be initialized to (+! for seeded)
         
         jacobian_iter: Mat5,
 
+        // storage for filtered values
         filter_state_vec_iter: Vec5,
         filter_cov_mat_iter: Mat5,
         filter_res_mat_iter: Mat5,
         filter_res_vec_iter: Vec5,
         chi_squared_iter: Real,
 
+        // storage for smoothed values
         smoothed_state_vec_iter : Vec5,
         smoothed_cov_mat_iter : Mat5,
         smoothed_res_mat_iter : Mat5,
         smoothed_res_vec_iter: Vec5
-        
     }
 
-
-    // create empty iterators to store values
-    // empty!{
-    //     jacobian_iter,
-        
-    //     // for filtered values
-    //     filter_state_vec_iter,
-    //     filter_cov_mat_iter,
-    //     filter_res_mat_iter,
-    //     filter_res_vec_iter,
-    //     chi_squared_iter,
-
-    //     //for smoothed values
-    //     smoothed_state_vec_iter,
-    //     smoothed_cov_mat_iter,
-    //     smoothed_res_mat_iter,
-    //     smoothed_res_vec_iter
-    // };
-    
     // calculate some seeded values (seeding improvement suggestions welcome)
     let mut previous_state_vec = super::utils::seed_state_vec();
     let mut previous_covariance = super::utils::seed_covariance();
@@ -228,11 +210,12 @@ pub fn run(
     // change all vectors into iterators (in place) and reverse them
     reverse!(into: H_vec, V_vec, m_k_vec, jacobian_iter, filter_state_vec_iter, filter_cov_mat_iter, filter_res_mat_iter, filter_res_vec_iter);
 
-    // let mut H_iter = H_vec.iter().rev();
-    // let mut V_iter = V_vec.iter().rev();
-    // let mut M_k_iter = m_k_vec.iter().rev();
 
-
+    // fetch the first values of the iterators that are required to be staggered
+    // in the sense that we need a previous iteration, current iter, and next iter
+    // in order to do the smoothing calculation. This is because the default next!()
+    // operation only fetches the new value of `next_YYYY_field_` and shifts previous
+    // data upward 
     next!(init: 
         filter_state_vec_iter => curr_state_vec,
         filter_state_vec_iter => next_state_vec,
@@ -262,8 +245,8 @@ pub fn run(
         // smoothing calculations
         //
 
-        // // NOTE: the next [ ] calculations assume that x^n references the next state vector and x^k references the previous 
-        // // state vector. I am uncertain as to what the actual answer is as andi still has not gotten back to me about it.
+        // NOTE: the next calculations assume that x^n references the next state vector and x^k references the previous 
+        // state vector. I am uncertain as to what the actual answer is as andi still has not gotten back to me about it.
         let gain_matrix = smoothing::gain_matrix(&curr_cov_mat, &curr_jacobian, &prev_cov_mat); 
         let smoothed_state_vec = smoothing::state_vector(&curr_state_vec, &gain_matrix, &next_state_vec, &prev_state_vec);
         let smoothed_cov_mat = smoothing::covariance_matrix(&curr_cov_mat, &gain_matrix, &next_cov_mat, &prev_cov_mat);
