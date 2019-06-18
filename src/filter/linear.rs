@@ -13,8 +13,11 @@ macro_rules! store_vec {
     // $name: the name of the variable
     // $type: Type of data stored in vector (Mat5 / Vec5)
     // $capacity: How much space to allocate
-    ($name:ident, $type:ty, $capacity:expr) => {
-        let mut $name: Vec<$type> = Vec::with_capacity($capacity);
+    ($capacity:expr ; $($name:ident : $type:ty),+ ) => {
+        $(
+            let mut $name : Vec<$type> = Vec::with_capacity($capacity);
+        )+
+        // let mut $name: Vec<$type> = Vec::with_capacity($capacity);
     };
 }
 
@@ -22,16 +25,24 @@ macro_rules! store_vec {
 /// matricies / vectors to their respective iterators while reducing code duplication.
 /// Not using this macro would mean we do something like this for every single iterator: 
 /// `iterable.chain(std::iter::repeat(value).take(1))`
- 
-// item: the value that will be turn into an iterator and chained
-// location: the iterator the value is being chained to
-macro_rules! chain {
+
+macro_rules! push {
     ($($item:expr => $location:ident),*) => {
         $(
-            _chain(&mut $location, take_one($item));
+            $location.push($item);
         )*
     };
 }
+
+macro_rules! length {
+    ($($var:ident),+) => {
+         $(
+             let coll: Vec<_> = $var.collect();
+             dbg!{coll.len()};
+         )+
+    };
+}
+
 
 /// Used for getting the next value of the iterator. Additionally, this macro allows
 /// us to move the ownership of the data to "stagger" it. This does the following:
@@ -51,6 +62,10 @@ macro_rules! next {
             let $previous = $current;
             let $current = $next;
             next!{init: $storage => $next};
+            
+            // if $previous.is_none() {
+            //     next!{$storage => $previous, $current, $next};
+            // };
         )+
     };
     //this unwraps each value of the iterator. useful for initializing values for `next`
@@ -58,18 +73,36 @@ macro_rules! next {
     // of the smoothing loop will call `next!` and immediatly shift the variables.
     // This is also important for future code where we handle for "holes" since we
     // would have to inline code for matching Some(_) or None in the loop.
-    (init: $($iterator:ident => $($store_location:ident):+),+) => {
+    (init: $($iterator:ident => $store_location:ident),+) => {
         $(
-            $(let $store_location = $iterator.next().unwrap();)+
+            let $store_location = $iterator.next().unwrap();
         )+
     };
 }
 
+// macro_rules! into_iter {
+//     ($iterator:ident) => {
+
+//         let $iterator = $iterator.into_iter();
+//     };
+// }
 /// Reverse every iterator passed in. This is useful for the smoothing calculations
 /// since we pass from the end to the front, but add items to iterators from 
 /// front to back
 macro_rules! reverse {
     ($($iterator:ident),+) => {
+        $(
+            let mut $iterator = $iterator.rev();
+        )+
+    };
+    (into: $($iterator:ident),+) =>{
+        $(
+            let $iterator =  $iterator.into_iter();
+            reverse!($iterator);
+            
+        )+
+    };
+    (base: $($iterator:ident),+) => {
         $(
             let mut $iterator = $iterator.rev();
         )+
@@ -87,6 +120,7 @@ macro_rules! empty {
 
 
 /// Monolithic function to handle linear KF calculations
+#[allow(dead_code)]
 pub fn run(
     V_vec: &Vec<Mat5>, 
     H_vec: &Vec<Mat5>,
@@ -99,30 +133,49 @@ pub fn run(
     } 
     let input_length = V_vec.len();
 
-    // create empty iterators to store values
-    empty!{
-        jacobian_iter,
+    store_vec!{
+        input_length;
         
-        // for filtered values
-        filter_state_vec_iter,
-        filter_cov_mat_iter,
-        filter_res_mat_iter,
-        filter_res_vec_iter,
-        chi_squared_iter,
+        jacobian_iter: Mat5,
 
-        //for smoothed values
-        smoothed_state_vec_iter,
-        smoothed_cov_mat_iter,
-        smoothed_res_mat_iter,
-        smoothed_res_vec_iter
-    };
+        filter_state_vec_iter: Vec5,
+        filter_cov_mat_iter: Mat5,
+        filter_res_mat_iter: Mat5,
+        filter_res_vec_iter: Vec5,
+        chi_squared_iter: Real,
+
+        smoothed_state_vec_iter : Vec5,
+        smoothed_cov_mat_iter : Mat5,
+        smoothed_res_mat_iter : Mat5,
+        smoothed_res_vec_iter: Vec5
+        
+    }
+
+
+    // create empty iterators to store values
+    // empty!{
+    //     jacobian_iter,
+        
+    //     // for filtered values
+    //     filter_state_vec_iter,
+    //     filter_cov_mat_iter,
+    //     filter_res_mat_iter,
+    //     filter_res_vec_iter,
+    //     chi_squared_iter,
+
+    //     //for smoothed values
+    //     smoothed_state_vec_iter,
+    //     smoothed_cov_mat_iter,
+    //     smoothed_res_mat_iter,
+    //     smoothed_res_vec_iter
+    // };
     
     // calculate some seeded values (seeding improvement suggestions welcome)
     let mut previous_state_vec = super::utils::seed_state_vec();
     let mut previous_covariance = super::utils::seed_covariance();
 
     // Store the seeded values in their respective iterators
-    chain!(
+    push!(
         previous_covariance => filter_cov_mat_iter, 
         previous_state_vec => filter_state_vec_iter
     );
@@ -157,7 +210,7 @@ pub fn run(
         let chi_squared_inc = filter_gain::chi_squared_increment(&filter_residual_vec, &filter_residual_mat);
 
         // store all the filtered values in their respective iterators
-        chain!{
+        push!{
             filter_state_vec =>filter_state_vec_iter,
             jacobian => jacobian_iter,
             filter_cov_mat => filter_cov_mat_iter,
@@ -172,23 +225,22 @@ pub fn run(
         previous_state_vec = filter_state_vec;
     }
 
-    dbg!{"made it this far"};
-    // smoothing
-    // cycle through the sensors from highest index to lowest index
+    // change all vectors into iterators (in place) and reverse them
+    reverse!(into: H_vec, V_vec, m_k_vec, jacobian_iter, filter_state_vec_iter, filter_cov_mat_iter, filter_res_mat_iter, filter_res_vec_iter);
+
+    // let mut H_iter = H_vec.iter().rev();
+    // let mut V_iter = V_vec.iter().rev();
+    // let mut M_k_iter = m_k_vec.iter().rev();
+
 
     next!(init: 
-        filter_state_vec_iter => curr_state_vec : next_state_vec,
-        filter_cov_mat_iter => curr_cov_mat : next_cov_mat
+        filter_state_vec_iter => curr_state_vec,
+        filter_state_vec_iter => next_state_vec,
+
+        filter_cov_mat_iter => curr_cov_mat,
+        filter_cov_mat_iter =>next_cov_mat
     );
-    
-    let mut H_iter = H_vec.iter();
-    let mut V_iter = V_vec.iter();
-    let mut M_k_iter = m_k_vec.iter();
 
-    // reverse all iterators so we move from the end sensor to the first sensor
-    reverse!(H_iter, V_iter, M_k_iter, jacobian_iter, filter_state_vec_iter, filter_cov_mat_iter, filter_res_mat_iter, filter_res_vec_iter);
-
-    
     for i in 1..input_length{
 
         //
@@ -197,12 +249,13 @@ pub fn run(
 
         next!{
             filter_state_vec_iter => prev_state_vec, curr_state_vec, next_state_vec,
-            filter_cov_mat_iter => prev_cov_mat, curr_cov_mat, next_cov_mat}
+            filter_cov_mat_iter => prev_cov_mat, curr_cov_mat, next_cov_mat
+        };
 
         next!{init:
-            M_k_iter => curr_measurement,
-            H_iter => curr_H_k,
-            V_iter => curr_V_k,
+            m_k_vec => curr_measurement,
+            H_vec => curr_H_k,
+            V_vec => curr_V_k,
             jacobian_iter => curr_jacobian}
 
         // 
@@ -220,7 +273,7 @@ pub fn run(
         //
         //  Store variables in iterators
         //
-        chain!{
+        push!{
             smoothed_state_vec => smoothed_state_vec_iter,
             smoothed_cov_mat => smoothed_cov_mat_iter,
             smoothed_res_mat => smoothed_res_mat_iter,
@@ -230,24 +283,15 @@ pub fn run(
     
     // put all data into a struct that will contain all the methods to return 
     // the data back to c++
-    return SmoothedData::new(smoothed_state_vec_iter.collect(),
-                                smoothed_cov_mat_iter.collect(),
-                                smoothed_res_mat_iter.collect(),
-                                smoothed_res_vec_iter.collect())
+    return SmoothedData::new(smoothed_state_vec_iter,
+                                smoothed_cov_mat_iter,
+                                smoothed_res_mat_iter,
+                                smoothed_res_vec_iter)
+
 
 }
 
 // TODO: figure out partial derivatives for jacobian calculation
 fn linear_jacobian() -> Mat5 {
     return Mat5::identity()
-}
-
-/// Chains two iterators together
-fn _chain<T>(main_iter: &mut impl Iterator<Item=T>, to_chain: impl Iterator<Item=T>) {
-    main_iter.chain(to_chain);
-}
-
-/// Convert `item` to an iterator of one element
-fn take_one<T: Clone>(item: T) -> impl Iterator<Item=T> {
-    iter::repeat(item).take(1)
 }
