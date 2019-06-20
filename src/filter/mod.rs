@@ -1,3 +1,6 @@
+#[macro_use]
+pub mod macros;
+
 pub mod linear;
 pub mod utils;
 
