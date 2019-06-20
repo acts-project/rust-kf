@@ -1,5 +1,4 @@
 pub mod linear;
-pub mod linear_old;
 pub mod utils;
 
 pub mod prediction;

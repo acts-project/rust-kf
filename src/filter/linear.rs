@@ -30,8 +30,27 @@ macro_rules! push {
             $location.push($item);
         )*
     };
+    (remove: $index:expr; $($pop_vec:ident => $dest_vec:ident),+) =>{
+        $(
+            let removed_val = $pop_vec.remove($index);
+            push!{removed_val => $dest_vec};
+        )+
+    };
+    (remove: $index:expr;$($pop_vec:ident),+ ) => {
+        $($pop_vec.remove($index);)+
+    }
 }
 
+macro_rules! get_unchecked {
+    ($index:expr; $($vector:ident => $destination:ident),+) => {
+        $(
+            let $destination = 
+                unsafe {
+                    $vector.get($index).expect("get_unchecked!{} fetched something out of bounds")
+                }
+        )+
+    };
+}
 
 /// Fetch the lengths of all iterators passed in. Used for debug
 macro_rules! length {
@@ -80,12 +99,13 @@ macro_rules! next {
     };
 }
 
-// macro_rules! into_iter {
-//     ($iterator:ident) => {
+macro_rules! into_iter {
+    ($iterator:ident) => {
 
-//         let $iterator = $iterator.into_iter();
-//     };
-// }
+        let $iterator = $iterator.into_iter();
+    };
+}
+
 /// Reverse every iterator passed in. This is useful for the smoothing calculations
 /// since we pass from the end to the front, but add items to iterators from 
 /// front to back
@@ -207,39 +227,44 @@ pub fn run(
         previous_state_vec = filter_state_vec;
     }
 
-    // change all vectors into iterators (in place) and reverse them
-    reverse!(into: H_vec, V_vec, m_k_vec, jacobian_iter, filter_state_vec_iter, filter_cov_mat_iter, filter_res_mat_iter, filter_res_vec_iter);
+    // remove the last value from the filter vector and push it to the smoothed version
+    push!{remove: input_length-1;
+        filter_state_vec_iter => smoothed_state_vec_iter,
+        filter_cov_mat_iter => smoothed_cov_mat_iter,
+        filter_res_mat_iter => smoothed_res_mat_iter,
+        filter_res_vec_iter => smoothed_res_vec_iter
+    }
 
 
-    // fetch the first values of the iterators that are required to be staggered
-    // in the sense that we need a previous iteration, current iter, and next iter
-    // in order to do the smoothing calculation. This is because the default next!()
-    // operation only fetches the new value of `next_YYYY_field_` and shifts previous
-    // data upward 
-    next!(init: 
-        filter_state_vec_iter => curr_state_vec,
-        filter_state_vec_iter => next_state_vec,
-
-        filter_cov_mat_iter => curr_cov_mat,
-        filter_cov_mat_iter =>next_cov_mat
-    );
-
-    for i in 1..input_length{
-
+    for i in (0..input_length-1).rev(){
+        
         //
         // initializing variables
         // 
-
-        next!{
-            filter_state_vec_iter => prev_state_vec, curr_state_vec, next_state_vec,
-            filter_cov_mat_iter => prev_cov_mat, curr_cov_mat, next_cov_mat
-        };
-
-        next!{init:
-            m_k_vec => curr_measurement,
+        
+        // fetch the current variables 
+        get_unchecked!{i;
+            filter_state_vec_iter => curr_filt_state_vec,
+            filter_cov_mat_iter => curr_filt_cov_mat,
             H_vec => curr_H_k,
             V_vec => curr_V_k,
-            jacobian_iter => curr_jacobian}
+            m_k_vec =>curr_measurement,
+            jacobian_iter => curr_jacobian
+        }
+
+        // since we move backwards, previous variables are at i+1
+        get_unchecked!{i+1;
+            filter_state_vec_iter => prev_filt_state_vec,
+            filter_cov_mat_iter => prev_filt_cov_mat
+        }
+
+        // grab variables pushed in the last iteration
+        // (i+2) since input_length is based on the function argument lengths
+        // and we also .remove() one value from each vec
+        get_unchecked!{input_length -(i+2);                                           //TODO: fix this index <IMPORTANT!!!>
+            smoothed_state_vec_iter => prev_smth_state_vec,
+            smoothed_cov_mat_iter => prev_smth_cov_mat
+        }
 
         // 
         // smoothing calculations
@@ -247,14 +272,14 @@ pub fn run(
 
         // NOTE: the next calculations assume that x^n references the next state vector and x^k references the previous 
         // state vector. I am uncertain as to what the actual answer is as andi still has not gotten back to me about it.
-        let gain_matrix = smoothing::gain_matrix(&curr_cov_mat, &curr_jacobian, &prev_cov_mat); 
-        let smoothed_state_vec = smoothing::state_vector(&curr_state_vec, &gain_matrix, &next_state_vec, &prev_state_vec);
-        let smoothed_cov_mat = smoothing::covariance_matrix(&curr_cov_mat, &gain_matrix, &next_cov_mat, &prev_cov_mat);
+        let gain_matrix = smoothing::gain_matrix(&curr_filt_cov_mat, &curr_jacobian, &prev_filt_cov_mat); 
+        let smoothed_state_vec = smoothing::state_vector(&curr_filt_state_vec, &gain_matrix, &prev_smth_state_vec, &prev_filt_state_vec);
+        let smoothed_cov_mat = smoothing::covariance_matrix(&curr_filt_cov_mat, &gain_matrix, &prev_filt_cov_mat, &prev_smth_cov_mat);
         let smoothed_res_mat = smoothing::residual_mat(&curr_V_k, &curr_H_k, &smoothed_cov_mat);
         let smoothed_res_vec = smoothing::residual_vec(&curr_measurement, &curr_H_k, &smoothed_state_vec);
 
         //
-        //  Store variables in iterators
+        //  group push variables to vectors
         //
         push!{
             smoothed_state_vec => smoothed_state_vec_iter,
