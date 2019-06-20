@@ -1,5 +1,5 @@
-// macro to initialize vectors with a given capacity to reduce copy / paste
 #[macro_export]
+// macro to initialize vectors with a given capacity to reduce copy / paste
 macro_rules! store_vec {
     // $name: the name of the variable
     // $type: Type of data stored in vector (Mat5 / Vec5)
@@ -13,9 +13,9 @@ macro_rules! store_vec {
 }
 
 
+#[macro_export]
 /// Push a value into an iterator. Saves repeating vec.push(asdad)
 /// Easier to read this way.
-#[macro_export]
 macro_rules! push {
     ($($item:expr => $location:ident),*) => {
         $(
@@ -34,6 +34,7 @@ macro_rules! push {
 }
 
 #[macro_export]
+/// Get a reference to an item in a vector using .get_unchecked(_)
 macro_rules! get_unchecked {
     ($index:expr; $($vector:ident => $destination:ident),+) => {
         $(
@@ -57,12 +58,12 @@ macro_rules! length {
 }
 
 
+#[macro_export]
 /// Used for getting the next value of the iterator. Additionally, this macro allows
 /// us to move the ownership of the data to "stagger" it. This does the following:
 /// `current` at n => `previous` at n+1,
 /// `next` at n => `current` at n+1,
 /// new `next` value is fetched from the iterator. 
-#[macro_export]
 macro_rules! next {
     // move the value from `next` to `current`, from `current` to `previous`, and 
     // fetch a new value from the iterator for `next`. This is done for the staggered
@@ -98,15 +99,14 @@ macro_rules! next {
 #[macro_export]
 macro_rules! into_iter {
     ($iterator:ident) => {
-
         let $iterator = $iterator.into_iter();
     };
 }
 
+#[macro_export]
 /// Reverse every iterator passed in. This is useful for the smoothing calculations
 /// since we pass from the end to the front, but add items to iterators from 
 /// front to back
-#[macro_export]
 macro_rules! reverse {
     ($($iterator:ident),+) => {
         $(
@@ -128,8 +128,8 @@ macro_rules! reverse {
 }
 
 
-/// Creates a variable amount of mutable empty iterators
 #[macro_export]
+/// Creates a variable amount of mutable empty iterators
 macro_rules! empty {
     ($($name:ident),+) => {
         $(

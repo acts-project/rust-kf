@@ -12,7 +12,7 @@ pub struct Rectangle {
     normal : Vec3,
     to_global: Aff3,
     to_local: Aff3,
-    measurement_to_state_vector: na::Matrix5x2<Real>
+    measurement_to_state_vector: Mat2x5
 }
 
 impl Rectangle {
@@ -35,7 +35,7 @@ impl Rectangle {
     /// 
     /// ```
     /// */
-    pub fn new(base: Real, height: Real, to_global_tfm_matrix: Mat4, projection_mat: na::Matrix5x2<Real>) -> Result<Rectangle, MatrixError>{
+    pub fn new(base: Real, height: Real, to_global_tfm_matrix: Mat4, projection_mat: Mat2x5) -> Result<Rectangle, MatrixError>{
     
         let to_global_transform = Aff3::from_matrix_unchecked(to_global_tfm_matrix);
 

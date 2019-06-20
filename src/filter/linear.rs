@@ -14,9 +14,9 @@ use super::macros;
 /// Monolithic function to handle linear KF calculations
 #[allow(dead_code)]
 pub fn run(
-    V_vec: &Vec<Mat5>, 
-    H_vec: &Vec<Mat5>,
-    m_k_vec: &Vec<Vec5>,
+    V_vec: &Vec<Mat2>, 
+    H_vec: &Vec<Mat2x5>,
+    m_k_vec: &Vec<Vec2>,
 )  -> SmoothedData{
     
     if (V_vec.len() == H_vec.len()) && (H_vec.len() == m_k_vec.len()) {}
@@ -33,15 +33,15 @@ pub fn run(
         // storage for filtered values
         filter_state_vec_iter: Vec5,
         filter_cov_mat_iter: Mat5,
-        filter_res_mat_iter: Mat5,
-        filter_res_vec_iter: Vec5,
+        filter_res_mat_iter: Mat2,
+        filter_res_vec_iter: Vec2,
         chi_squared_iter: Real,
 
         // storage for smoothed values
         smoothed_state_vec_iter : Vec5,
         smoothed_cov_mat_iter : Mat5,
-        smoothed_res_mat_iter : Mat5,
-        smoothed_res_vec_iter: Vec5
+        smoothed_res_mat_iter : Mat2,
+        smoothed_res_vec_iter: Vec2
     }
 
     // calculate some seeded values (seeding improvement suggestions welcome)
@@ -71,16 +71,16 @@ pub fn run(
         //predictions
         let pred_state_vec = prediction::state_vector(&jacobian, &previous_state_vec);
         let pred_cov_mat = prediction::covariance_matrix(&jacobian, &previous_covariance);
-        let pred_residual_mat = prediction::residual_mat(&curr_V, &curr_H, &pred_cov_mat);
+        let pred_residual_mat = prediction::residual_mat(curr_V, curr_H, &pred_cov_mat);
         let pred_residual_vec = prediction::residual_vec(&curr_m_k, &curr_H, &pred_state_vec);
 
       
         //filtering
-        let kalman_gain = filter_gain::kalman_gain(&pred_cov_mat, &curr_H, &curr_V);
-        let filter_state_vec = filter_gain::state_vector(&pred_state_vec, &kalman_gain, &curr_m_k, &curr_H);
-        let filter_cov_mat = filter_gain::covariance_matrix(&kalman_gain, &curr_H, &pred_cov_mat);
-        let filter_residual_vec = filter_gain::residual_vec(&curr_H, &kalman_gain, &pred_residual_vec);
-        let filter_residual_mat = filter_gain::residual_mat(&curr_V, &curr_H, &filter_cov_mat);
+        let kalman_gain = filter_gain::kalman_gain(&pred_cov_mat, curr_H, curr_V);
+        let filter_state_vec = filter_gain::state_vector(&pred_state_vec, &kalman_gain, curr_m_k, curr_H);
+        let filter_cov_mat = filter_gain::covariance_matrix(&kalman_gain, curr_H, &pred_cov_mat);
+        let filter_residual_vec = filter_gain::residual_vec(curr_H, &kalman_gain, &pred_residual_vec);
+        let filter_residual_mat = filter_gain::residual_mat(curr_V, curr_H, &filter_cov_mat);
         let chi_squared_inc = filter_gain::chi_squared_increment(&filter_residual_vec, &filter_residual_mat);
 
         // store all the filtered values in their respective iterators
@@ -144,11 +144,11 @@ pub fn run(
 
         // NOTE: the next calculations assume that x^n references the next state vector and x^k references the previous 
         // state vector. I am uncertain as to what the actual answer is as andi still has not gotten back to me about it.
-        let gain_matrix = smoothing::gain_matrix(&curr_filt_cov_mat, &curr_jacobian, &prev_filt_cov_mat); 
-        let smoothed_state_vec = smoothing::state_vector(&curr_filt_state_vec, &gain_matrix, &prev_smth_state_vec, &prev_filt_state_vec);
-        let smoothed_cov_mat = smoothing::covariance_matrix(&curr_filt_cov_mat, &gain_matrix, &prev_filt_cov_mat, &prev_smth_cov_mat);
-        let smoothed_res_mat = smoothing::residual_mat(&curr_V_k, &curr_H_k, &smoothed_cov_mat);
-        let smoothed_res_vec = smoothing::residual_vec(&curr_measurement, &curr_H_k, &smoothed_state_vec);
+        let gain_matrix = smoothing::gain_matrix(curr_filt_cov_mat, curr_jacobian, prev_filt_cov_mat); 
+        let smoothed_state_vec = smoothing::state_vector(curr_filt_state_vec, &gain_matrix, prev_smth_state_vec, prev_filt_state_vec);
+        let smoothed_cov_mat = smoothing::covariance_matrix(curr_filt_cov_mat, &gain_matrix, prev_filt_cov_mat, prev_smth_cov_mat);
+        let smoothed_res_mat = smoothing::residual_mat(curr_V_k, curr_H_k, &smoothed_cov_mat);
+        let smoothed_res_vec = smoothing::residual_vec(curr_measurement, curr_H_k, &smoothed_state_vec);
 
         //
         //  group push variables to vectors
@@ -159,6 +159,7 @@ pub fn run(
             smoothed_res_mat => smoothed_res_mat_iter,
             smoothed_res_vec => smoothed_res_vec_iter
         }
+
     }
     
     // put all data into a struct that will contain all the methods to return 
@@ -168,7 +169,8 @@ pub fn run(
                                 smoothed_res_mat_iter,
                                 smoothed_res_vec_iter)
 
-
+    // 
+    // unimplemented!()
 }
 
 // TODO: figure out partial derivatives for jacobian calculation

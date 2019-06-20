@@ -13,14 +13,14 @@ pub fn covariance_matrix(jacobian: &Mat5, previous_covariance: &Mat5)-> Mat5{
 
 // just below eq. 7
 // covariance of predicted results
-pub fn residual_mat(V: &Mat5, H: &Mat5, C: &Mat5) -> Mat5 {
+pub fn residual_mat(V: &Mat2, H: &Mat2x5, C: &Mat5) -> Mat2 {
     return V + (H*C * H.transpose())
 }
 
 pub fn residual_vec(
-    m_k: &Vec5,
-    H_k: &Mat5,
-    pred_state_vec: &Vec5) -> Vec5 {
+    m_k: &Vec2,
+    H_k: &Mat2x5,
+    pred_state_vec: &Vec5) -> Vec2 {
 
     let prod = H_k * pred_state_vec;
     let diff = m_k - prod;

@@ -10,10 +10,12 @@ pub type Vec5 = na::Vector5<Real>;
 pub type P2 = na::Point2<Real>;
 pub type P3 = na::Point3<Real>;
 
+pub type Mat2 = na::Matrix2<Real>;
 pub type Mat3 = na::Matrix3<Real>;
 pub type Mat4 = na::Matrix4<Real>;
 pub type Mat5 = na::Matrix5<Real>;
 
+pub type Mat2x5 =na::Matrix2x5<Real>;
 pub type Mat5x2 =na::Matrix5x2<Real>;
 
 pub type Trf3 = na::Transform3<Real>;

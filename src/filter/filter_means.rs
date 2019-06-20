@@ -8,9 +8,9 @@ fn state_vector(
     C_k : &Mat5,
     C_prediction : &Mat5,
     extrap_state_vector: &Vec5,
-    H : &Mat5,
-    G : &Mat5,
-    m_k: &Vec5) -> Vec5{
+    H : &Mat2x5,
+    G : &Mat2,
+    m_k: &Vec2) -> Vec5{
     
     let product_one = C_prediction.try_inverse().unwrap() * extrap_state_vector;
     let product_two = H.transpose() * G * m_k;
@@ -22,8 +22,8 @@ fn state_vector(
 #[allow(dead_code)]
 fn covariance_mat ( // C_k
     C_prediction: &Mat5,
-    H : &Mat5,
-    G : &Mat5) -> Mat5 {
+    H : &Mat2x5,
+    G : &Mat2) -> Mat5 {
     
     let product = H.transpose() * G * H;
     let C_prevoius_inv = C_prediction.try_inverse().unwrap();
@@ -34,8 +34,8 @@ fn covariance_mat ( // C_k
 //TOOD: fix uwrap()
 #[allow(dead_code)]
 fn chi_squared_increment(
-    residual_vec: &Vec5,
-    G: &Mat5,
+    residual_vec: &Vec2,
+    G: &Mat2,
     state_vector: &Vec5,
     extrap_state_vector: &Vec5,
     C_prediction: &Mat5) -> Real {

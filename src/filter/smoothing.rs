@@ -40,9 +40,9 @@ pub fn covariance_matrix(
 
 
 pub fn residual_mat(
-    V_k: &Mat5,
-    H_k: &Mat5,
-    curr_smth_cov_mat: &Mat5) -> Mat5 {
+    V_k: &Mat2,
+    H_k: &Mat2x5,
+    curr_smth_cov_mat: &Mat5) -> Mat2 {
 
     let prod = H_k * curr_smth_cov_mat * H_k.transpose();
     let diff = V_k - prod;
@@ -51,9 +51,9 @@ pub fn residual_mat(
 }
 
 pub fn residual_vec(
-    m_k: &Vec5,
-    H_k: &Mat5,
-    curr_smth_state_vec: &Vec5) -> Vec5 {
+    m_k: &Vec2,
+    H_k: &Mat2x5,
+    curr_smth_state_vec: &Vec5) -> Vec2 {
     
     let prod = H_k * curr_smth_state_vec;
     let sum = m_k + prod;
