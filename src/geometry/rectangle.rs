@@ -7,11 +7,15 @@ use super::utils;
 /// A struct for sensors of rectangular geometry
 #[derive(Debug)]
 pub struct Rectangle {
+    pub gloabl_center: P3,  //center of the sensor (not used in bound checks)
+    pub normal : Vec3,      // normal vector of plane
+    pub plane_constant: Real, // D in Ax +By + Cz +D =0 
+
     half_base: Real,
     half_height: Real,
-    normal : Vec3,
-    to_global: Aff3,
-    to_local: Aff3,
+
+    to_global: Aff3,    // L => G for point
+    to_local: Aff3,     // G => L for point
     measurement_to_state_vector: Mat2x5
 }
 
@@ -55,6 +59,8 @@ impl Rectangle {
                 let rect = Rectangle{half_base: half_base, 
                              half_height: half_height,
                              normal: normal_vector,
+                             plane_constant: 0.,         //TODO fix this one
+                             gloabl_center: orig,
                              to_global: to_global_transform,
                              to_local: to_local_transform,
                              measurement_to_state_vector: projection_mat};
@@ -172,5 +178,9 @@ impl Plane for Rectangle{
         else{
             false
         }
+    }
+
+    fn plane_normal_vec(&self) -> &Vec3 {
+        return &self.normal
     }
 }

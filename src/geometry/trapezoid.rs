@@ -254,4 +254,8 @@ impl Plane for Trapezoid{
         }
 
     }
+
+    fn plane_normal_vec(&self) -> &Vec3 {
+        return &self.normal
+    }
 }

@@ -8,6 +8,8 @@ pub trait Plane {
     // mutable access
     /// Checks that a given point is located on a plane
     fn on_plane(&self, input_point: &P3) -> bool;
+
+    fn plane_normal_vec(&self) -> &Vec3;
 }
 
 /// Transformations between global and local reference frames. Additionally, It can be used to check if a 

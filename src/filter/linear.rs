@@ -6,6 +6,8 @@ use super::smoothing;
 
 use std::iter;
 
+use super::super::geometry::traits::{Plane, Transform};
+
 use super::utils::SmoothedData;
 
 #[macro_use]
@@ -62,11 +64,16 @@ pub fn run(
         let jacobian = linear_jacobian();
 
         // fetch the next values of H / V / m_k
-        next!{init:
-            H_iter => curr_H,
-            V_iter => curr_V,
-            M_k_iter => curr_m_k
-        };
+        // next!{init:
+        //     H_iter => curr_H,
+        //     V_iter => curr_V,
+        //     M_k_iter => curr_m_k
+        // };
+        get_unchecked!{i;
+            H_vec => curr_H,
+            V_vec => curr_V,
+            m_k_vec=> curr_m_k 
+        }
 
         //predictions
         let pred_state_vec = prediction::state_vector(&jacobian, &previous_state_vec);
@@ -176,4 +183,41 @@ pub fn run(
 // TODO: figure out partial derivatives for jacobian calculation
 fn linear_jacobian() -> Mat5 {
     return Mat5::identity()
+}
+
+
+/// Calculates the predicted location of the hit on the following sensor
+// based on this equation set https://i.imgur.com/mWC0qkj.png
+fn pred_next_hit<T: Transform + Plane>(start_sensor: &T, 
+                                        end_sensor: &T, 
+                                        global_start_sensor_hit: &P3,
+                                        phi: Real,
+                                        theta: Real) -> P3 {
+    
+    let cos_phi = phi.cos();
+    let x_slope = cos_phi * theta.cos();
+    let y_slope = cos_phi * theta.sin();
+    let z_slope = phi.sin();
+
+    // used so we can be generic over planar sensors
+    let normal = end_sensor.plane_normal_vec();
+
+    // calculate a generic numerator used repetitively later
+    let gen_num_1 = normal.x * global_start_sensor_hit.x;
+    let gen_num_2 = normal.y * global_start_sensor_hit.y;
+    let gen_num_3 = normal.z * global_start_sensor_hit.z;
+    let gen_num = gen_num_1 + gen_num_2 + gen_num_3;
+
+    // generic denominator 
+    let gen_den_1 = normal.x * x_slope;
+    let gen_den_2 = normal.y * y_slope;
+    let gen_den_3 = normal.z * z_slope;
+    let gen_den = gen_den_1 + gen_den_2 + gen_den_3;
+
+    // calculate predicted points of intersection on ending plane
+    let pred_x = global_start_sensor_hit.x - ((x_slope * gen_num)/gen_den);
+    let pred_y = global_start_sensor_hit.y - ((y_slope * gen_num)/gen_den);
+    let pred_z = global_start_sensor_hit.z - ((z_slope * gen_num)/gen_den);
+
+    P3::new(pred_x, pred_y, pred_z)
 }
