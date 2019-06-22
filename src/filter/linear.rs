@@ -6,9 +6,13 @@ use super::smoothing;
 
 use std::iter;
 
+use super::super::geometry::Rectangle;
 use super::super::geometry::traits::{Plane, Transform};
 
+use super::super::error::*;
 use super::utils::SmoothedData;
+
+
 
 #[macro_use]
 use super::macros;
@@ -18,7 +22,8 @@ use super::macros;
 pub fn run(
     V_vec: &Vec<Mat2>, 
     H_vec: &Vec<Mat2x5>,
-    m_k_vec: &Vec<Vec2>,
+    m_k_vec: &Vec<Vec2>
+    // Sensor_vec: &Vec<Rectangle>,            // placeholder until we make it generic later
 )  -> SmoothedData{
     
     if (V_vec.len() == H_vec.len()) && (H_vec.len() == m_k_vec.len()) {}
@@ -28,13 +33,11 @@ pub fn run(
     let input_length = V_vec.len();
 
     store_vec!{
-        input_length + 1; // length all vectors will be initialized to (+! for seeded)
+        input_length; // since we have n sensors, we should have n filtered values
         
         jacobian_iter: Mat5,
 
         // storage for filtered values
-        filter_state_vec_iter: Vec5,
-        filter_cov_mat_iter: Mat5,
         filter_res_mat_iter: Mat2,
         filter_res_vec_iter: Vec2,
         chi_squared_iter: Real,
@@ -44,6 +47,10 @@ pub fn run(
         smoothed_cov_mat_iter : Mat5,
         smoothed_res_mat_iter : Mat2,
         smoothed_res_vec_iter: Vec2
+    }
+    store_vec!{input_length+1; // these vectors require initial seeded values so we initialize to len+1
+        filter_state_vec_iter: Vec5,
+        filter_cov_mat_iter: Mat5
     }
 
     // calculate some seeded values (seeding improvement suggestions welcome)
@@ -56,19 +63,11 @@ pub fn run(
         previous_state_vec => filter_state_vec_iter
     );
 
-    let mut H_iter = H_vec.iter();
-    let mut V_iter = V_vec.iter();
-    let mut M_k_iter = m_k_vec.iter();
 
     for i in 0..input_length{
         let jacobian = linear_jacobian();
 
         // fetch the next values of H / V / m_k
-        // next!{init:
-        //     H_iter => curr_H,
-        //     V_iter => curr_V,
-        //     M_k_iter => curr_m_k
-        // };
         get_unchecked!{i;
             H_vec => curr_H,
             V_vec => curr_V,
@@ -140,7 +139,7 @@ pub fn run(
         // grab variables pushed in the last iteration
         // (i+2) since input_length is based on the function argument lengths
         // and we also .remove() one value from each vec
-        get_unchecked!{input_length -(i+2);                                           //TODO: fix this index <IMPORTANT!!!>
+        get_unchecked!{input_length -(i+2);                         //TODO: double check this indexing
             smoothed_state_vec_iter => prev_smth_state_vec,
             smoothed_cov_mat_iter => prev_smth_cov_mat
         }
@@ -183,41 +182,4 @@ pub fn run(
 // TODO: figure out partial derivatives for jacobian calculation
 fn linear_jacobian() -> Mat5 {
     return Mat5::identity()
-}
-
-
-/// Calculates the predicted location of the hit on the following sensor
-// based on this equation set https://i.imgur.com/mWC0qkj.png
-fn pred_next_hit<T: Transform + Plane>(start_sensor: &T, 
-                                        end_sensor: &T, 
-                                        global_start_sensor_hit: &P3,
-                                        phi: Real,
-                                        theta: Real) -> P3 {
-    
-    let cos_phi = phi.cos();
-    let x_slope = cos_phi * theta.cos();
-    let y_slope = cos_phi * theta.sin();
-    let z_slope = phi.sin();
-
-    // used so we can be generic over planar sensors
-    let normal = end_sensor.plane_normal_vec();
-
-    // calculate a generic numerator used repetitively later
-    let gen_num_1 = normal.x * global_start_sensor_hit.x;
-    let gen_num_2 = normal.y * global_start_sensor_hit.y;
-    let gen_num_3 = normal.z * global_start_sensor_hit.z;
-    let gen_num = gen_num_1 + gen_num_2 + gen_num_3;
-
-    // generic denominator 
-    let gen_den_1 = normal.x * x_slope;
-    let gen_den_2 = normal.y * y_slope;
-    let gen_den_3 = normal.z * z_slope;
-    let gen_den = gen_den_1 + gen_den_2 + gen_den_3;
-
-    // calculate predicted points of intersection on ending plane
-    let pred_x = global_start_sensor_hit.x - ((x_slope * gen_num)/gen_den);
-    let pred_y = global_start_sensor_hit.y - ((y_slope * gen_num)/gen_den);
-    let pred_z = global_start_sensor_hit.z - ((z_slope * gen_num)/gen_den);
-
-    P3::new(pred_x, pred_y, pred_z)
 }

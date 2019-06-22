@@ -44,6 +44,14 @@ macro_rules! get_unchecked {
                 }
         )+
     };
+    ($($vector:ident[$index:expr] => $destination:ident),+) => {
+        $(
+            let $destination = 
+                unsafe {
+                    $vector.get($index).expect("get_unchecked!{} fetched something out of bounds")
+                }
+        )+
+    };
 }
 
 #[macro_export]
