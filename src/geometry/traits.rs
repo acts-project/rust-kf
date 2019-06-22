@@ -22,7 +22,7 @@ pub trait Transform{
     fn to_local(&self, input_point: P3) -> P2;
 
     /// Checks if a global point is contained within the localized bounds of a sensor.
-    fn contains_from_global(&mut self, input_point: P3) -> bool {
+    fn contains_from_global(&self, input_point: P3) -> bool {
         let local_point = Self::to_local(&self, input_point);
         Self::contains_from_local(&self,&local_point)
     }
