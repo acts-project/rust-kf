@@ -19,7 +19,6 @@ pub fn state_vector( // x
 }
 
 //TODO: remove `unwrap` on the inverse
-#[allow(dead_code)]
 pub fn kalman_gain ( // K
     C : &Mat5,
     H : &Mat2x5,
