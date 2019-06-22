@@ -42,7 +42,8 @@ macro_rules! impl_from {
 
 #[derive(Debug)]
 pub enum Error{
-    Matrix(MatrixError)
+    Matrix(MatrixError),
+    Sensor(SensorError)
 }
 
 #[derive(Debug)]
@@ -50,10 +51,19 @@ pub enum MatrixError {
     NonInvertible,
 }
 
+#[derive(Debug)]
+pub enum SensorError {
+    OutsideSensorBounds
+}
+
 // this function is only here to ensure that all `std::From` trait implementations 
 // are correctly expanded at compile time. It never needs to be called
 #[allow(dead_code)]
 fn init_from() {
+    // MatrixError
     impl_from!(MatrixError, Error, Error::Matrix);
     impl_from!(empty: i32, MatrixError, MatrixError::NonInvertible);
+    
+    //SensorError
+    impl_from!(SensorError, Error, Error::Sensor);
 }
