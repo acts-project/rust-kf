@@ -7,77 +7,83 @@ use super::super::config::*;
 //     return jacobian * previous_state_vec
 // }
 
-pub fn state_vector( // x
-    extrap_state_vector: &Vec5, 
-    kalman_gain: &Mat5x2, 
-    measurement : &Vec2, 
-    sensor_mapping: &Mat2x5) -> Vec5 {
+pub fn state_vector( 
+    pred_state_vec: &Vec5,  //x
+    kalman_gain: &Mat5x2,   //K
+    measurement : &Vec2,    //m_k
+    sensor_mapping: &Mat2x5 // H
+    ) -> Vec5 { // x
 
-    let parens = measurement - (sensor_mapping * extrap_state_vector);
+    let parens = measurement - (sensor_mapping * pred_state_vec);
     let kalman_product = kalman_gain * parens;
-    return extrap_state_vector + kalman_product;
+    return pred_state_vec + kalman_product;
 }
 
 //TODO: remove `unwrap` on the inverse
-pub fn kalman_gain ( // K
-    C : &Mat5,
-    H : &Mat2x5,
-    V : &Mat2) -> Mat5x2 {
+pub fn kalman_gain (                
+    pred_covariance : &Mat5,        //C
+    sensor_mapping_mat : &Mat2x5,   //H
+    V : &Mat2                       //V
+    ) -> Mat5x2 {                   // K 
 
-    let parens = V + ( H * C * H.transpose() );
-    let kalman_gain = C * H.transpose() * parens.try_inverse().unwrap();
+    let parens = V + ( sensor_mapping_mat * pred_covariance * sensor_mapping_mat.transpose() );
+    let kalman_gain = pred_covariance * sensor_mapping_mat.transpose() * parens.try_inverse().unwrap();
     
     kalman_gain
 }
 
-//TODO add lazy static for identity
-//update covariance matrix C
-pub fn covariance_matrix( // C
-    K : &Mat5x2,
-    H : &Mat2x5,
-    C : &Mat5) -> Mat5 {
-    let parens = Mat5::identity() - (K*H);
 
-    return C * parens;
+pub fn covariance_matrix( 
+    kalman_gain_mat : &Mat5x2,      //K
+    sensor_mapping_mat : &Mat2x5,   // H
+    pred_covariance : &Mat5         // pred C
+    ) -> Mat5 {                     //filt C
+        
+    let parens = Mat5::identity() - (kalman_gain_mat*sensor_mapping_mat);
+
+    return pred_covariance * parens;
 }
 
-//TODO  add second method for this calculation
-//      since the second one looks to have less matmul
 
-//TODO add lazy static for identity
-pub fn residual_vec(  //r
-    H : &Mat2x5,
-    K : &Mat5x2,
-    residual_preiction : &Vec2) -> Vec2 {
+//TODO ensure that `identity` is complile-time optimized
+pub fn residual_vec(
+    sensor_mapping_mat : &Mat2x5,          // H
+    kalman_gain_mat : &Mat5x2,             // K
+    pred_residual_vec : &Vec2              // pred r
+    ) -> Vec2 {                            // filt r
 
     let ident = Mat2::identity();
-    let parens = ident - (H * K);
+    let parens = ident - (sensor_mapping_mat * kalman_gain_mat);
 
-    return  parens * residual_preiction;
+    return  parens * pred_residual_vec;
 }
 
+
 pub fn residual_mat( //R
-    V : &Mat2,
-    H : &Mat2x5,
-    C : &Mat5) -> Mat2{
+    V : &Mat2,                      // V
+    sensor_mapping_mat : &Mat2x5,   // H
+    filt_covariance_mat : &Mat5     //filt C
+    ) -> Mat2{                      //filt R
     
-    let product = H * C * H.transpose();
+    let product = sensor_mapping_mat * filt_covariance_mat * sensor_mapping_mat.transpose();
     return V - product;
 }
 
 
 pub fn chi_squared_increment(
-    residual_vec : &Vec2,
-    residual_covariance : &Mat2 ) -> Real {
+    filt_residual_vec : &Vec2,
+    filt_residual_mat : &Mat2 
+    ) -> Real {
     
-    let prod = residual_vec.transpose() * residual_covariance.try_inverse().unwrap() * residual_vec;
+    let prod = filt_residual_vec.transpose() * filt_residual_mat.try_inverse().expect("could not invert residual covairiance matrix") * filt_residual_vec;
     return prod[0]
 }
 
 
 pub fn update_chi_squared(
     previous_chi_squaread: Real,
-    increment: Real) -> Real {
+    increment: Real
+    ) -> Real {
     
     previous_chi_squaread + increment
 }
