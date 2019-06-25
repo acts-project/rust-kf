@@ -12,25 +12,26 @@ use super::super::geometry::traits::{Plane, Transform};
 use super::super::error::*;
 use super::utils::SmoothedData;
 
-
-
 #[macro_use]
 use super::macros;
 
 /// Monolithic function to handle linear KF calculations
-#[allow(dead_code)]
+#[allow(dead_code)] 
 pub fn run(
-    V_vec: &Vec<Mat2>, 
-    H_vec: &Vec<Mat2x5>,
-    m_k_vec: &Vec<Vec2>
-    // Sensor_vec: &Vec<Rectangle>,            // placeholder until we make it generic later
-)  -> SmoothedData{
+    measurement_noise_coarariance_vector: &Vec<Mat2>,  // vector of V from fruhwirth paper
+    measurements_vector: &Vec<Vec2>,            // vector of all the measurements that were registered
+    sensor_vector: &Vec<Rectangle>,             // the geometric sensors that correspond to each hit 
+    )  -> SmoothedData{
+
+    let meas_map_mat = Mat2x5::new(1.0, 0. , 0. , 0. , 0. ,
+                                   0. , 0. , 0. , 0. , 0. );
     
-    if (V_vec.len() == H_vec.len()) && (H_vec.len() == m_k_vec.len()) {}
+    if (measurement_noise_coarariance_vector.len() == measurements_vector.len()) && (measurements_vector.len() == sensor_vector.len()) {}
     else {
         panic!("vector lengths need to be the same length")
-    } 
-    let input_length = V_vec.len();
+    }
+    let input_length = measurements_vector.len();
+
 
     store_vec!{
         input_length; // since we have n sensors, we should have n filtered values
@@ -69,24 +70,23 @@ pub fn run(
 
         // fetch the next values of H / V / m_k
         get_unchecked!{i;
-            H_vec => curr_H,
-            V_vec => curr_V,
-            m_k_vec=> curr_m_k 
+            measurement_noise_coarariance_vector => curr_v,
+            measurements_vector=> curr_m_k 
         }
 
         //predictions
         let pred_state_vec = prediction::state_vector(&jacobian, &previous_state_vec);
         let pred_cov_mat = prediction::covariance_matrix(&jacobian, &previous_covariance);
-        let pred_residual_mat = prediction::residual_mat(curr_V, curr_H, &pred_cov_mat);
-        let pred_residual_vec = prediction::residual_vec(&curr_m_k, &curr_H, &pred_state_vec);
+        let pred_residual_mat = prediction::residual_mat(curr_v, &meas_map_mat, &pred_cov_mat);
+        let pred_residual_vec = prediction::residual_vec(&curr_m_k, &meas_map_mat, &pred_state_vec);
 
       
         //filtering
-        let kalman_gain = filter_gain::kalman_gain(&pred_cov_mat, curr_H, curr_V);
-        let filter_state_vec = filter_gain::state_vector(&pred_state_vec, &kalman_gain, curr_m_k, curr_H);
-        let filter_cov_mat = filter_gain::covariance_matrix(&kalman_gain, curr_H, &pred_cov_mat);
-        let filter_residual_vec = filter_gain::residual_vec(curr_H, &kalman_gain, &pred_residual_vec);
-        let filter_residual_mat = filter_gain::residual_mat(curr_V, curr_H, &filter_cov_mat);
+        let kalman_gain = filter_gain::kalman_gain(&pred_cov_mat, &meas_map_mat, curr_v);
+        let filter_state_vec = filter_gain::state_vector(&pred_state_vec, &kalman_gain, curr_m_k, &meas_map_mat);
+        let filter_cov_mat = filter_gain::covariance_matrix(&kalman_gain, &meas_map_mat, &pred_cov_mat);
+        let filter_residual_vec = filter_gain::residual_vec(&meas_map_mat, &kalman_gain, &pred_residual_vec);
+        let filter_residual_mat = filter_gain::residual_mat(curr_v, &meas_map_mat, &filter_cov_mat);
         let chi_squared_inc = filter_gain::chi_squared_increment(&filter_residual_vec, &filter_residual_mat);
 
         // store all the filtered values in their respective iterators
@@ -124,9 +124,8 @@ pub fn run(
         get_unchecked!{i;
             filter_state_vec_iter => curr_filt_state_vec,
             filter_cov_mat_iter => curr_filt_cov_mat,
-            H_vec => curr_H_k,
-            V_vec => curr_V_k,
-            m_k_vec =>curr_measurement,
+            measurement_noise_coarariance_vector => curr_v,
+            measurements_vector =>curr_measurement,
             jacobian_iter => curr_jacobian
         }
 
@@ -153,8 +152,8 @@ pub fn run(
         let gain_matrix = smoothing::gain_matrix(curr_filt_cov_mat, curr_jacobian, prev_filt_cov_mat); 
         let smoothed_state_vec = smoothing::state_vector(curr_filt_state_vec, &gain_matrix, prev_smth_state_vec, prev_filt_state_vec);
         let smoothed_cov_mat = smoothing::covariance_matrix(curr_filt_cov_mat, &gain_matrix, prev_filt_cov_mat, prev_smth_cov_mat);
-        let smoothed_res_mat = smoothing::residual_mat(curr_V_k, curr_H_k, &smoothed_cov_mat);
-        let smoothed_res_vec = smoothing::residual_vec(curr_measurement, curr_H_k, &smoothed_state_vec);
+        let smoothed_res_mat = smoothing::residual_mat(curr_v, &meas_map_mat, &smoothed_cov_mat);
+        let smoothed_res_vec = smoothing::residual_vec(curr_measurement, &meas_map_mat, &smoothed_state_vec);
 
         //
         //  group push variables to vectors

@@ -28,6 +28,3 @@ pub trait Transform{
     /// Checks if a local point is contained within the bounds of a sensor.
     fn inside(&self, input: &P2) -> bool;
 }
-
-
-

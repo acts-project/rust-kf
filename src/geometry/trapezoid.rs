@@ -245,7 +245,7 @@ impl Plane for Trapezoid{
     fn on_plane(&self, input_point: &P3) -> bool {
         let pv = P3::new(0.0, 0.0, 0.0) - input_point;
 
-        if self.normal.dot(&pv) <= DOT_PRODUCT_EPSILON {
+        if self.normal.dot(&pv).abs() <= DOT_PRODUCT_EPSILON {
             true
         }
         else{

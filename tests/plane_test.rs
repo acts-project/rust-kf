@@ -11,9 +11,8 @@ fn initialize_rect() -> Rectangle {
     let height_len = 3 as Real;
 
     let tfm_matrix= Mat4::identity(); //arbitrary transform matrix
-    let projection = Mat2x5::zeros();
 
-    Rectangle::new(base_len, height_len, tfm_matrix, projection).unwrap()
+    Rectangle::new(base_len, height_len, tfm_matrix).unwrap()
 }
 
 // default trapezoid for testing
@@ -31,12 +30,12 @@ fn initialize_trap() -> Trapezoid {
 #[cfg(test)]
 mod plane_tests{
  
-    use super::{Trapezoid, Rectangle, Plane, initialize_rect, initialize_trap};
-    use kalman_rs::config::*;
+    use super::*;
 
     #[test]
     fn rectangle_on_plane() {
         let rect = initialize_rect();
+        dbg!{rect.normal};
         assert_eq!(rect.on_plane(&P3::new(1.0, 1.0, 0.0)), true)
     }
 

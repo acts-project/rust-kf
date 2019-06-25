@@ -16,7 +16,6 @@ pub struct Rectangle {
 
     to_global: Aff3,    // L => G for point
     to_local: Aff3,     // G => L for point
-    measurement_to_state_vector: Mat2x5
 }
 
 impl Rectangle {
@@ -40,7 +39,11 @@ impl Rectangle {
     /// 
     /// ```
     /// */
-    pub fn new(base: Real, height: Real, to_global_tfm_matrix: Mat4, projection_mat: Mat2x5) -> Result<Rectangle, MatrixError>{
+    pub fn new(
+        base: Real, 
+        height: Real, 
+        to_global_tfm_matrix: Mat4
+        ) -> Result<Rectangle, MatrixError>{
     
         let to_global_transform = Aff3::from_matrix_unchecked(to_global_tfm_matrix);
 
@@ -63,10 +66,9 @@ impl Rectangle {
                              plane_constant: 0.,         //TODO fix this one
                              gloabl_center: orig,
                              to_global: to_global_transform,
-                             to_local: to_local_transform,
-                             measurement_to_state_vector: projection_mat};
+                             to_local: to_local_transform};
                              
-                dbg!{&rect};
+                // dbg!{&rect};
                 Ok(rect)
                 },
             None => return Err(MatrixError::NonInvertible)
@@ -172,8 +174,8 @@ impl Plane for Rectangle{
     /// ```*/
     fn on_plane(&self, input_point: &P3) -> bool {
         let pv : Vec3= P3::new(0.0, 0.0, 0.0) - input_point;
-
-        if self.normal.dot(&pv) == DOT_PRODUCT_EPSILON{
+       
+        if self.normal.dot(&pv).abs() <= DOT_PRODUCT_EPSILON{
             true
         }
         else{

@@ -29,5 +29,5 @@ fn main() {
         m_k_vec, Vec2, U2, U1
     }
 
-    filter::linear::run(&V_vec, &H_vec, &m_k_vec);
+    // filter::linear::run(&V_vec, &H_vec, &m_k_vec);
 }

@@ -13,9 +13,8 @@ fn initialize_rect() -> Rectangle {
     let height_len = 3 as Real;
 
     let tfm_matrix= Mat4::identity(); //arbitrary transform matrix
-    let projection = Mat2x5::zeros();
 
-    Rectangle::new(base_len, height_len, tfm_matrix, projection).unwrap()
+    Rectangle::new(base_len, height_len, tfm_matrix).unwrap()
 }
 
 // default trapezoid for testing
