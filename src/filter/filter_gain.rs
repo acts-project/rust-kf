@@ -1,20 +1,15 @@
 use nalgebra as na;
 use super::super::config::*;
 
-// pub fn measurement_vector(
-//     jacobian: &Mat5,
-//     previous_state_vec: &Vec5) -> Vec2{
-//     return jacobian * previous_state_vec
-// }
 
 pub fn state_vector( 
     pred_state_vec: &Vec5,  //x
     kalman_gain: &Mat5x2,   //K
     measurement : &Vec2,    //m_k
-    sensor_mapping: &Mat2x5 // H
+    sensor_mapping_mat: &Mat2x5 // H
     ) -> Vec5 { // x
 
-    let parens = measurement - (sensor_mapping * pred_state_vec);
+    let parens = measurement - (sensor_mapping_mat * pred_state_vec);
     let kalman_product = kalman_gain * parens;
     return pred_state_vec + kalman_product;
 }
