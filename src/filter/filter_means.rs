@@ -17,7 +17,7 @@ pub fn state_vector(
 }
 
 
-pub fn covariance_mat ( 
+pub fn covariance_matrix ( 
     pred_covariance_mat: &Mat5,     // pred C
     sensor_mapping_mat : &Mat2x5,   // H
     G : &Mat2                       // inv (V)
