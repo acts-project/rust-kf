@@ -188,7 +188,7 @@ impl Transform for Trapezoid{
     /// 
     /// let is_point_on_sensor = trap_sensor.contains_from_local(&na::Point2::new(1.0, 6.0));
     /// ```*/
-    fn contains_from_local(&self, input: &P2) -> bool {
+    fn inside(&self, input: &P2) -> bool {
 
         let line = 
             if (0 as Real) <= input.x {&self.right_line}
@@ -244,9 +244,8 @@ impl Plane for Trapezoid{
     /// ```*/
     fn on_plane(&self, input_point: &P3) -> bool {
         let pv = P3::new(0.0, 0.0, 0.0) - input_point;
-        //TODO : this function should probably not return result
-        if self.normal.dot(&pv) == 0.0 {
-            // bounds_check!();
+
+        if self.normal.dot(&pv) <= DOT_PRODUCT_EPSILON {
             true
         }
         else{

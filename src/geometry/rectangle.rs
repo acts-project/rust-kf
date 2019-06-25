@@ -22,8 +22,9 @@ pub struct Rectangle {
 impl Rectangle {
     /*
     /// This is the constructor for the rectangular geometry. It expects a 4x4 `nalgebra::Matrix4<f32>` that is invertible 
-    /// and a 4 element array of `nalgebra::Point3<f32>`. If the matrix is not invertible it will return `Err(&str)`.
-    /// The provided matrix should be an affine transformation for converting from R2->R3
+    /// and a 4 element array of `nalgebra::Point3<f32>`. If the matrix is not invertible it will return `Err(kalman_rs::Error)`.
+    /// The provided matrix should be an affine transformation for converting from R2->R3 since we assume the local coordiante system
+    /// is on the x-y plane.
     /// 
     ///  # Examples
     /// ```
@@ -137,7 +138,7 @@ impl Transform for Rectangle{
     /// 
     /// let is_point_on_sensor = rectangle_sensor.contains_from_local(&na::Point2::new(1.0, 6.0));
     /// ```*/
-    fn contains_from_local(&self, input: &P2) -> bool {
+    fn inside(&self, input: &P2) -> bool {
         
         if (input.x.abs() < self.half_base.abs()) && (input.y.abs() < self.half_height.abs()) {
             true
@@ -171,8 +172,8 @@ impl Plane for Rectangle{
     /// ```*/
     fn on_plane(&self, input_point: &P3) -> bool {
         let pv : Vec3= P3::new(0.0, 0.0, 0.0) - input_point;
-        //TODO : this function should probably not return result
-        if self.normal.dot(&pv) == 0.0 {
+
+        if self.normal.dot(&pv) == DOT_PRODUCT_EPSILON{
             true
         }
         else{

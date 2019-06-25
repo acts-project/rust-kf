@@ -1,53 +1,56 @@
-use nalgebra as na;
 use super::super::config::*;
 use super::super::error::*;
 use super::super::geometry::traits::{Plane, Transform};
 
 // extrapolating state vector
+// NOTE: this can only be used for linear systems
 pub fn state_vector (
-    jacobian: &Mat5, 
-    state_vector: &Vec5
-    ) -> Vec5 {
+    jacobian: &Mat5,               // J or F_k-1
+    prev_filt_state_vec: &Vec5     // prev filt x
+    ) -> Vec5 {                    // pred x
 
-    return jacobian * state_vector
+    return jacobian * prev_filt_state_vec
 }
-
 
 // prediction of covariance matrix C
 pub fn covariance_matrix(
-    jacobian: &Mat5, 
-    previous_covariance: &Mat5
-    )-> Mat5{
-    return jacobian * previous_covariance * jacobian.transpose()
+    jacobian: &Mat5,                    // J or F_k-1
+    prev_filt_covariance_mat: &Mat5     // prev filt C
+    )-> Mat5{                           // pred C
+
+    return jacobian * prev_filt_covariance_mat * jacobian.transpose()
 }
 
 // just below eq. 7
 // residual covariance of predicted results
 pub fn residual_mat(
-    V: &Mat2, 
-    H: &Mat2x5, 
-    C: &Mat5) -> Mat2 {
-    return V + (H*C * H.transpose())
+    V: &Mat2,                       // V
+    sensor_mapping_mat: &Mat2x5,    // H
+    pred_covariance_mat: &Mat5      // pred C
+    ) -> Mat2 {                     // pred R
+        
+    return V + (sensor_mapping_mat*pred_covariance_mat * sensor_mapping_mat.transpose())
 }
 
 pub fn residual_vec(
-    m_k: &Vec2,
-    H_k: &Mat2x5,
-    pred_state_vec: &Vec5) -> Vec2 {
+    measurement_vec: &Vec2,         // m_k
+    sensor_mapping_mat: &Mat2x5,    // H
+    pred_state_vec: &Vec5           // pred x
+    ) -> Vec2 {                     // pred r
 
-    let prod = H_k * pred_state_vec;
-    let diff = m_k - prod;
+    let prod = sensor_mapping_mat * pred_state_vec;
+    let diff = measurement_vec - prod;
 
     return diff;
 }
 
 /// Calculates the predicted location of the hit on the following sensor
 // based on this equation set https://i.imgur.com/mWC0qkj.png
-fn linear_state_vector<T: Transform + Plane>(start_sensor: &T, 
-                                        end_sensor: &T, 
-                                        prev_filt_state_vec: &Vec5,
-                                        phi: Real,
-                                        theta: Real) -> Result<Vec5, SensorError> {
+pub fn linear_state_vector<T: Transform + Plane>(
+    start_sensor: &T, 
+    end_sensor: &T, 
+    prev_filt_state_vec: &Vec5,
+    ) -> Result<Vec5, SensorError> {
     
     get_unchecked!{
         prev_filt_state_vec[0] => start_local_x_hit,
@@ -90,7 +93,7 @@ fn linear_state_vector<T: Transform + Plane>(start_sensor: &T,
     let local_pred_point  = end_sensor.to_local(global_pred_point);
 
     // check if the predicted point is on the sensor
-    if end_sensor.contains_from_local(&local_pred_point) {
+    if end_sensor.inside(&local_pred_point) {
         // might be able to avoid cloning here
         let mut new_state_vec = prev_filt_state_vec.clone();
         new_state_vec[0] =local_pred_point.x;

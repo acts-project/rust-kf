@@ -44,7 +44,7 @@ mod _quadralateral_contains {
 
         let test_point = P2::new(1.51, 1.51);
 
-        assert_eq!(rect.contains_from_local(&test_point), false)
+        assert_eq!(rect.inside(&test_point), false)
     }
 
     #[test]
@@ -53,7 +53,7 @@ mod _quadralateral_contains {
 
         let test_point = P2::new(-3.0, 0.0);
 
-        assert_eq!(rect.contains_from_local(&test_point), false)
+        assert_eq!(rect.inside(&test_point), false)
     }
 
     #[test]
@@ -62,7 +62,7 @@ mod _quadralateral_contains {
 
         let test_point = P2::new(1.49, 1.49);
 
-        assert_eq!(rect.contains_from_local(&test_point), true)
+        assert_eq!(rect.inside(&test_point), true)
     }
 
     #[test]
@@ -71,7 +71,7 @@ mod _quadralateral_contains {
 
         let test_point = P2::new(-1.0, 1.0);
 
-        assert_eq!(rect.contains_from_local(&test_point), true)
+        assert_eq!(rect.inside(&test_point), true)
     }
 
     #[test]
@@ -80,7 +80,7 @@ mod _quadralateral_contains {
 
         let test_point = P2::new(-1.0, 2.6);
 
-        assert_eq!(trap.contains_from_local(&test_point), false)
+        assert_eq!(trap.inside(&test_point), false)
     }
 
     
@@ -90,7 +90,7 @@ mod _quadralateral_contains {
 
         let test_point = P2::new(-1.0, 1.01);
 
-        assert_eq!(trap.contains_from_local(&test_point), false)
+        assert_eq!(trap.inside(&test_point), false)
     }
 
     #[test]
@@ -99,7 +99,7 @@ mod _quadralateral_contains {
 
         let test_point = P2::new(0.0, 2.0);
 
-        assert_eq!(trap.contains_from_local(&test_point), false)
+        assert_eq!(trap.inside(&test_point), false)
     }
 
     #[test]
@@ -108,7 +108,7 @@ mod _quadralateral_contains {
 
         let test_point = P2::new(0.0, -2.0);
 
-        assert_eq!(trap.contains_from_local(&test_point), false)
+        assert_eq!(trap.inside(&test_point), false)
     }
 
     #[test]
@@ -117,7 +117,7 @@ mod _quadralateral_contains {
 
         let test_point = P2::new(-1.0, 1.1);
 
-        assert_eq!(trap.contains_from_local(&test_point), false)
+        assert_eq!(trap.inside(&test_point), false)
     }
 
     #[test]
@@ -126,7 +126,7 @@ mod _quadralateral_contains {
 
         let test_point = P2::new(0.0, -5.0);
 
-        assert_eq!(trap.contains_from_local(&test_point), false)
+        assert_eq!(trap.inside(&test_point), false)
     }
 
     #[test]
@@ -135,7 +135,7 @@ mod _quadralateral_contains {
 
         let test_point = P2::new(0.0, 0.0);
 
-        assert_eq!(trap.contains_from_local(&test_point), true)
+        assert_eq!(trap.inside(&test_point), true)
     }
     #[test]
     fn trapezoid_inside_2 (){
@@ -143,7 +143,7 @@ mod _quadralateral_contains {
 
         let test_point = P2::new(1.0, 0.0);
 
-        assert_eq!(trap.contains_from_local(&test_point), true)
+        assert_eq!(trap.inside(&test_point), true)
     }
     #[test]
     fn trapezoid_inside_3 (){
@@ -151,7 +151,7 @@ mod _quadralateral_contains {
 
         let test_point = P2::new(-1.0, 0.0);
 
-        assert_eq!(trap.contains_from_local(&test_point), true)
+        assert_eq!(trap.inside(&test_point), true)
     }
     #[test]
     fn trapezoid_inside_4 (){
@@ -159,7 +159,7 @@ mod _quadralateral_contains {
 
         let test_point = P2::new(1.5, 0.0);
 
-        assert_eq!(trap.contains_from_local(&test_point), true)
+        assert_eq!(trap.inside(&test_point), true)
     }
     #[test]
     fn trapezoid_inside_5 (){
@@ -167,7 +167,7 @@ mod _quadralateral_contains {
 
         let test_point = P2::new(4.0, 0.0);
 
-        assert_eq!(trap.contains_from_local(&test_point), false)
+        assert_eq!(trap.inside(&test_point), false)
     }
 }
 
