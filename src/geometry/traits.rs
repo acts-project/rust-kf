@@ -1,5 +1,3 @@
-extern crate nalgebra as na;
-use na::{Point3, Vector3};
 use super::super::config::*;
 
 /// Finding the attributes of a generic sensor's plane

@@ -22,3 +22,6 @@ pub type Trf3 = na::Transform3<Real>;
 pub type Trl3 = na::Translation3<Real>;
 pub type Rot3 = na::Rotation3<Real>;
 pub type Aff3 = na::Affine3<Real>;
+
+
+pub const DOT_PRODUCT_EPSILON : Real = 0.0005;
