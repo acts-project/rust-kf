@@ -137,7 +137,7 @@ impl Transform for Rectangle{
     /// 
     /// let is_point_on_sensor = rectangle_sensor.contains_from_local(&na::Point2::new(1.0, 6.0));
     /// ```*/
-    fn contains_from_local(&self, input: &P2) -> bool {
+    fn inside(&self, input: &P2) -> bool {
         
         if (input.x.abs() < self.half_base.abs()) && (input.y.abs() < self.half_height.abs()) {
             true

@@ -93,7 +93,7 @@ pub fn linear_state_vector<T: Transform + Plane>(
     let local_pred_point  = end_sensor.to_local(global_pred_point);
 
     // check if the predicted point is on the sensor
-    if end_sensor.contains_from_local(&local_pred_point) {
+    if end_sensor.inside(&local_pred_point) {
         // might be able to avoid cloning here
         let mut new_state_vec = prev_filt_state_vec.clone();
         new_state_vec[0] =local_pred_point.x;

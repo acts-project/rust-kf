@@ -188,7 +188,7 @@ impl Transform for Trapezoid{
     /// 
     /// let is_point_on_sensor = trap_sensor.contains_from_local(&na::Point2::new(1.0, 6.0));
     /// ```*/
-    fn contains_from_local(&self, input: &P2) -> bool {
+    fn inside(&self, input: &P2) -> bool {
 
         let line = 
             if (0 as Real) <= input.x {&self.right_line}
