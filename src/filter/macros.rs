@@ -38,18 +38,15 @@ macro_rules! push {
 macro_rules! get_unchecked {
     ($index:expr; $($vector:ident => $destination:ident),+) => {
         $(
-            let $destination = 
-                unsafe {
-                    $vector.get($index).expect("get_unchecked!{} fetched something out of bounds")
-                }
+            get_unchecked!{$vector[$index] => $destination}
         )+
     };
     ($($vector:ident[$index:expr] => $destination:ident),+) => {
         $(
             let $destination = 
                 unsafe {
-                    $vector.get($index).expect("get_unchecked!{} fetched something out of bounds")
-                }
+                    $vector.get_unchecked($index)
+                };
         )+
     };
 }
@@ -86,9 +83,6 @@ macro_rules! next {
             let $current = $next;
             next!{init: $storage => $next};
             
-            // if $previous.is_none() {
-            //     next!{$storage => $previous, $current, $next};
-            // };
         )+
     };
     //this unwraps each value of the iterator. useful for initializing values for `next`
@@ -144,4 +138,24 @@ macro_rules! empty {
             let mut $name = std::iter::empty();
         )+
     };
+}
+
+
+#[macro_export]
+macro_rules! change_mat_val {
+    ($matrix_name:ident: $row_count:expr; $([$row:expr, $col:expr] => $new_value:expr),+) => {
+        $(
+            // indexing for get() methods is done linearly. Instead of .get(3,3) for the bottom right
+            // corner of a 4x4 matrix we must do .get(15). This line calculates what that index is.
+            let linear_index = ($col * $row_count) + $row;
+
+            let mut value = 
+                unsafe {
+                    $matrix_name.get_unchecked_mut(linear_index)
+                };
+            *value = $new_value;
+
+        )+
+    };
+
 }
