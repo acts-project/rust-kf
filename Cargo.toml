@@ -7,6 +7,6 @@ license = "MIT"
 description = "Kalman filter implementation in rust (WIP)"
 
 [dependencies]
-nalgebra = "0.17.2"
+nalgebra = "0.18.0"
 rand = "0.6.5"
 lazy_static = "1.3.0"
