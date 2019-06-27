@@ -24,8 +24,8 @@ pub fn run(
     sensor_vector: &Vec<Rectangle>,             // the geometric sensors that correspond to each hit 
     )  -> SmoothedData{
 
-    let meas_map_mat = Mat2x5::new(1.0, 0. , 0. , 0. , 0. ,
-                                   0. , 0. , 0. , 0. , 0. );
+    let meas_map_mat = Mat2x5::new(1. , 0. , 0. , 0. , 0. ,
+                                   0. , 1. , 0. , 0. , 0. );
     
     if (measurement_noise_coarariance_vector.len() == measurements_vector.len()) && (measurements_vector.len() == sensor_vector.len()) {}
     else {
@@ -69,7 +69,7 @@ pub fn run(
     for i in 0..input_length{
         let jacobian = jacobian::linear(&previous_state_vec);
 
-        // fetch the next values of H / V / m_k
+        // fetch the next values of V / m_k / current sensor
         get_unchecked!{i;
             measurement_noise_coarariance_vector => curr_v,
             measurements_vector=> curr_m_k,

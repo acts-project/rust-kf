@@ -2,6 +2,7 @@
 pub mod macros;
 
 pub mod linear;
+pub mod jacobian;
 pub mod utils;
 
 pub mod prediction;

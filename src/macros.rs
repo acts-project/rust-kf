@@ -1,3 +1,4 @@
+use super::geometry::{Rectangle, Trapezoid};
 #[macro_export]
 /// This macro is to quickly define pub constants
 /// To suppress warnings and keep variable names parallel to 
@@ -32,14 +33,18 @@ macro_rules! def_constant {
 macro_rules! test_data {
     ($len:expr; $($name:ident, $type:ident),+) => {
         $(  
-            // if $cond == true{
-
-            // }
             let mut $name = Vec::with_capacity($len);
             let var : $type = $type::new_random();
             for _ in 0..$len {
                 $name.push(var.clone());
             }
         )+
+    };
+    (mat; $len:expr; $name:ident, $type:ident) => {
+        let mut $name = Vec::with_capacity($len);
+        for _ in 0..$len {
+            let default = $type::default();
+            $name.push(default)
+        }
     };
 }
