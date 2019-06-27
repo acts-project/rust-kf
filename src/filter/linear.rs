@@ -3,6 +3,7 @@ use super::super::config::*;
 use super::prediction;
 use super::filter_gain;
 use super::smoothing;
+use super::jacobian;
 
 use std::iter;
 
@@ -66,16 +67,21 @@ pub fn run(
 
 
     for i in 0..input_length{
-        let jacobian = linear_jacobian();
+        let jacobian = jacobian::linear(&previous_state_vec);
 
         // fetch the next values of H / V / m_k
         get_unchecked!{i;
             measurement_noise_coarariance_vector => curr_v,
-            measurements_vector=> curr_m_k 
+            measurements_vector=> curr_m_k,
+            sensor_vector => curr_sensor
+        }
+        
+        get_unchecked!{
+            sensor_vector[i+1] => next_sensor
         }
 
         //predictions
-        let pred_state_vec = prediction::state_vector(&jacobian, &previous_state_vec);
+        let pred_state_vec = prediction::linear_state_vector(curr_sensor, next_sensor, &previous_state_vec).expect("pred location out of bounds");
         let pred_cov_mat = prediction::covariance_matrix(&jacobian, &previous_covariance);
         let pred_residual_mat = prediction::residual_mat(curr_v, &meas_map_mat, &pred_cov_mat);
         let pred_residual_vec = prediction::residual_vec(&curr_m_k, &meas_map_mat, &pred_state_vec);
@@ -176,9 +182,4 @@ pub fn run(
 
     // 
     // unimplemented!()
-}
-
-// TODO: figure out partial derivatives for jacobian calculation
-fn linear_jacobian() -> Mat5 {
-    return Mat5::identity()
 }
