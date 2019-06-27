@@ -76,6 +76,14 @@ impl Rectangle {
         }
     }
 
+    ///quickly generates arbitrary sensor data
+    pub fn default() -> Self {
+        let base = 4.;
+        let height = 4.;
+        let to_global = Mat4::new_random();
+        Self::new(base, height, to_global).expect("could not generate rect. sensor")
+    }
+
 }
 impl Transform for Rectangle{
     /*

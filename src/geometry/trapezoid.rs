@@ -1,4 +1,4 @@
-extern crate nalgebra as na;
+use nalgebra as na;
 
 use super::traits::{Transform, Plane};
 use super::utils;
@@ -117,6 +117,17 @@ impl Trapezoid{
             None => return Err(MatrixError::NonInvertible)
 
         }
+    }
+    ///quickly generates arbitrary sensor data
+    pub fn default() -> Self {
+        let base_top = 2.;
+        let base_bot = 5.;
+        let height = 2.;
+
+        let to_global = Mat4::new_random();
+        
+        Self::new(base_top, base_bot, to_global, height).expect("could not generate trap. sensor")
+        
     }
 }
 
