@@ -16,7 +16,7 @@ macro_rules! def_constant {
             def_constant!($var_name :  $type = $val);
         )+
     };
-    // General form for the macro used for non-usize types
+    // General form for the macro used for mixtures of types (specified per constant)
     //varname: name of the constant being stored
     //type: type of the constant
     //val: the value the constant is set to

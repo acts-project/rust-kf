@@ -7,6 +7,7 @@ pub type Real = f64;
 
 pub type Vec2 = Vector2<Real>;
 pub type Vec3 = Vector3<Real>;
+pub type Vec4 = Vector4<Real>;
 pub type Vec5 = Vector5<Real>;
 
 pub type P2 = Point2<Real>;

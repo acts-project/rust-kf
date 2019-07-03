@@ -1,6 +1,7 @@
 #[macro_use]
 pub mod macros;
 
+pub mod constant_magnetic_field;
 pub mod linear;
 pub mod jacobian;
 pub mod utils;
