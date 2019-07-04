@@ -8,6 +8,8 @@ pub trait Plane {
     fn on_plane(&self, input_point: &P3) -> bool;
 
     fn plane_normal_vec(&self) -> &Vec3;
+
+    fn global_center(&self) -> &P3;
 }
 
 /// Transformations between global and local reference frames. Additionally, It can be used to check if a 

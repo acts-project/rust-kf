@@ -36,17 +36,26 @@ macro_rules! push {
 #[macro_export]
 /// Get a reference to an item in a vector using .get_unchecked(_)
 macro_rules! get_unchecked {
+    // get the same index from multiple vectors
     ($index:expr; $($vector:ident => $destination:ident),+) => {
         $(
             get_unchecked!{$vector[$index] => $destination}
         )+
     };
+    // get specific indexes from different vectors
+    // this branch gets called every time
     ($($vector:ident[$index:expr] => $destination:ident),+) => {
         $(
             let $destination = 
                 unsafe {
                     $vector.get_unchecked($index)
                 };
+        )+
+    };
+    // get multiple indexes from the same vector
+    (vector; $vector:ident; $($index:expr => $destination:ident),+) => {
+        $(
+            get_unchecked!{$vector[$index] => $destination}
         )+
     };
 }
@@ -149,7 +158,7 @@ macro_rules! change_mat_val {
             // corner of a 4x4 matrix we must do .get(15). This line calculates what that index is.
             let linear_index = ($col * $row_count) + $row;
 
-            let mut value = 
+            let value = 
                 unsafe {
                     $matrix_name.get_unchecked_mut(linear_index)
                 };
@@ -157,5 +166,32 @@ macro_rules! change_mat_val {
 
         )+
     };
+    (multiply; $matrix_name:ident: $row_count:expr; $([$row:expr, $col:expr] => $scalar_multiple:expr),+) => {
+        $(
+            // indexing for get() methods is done linearly. Instead of .get(3,3) for the bottom right
+            // corner of a 4x4 matrix we must do .get(15). This line calculates what that index is.
+            let linear_index = ($col * $row_count) + $row;
 
+            let value = 
+                unsafe {
+                    $matrix_name.get_unchecked_mut(linear_index)
+                };
+            *value = (*value)*$scalar_multiple;
+
+        )+
+    };
+    (add; $matrix_name:ident: $row_count:expr; $([$row:expr, $col:expr] => $scalar_add:expr),+) => {
+        $(
+            // indexing for get() methods is done linearly. Instead of .get(3,3) for the bottom right
+            // corner of a 4x4 matrix we must do .get(15). This line calculates what that index is.
+            let linear_index = ($col * $row_count) + $row;
+
+            let value = 
+                unsafe {
+                    $matrix_name.get_unchecked_mut(linear_index)
+                };
+            *value = (*value) + $scalar_add;
+
+        )+
+    };
 }

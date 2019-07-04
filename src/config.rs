@@ -2,6 +2,8 @@ use nalgebra::*;
 #[macro_use]
 use super::macros;
 
+pub use std::f64::consts::PI; // re-export pi
+
 // reusable types to be referenced from functions;
 pub type Real = f64;
 
@@ -43,3 +45,5 @@ def_constant!{usize;
 def_constant!{Real;
     DOT_PRODUCT_EPSILON = 0.0005
 }
+
+

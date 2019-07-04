@@ -19,6 +19,7 @@ use super::macros;
 /// Monolithic function to handle linear KF calculations
 #[allow(dead_code)] 
 pub fn run(
+    start_location: &P3,                         // start loc used to predict initial filtered state vec
     measurement_noise_coarariance_vector: &Vec<Mat2>,  // vector of V from fruhwirth paper
     measurements_vector: &Vec<Vec2>,            // vector of all the measurements that were registered
     sensor_vector: &Vec<Rectangle>,             // the geometric sensors that correspond to each hit 
@@ -54,9 +55,12 @@ pub fn run(
         filter_state_vec_iter: Vec5,
         filter_cov_mat_iter: Mat5
     }
+    
+    // fetch the first sensor
+    get_unchecked!{sensor_vector[0]=> first_sensor}
 
     // calculate some seeded values (seeding improvement suggestions welcome)
-    let mut previous_state_vec = super::utils::seed_state_vec();
+    let mut previous_state_vec = super::utils::seed_state_vec_from_sensor(&start_location, first_sensor);
     let mut previous_covariance = super::utils::seed_covariance();
 
     // Store the seeded values in their respective iterators

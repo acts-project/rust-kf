@@ -49,10 +49,14 @@ impl Line {//
 pub struct Trapezoid{
     half_height: Real,
     normal: Vec3,
+    center_global: P3,
+
     to_global: Aff3,
     to_local : Aff3,
+
     left_line: Line,    // equation of line used for bounds checking 
     right_line: Line,  //   ''
+
     max_half_width: Real,
     min_half_width: Real
 }
@@ -101,9 +105,14 @@ impl Trapezoid{
                 let right_line_eq = Line::new_from_points(&top_right_corner, &bottom_right_corner);
                 let left_line_eq = Line::new_from_y_axis_reflection(&right_line_eq);
 
+                let local_center = P3::new(0., 0., 0.);
+                let global_center = to_global_transform * local_center;
+
+
                 let trap = Trapezoid{
                             half_height: half_height,
                             normal: normal_vector,
+                            center_global: global_center,
                             to_global: to_global_transform,
                             to_local: to_local_transform,
                             left_line: left_line_eq,
@@ -267,5 +276,9 @@ impl Plane for Trapezoid{
 
     fn plane_normal_vec(&self) -> &Vec3 {
         return &self.normal
+    }
+
+    fn global_center(&self) -> &P3 {
+        &self.center_global
     }
 }
