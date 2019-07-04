@@ -2,6 +2,9 @@ use super::super::config::*;
 use super::super::error::*;
 use super::super::geometry::traits::{Plane, Transform};
 
+#[macro_use]
+use super::macros;
+
 // extrapolating state vector
 // NOTE: this can only be used for linear systems
 pub fn state_vector (
@@ -96,8 +99,11 @@ pub fn linear_state_vector<T: Transform + Plane>(
     if end_sensor.inside(&local_pred_point) {
         // might be able to avoid cloning here
         let mut new_state_vec = prev_filt_state_vec.clone();
-        new_state_vec[0] =local_pred_point.x;
-        new_state_vec[1] =local_pred_point.y; 
+
+        change_mat_val!{new_state_vec:5;
+            [eLOC_0, 0] => local_pred_point.x,
+            [eLOC_1, 0] => local_pred_point.y
+        }
 
         Ok(new_state_vec)
     }
