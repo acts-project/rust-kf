@@ -53,7 +53,7 @@ pub fn linear_state_vector<T: Transform + Plane>(
     start_sensor: &T, 
     end_sensor: &T, 
     prev_filt_state_vec: &Vec5,
-    ) -> Result<Vec5, SensorError> {
+    ) -> Result<(Vec5, Real), SensorError> {
     
     get_unchecked!{
         prev_filt_state_vec[0] => start_local_x_hit,
@@ -95,6 +95,9 @@ pub fn linear_state_vector<T: Transform + Plane>(
     let global_pred_point = P3::new(pred_x, pred_y, pred_z);
     let local_pred_point  = end_sensor.to_local(global_pred_point);
 
+    // we calculate this here so we can use it in the linear jacobian calculation
+    let global_distance = (global_pred_point - start_global_point).norm();
+
     // check if the predicted point is on the sensor
     if end_sensor.inside(&local_pred_point) {
         // might be able to avoid cloning here
@@ -105,7 +108,7 @@ pub fn linear_state_vector<T: Transform + Plane>(
             [eLOC_1, 0] => local_pred_point.y
         }
 
-        Ok(new_state_vec)
+        Ok((new_state_vec, global_distance))
     }
     else {
         Err(SensorError::OutsideSensorBounds)

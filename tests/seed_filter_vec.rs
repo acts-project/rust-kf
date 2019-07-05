@@ -6,10 +6,7 @@ use kalman_rs::geometry::Rectangle;
 fn start_location() -> P3 {
     P3::new(0.,0.,0.)
 }
-fn start_sensor_from_center(center: P3) -> Rectangle {
-    // unimplemented!()
-    Rectangle::default()
-}
+
 
 // general form of tests;
 fn run_test(

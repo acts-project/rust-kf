@@ -71,7 +71,6 @@ pub fn run(
 
 
     for i in 0..input_length{
-        let jacobian = jacobian::linear(&previous_state_vec);
 
         // fetch the next values of V / m_k / current sensor
         get_unchecked!{i;
@@ -85,7 +84,10 @@ pub fn run(
         }
 
         //predictions
-        let pred_state_vec = prediction::linear_state_vector(curr_sensor, next_sensor, &previous_state_vec).expect("pred location out of bounds");
+        let (pred_state_vec, distance_between) = prediction::linear_state_vector(curr_sensor, next_sensor, &previous_state_vec).expect("pred location out of bounds");
+
+        let jacobian = jacobian::linear(&previous_state_vec, distance_between);
+
         let pred_cov_mat = prediction::covariance_matrix(&jacobian, &previous_covariance);
         let pred_residual_mat = prediction::residual_mat(curr_v, &meas_map_mat, &pred_cov_mat);
         let pred_residual_vec = prediction::residual_vec(&curr_m_k, &meas_map_mat, &pred_state_vec);
