@@ -22,9 +22,9 @@ macro_rules! push {
             $location.push($item);
         )*
     };
-    (remove: $index:expr; $($pop_vec:ident => $dest_vec:ident),+) =>{
+    (clone: $index:expr; $($pop_vec:ident => $dest_vec:ident),+) =>{
         $(
-            let removed_val = $pop_vec.remove($index);
+            let removed_val = $pop_vec.get($index).expect("could not pop").clone();
             push!{removed_val => $dest_vec};
         )+
     };
@@ -49,6 +49,7 @@ macro_rules! get_unchecked {
             let $destination = 
                 unsafe {
                     $vector.get_unchecked($index)
+                    // $vector.get($index).expect("get_unchecked! paniced")
                 };
         )+
     };
@@ -158,7 +159,8 @@ macro_rules! change_mat_val {
             // corner of a 4x4 matrix we must do .get(15). This line calculates what that index is.
             let value = 
                 unsafe {
-                    $matrix_name.get_mut(($row, $col)).expect("CHAMGE MAT VAL ERROR")
+                    $matrix_name.get_unchecked_mut(($row, $col))
+                    // $matrix_name.get_mut(($row, $col)).expect("CHAMGE MAT VAL ERROR")
                 };
             *value = $new_value;
 
@@ -173,6 +175,7 @@ macro_rules! change_mat_val {
             let value = 
                 unsafe {
                     $matrix_name.get_unchecked_mut(($row, $col))
+                    // $matrix_name.get_mut(($row, $col)).expect("CHAGNE MAT VAL Multiply error")
                 };
             *value = (*value)*$scalar_multiple;
 
@@ -186,6 +189,7 @@ macro_rules! change_mat_val {
             let value = 
                 unsafe {
                     $matrix_name.get_unchecked_mut(($row, $col))
+                    // $matrix_name.get_mut(($row, $col)).expect("CHAGNE MAT VAL add error")
                 };
             *value = (*value) + $scalar_add;
 

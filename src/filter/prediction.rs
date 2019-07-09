@@ -51,20 +51,20 @@ pub fn residual_vec(
 
 /// Calculates the predicted location of the hit on the following sensor
 // based on this equation set https://i.imgur.com/mWC0qkj.png
-pub fn linear_state_vector/*<T: Transform + Plane>*/(
-    start_sensor: &Rectangle, 
-    end_sensor: &Rectangle, 
+pub fn linear_state_vector<T: Transform + Plane>(
+    start_sensor: &T, 
+    end_sensor: &T, 
     prev_filt_state_vec: &Vec5,
     ) -> Result<(Vec5, Real), SensorError> {
 
-    println!{"IN PREDICTION: filtered state vec:"}
-    dbg!{prev_filt_state_vec};
+    // println!{"IN PREDICTION: filtered state vec:"}
+    // dbg!{prev_filt_state_vec};
     
     get_unchecked!{
-        prev_filt_state_vec[0] => start_local_x_hit,
-        prev_filt_state_vec[1] => start_local_y_hit,
-        prev_filt_state_vec[2] => theta,
-        prev_filt_state_vec[3] => phi
+        prev_filt_state_vec[eLOC_0] => start_local_x_hit,
+        prev_filt_state_vec[eLOC_1] => start_local_y_hit,
+        prev_filt_state_vec[eTHETA] => theta,
+        prev_filt_state_vec[ePHI] => phi
     }
 
     let mut ang = angles::Angles::new_from_angles(*phi, *theta);
@@ -78,6 +78,8 @@ pub fn linear_state_vector/*<T: Transform + Plane>*/(
 
     let end_plane_constant = end_sensor.plane_constant();
 
+    // dbg!{end_plane_constant};
+
     // find predicted 
     let (global_pred_point, global_distance) = 
         linear_global_hit_estimation(
@@ -89,10 +91,10 @@ pub fn linear_state_vector/*<T: Transform + Plane>*/(
 
     let local_pred_point  = end_sensor.to_local(global_pred_point);
 
-    println!{"global predicted point:"}
-    dbg!{global_pred_point};
-    println!{"local predicted point: "}
-    dbg!{local_pred_point};
+    // println!{"global predicted point:"}
+    // dbg!{global_pred_point};
+    // println!{"local predicted point: "}
+    // dbg!{local_pred_point};
 
 
     // check if the predicted point is on the sensor
@@ -104,8 +106,8 @@ pub fn linear_state_vector/*<T: Transform + Plane>*/(
             [eLOC_0, 0] => local_pred_point.x,
             [eLOC_1, 0] => local_pred_point.y
         }
-        println!{"full predicted state vector"}
-        dbg!{&new_state_vec};
+        // println!{"full predicted state vector"}
+        // dbg!{&new_state_vec};
 
         Ok((new_state_vec, global_distance))
     }
@@ -125,13 +127,16 @@ pub fn linear_global_hit_estimation(
     end_plane_constant: &Real
     ) -> (P3,Real) {
 
-    // to be honest i am not sure _at all_ why this vector has to be reversed, but the tests will not work without it 
+    // to be honest i am not sure _at all_ why this vector has to be reversed,
+    // but the tests where x and y are not both positive will fail without this.
     let normal_vector = -plane_normal_vector;
 
     // find the slopes of the unit vector from the starting point to the end sensor
     let x_slope = angles.tx();
     let y_slope = angles.ty();
     let z_slope = angles.tz();
+
+    // dbg!{normal_vector};dbg!{angles}; dbg!{x_slope}; dbg!{y_slope}; dbg!{z_slope};
 
     //generic numerator for repetitive calculations
     let gen_num_1 = normal_vector.x * start_global_point.x;
@@ -159,7 +164,7 @@ pub fn linear_global_hit_estimation(
     let pred_y = start_global_point.y - (y_slope * gen_division);
     let pred_z = start_global_point.z - (z_slope * gen_division);
 
-    dbg!{pred_x}; dbg!{pred_y}; dbg!{pred_z};
+    // dbg!{pred_x}; dbg!{pred_y}; dbg!{pred_z};
 
     let global_pred_point = P3::new(pred_x, pred_y, pred_z);
 

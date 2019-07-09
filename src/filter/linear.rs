@@ -32,8 +32,7 @@ pub fn run(
     else {
         panic!("vector lengths need to be the same length")
     }
-    let input_length = measurements_vector.len();
-
+    let input_length = measurements_vector.len() - 1;
 
     store_vec!{
         input_length; // since we have n sensors, we should have n filtered values
@@ -71,6 +70,7 @@ pub fn run(
 
 
     for i in 0..input_length{
+        dbg!{i};
 
         // fetch the next values of V / m_k / current sensor
         get_unchecked!{i;
@@ -101,7 +101,8 @@ pub fn run(
         let filter_residual_mat = filter_gain::residual_mat(curr_v, &meas_map_mat, &filter_cov_mat);
         let chi_squared_inc = filter_gain::chi_squared_increment(&filter_residual_vec, &filter_residual_mat);
 
-        println!{"filtered state vector: {:?}", filter_state_vec}
+        // println!{"filtered state vector:"}
+        // dbg!{filter_state_vec};
 
         // store all the filtered values in their respective iterators
         push!{
@@ -120,8 +121,13 @@ pub fn run(
 
     }
 
-    // remove the last value from the filter vector and push it to the smoothed version
-    push!{remove: input_length-1;
+    // println!{"filtered vec length : {}", filter_state_vec_iter.len()};
+
+
+    // Clone the last value of filtered and insert it into smoothed. This is required 
+    // (at least for filter_state_vec_iter and filter_cov_mat_iter) since they are required 
+    // as both the previous filtered values and previous smoothed values
+    push!{clone: input_length-1;
         filter_state_vec_iter => smoothed_state_vec_iter,
         filter_cov_mat_iter => smoothed_cov_mat_iter,
         filter_res_mat_iter => smoothed_res_mat_iter,
@@ -129,7 +135,8 @@ pub fn run(
     }
 
 
-    for i in (0..input_length-1).rev(){
+    for i in (0..input_length).rev(){
+        dbg!{i};
         
         //
         // initializing variables
@@ -153,7 +160,7 @@ pub fn run(
         // grab variables pushed in the last iteration
         // (i+2) since input_length is based on the function argument lengths
         // and we also .remove() one value from each vec
-        get_unchecked!{input_length -(i+2);                         //TODO: double check this indexing
+        get_unchecked!{input_length -(i+1);                         //TODO: double check this indexing
             smoothed_state_vec_iter => prev_smth_state_vec,
             smoothed_cov_mat_iter => prev_smth_cov_mat
         }
@@ -181,6 +188,7 @@ pub fn run(
         }
 
     }
+    // println!{"smoothed vec length : {}", smoothed_state_vec_iter.len()};
     
     // put all data into a struct that will contain all the methods to return 
     // the data back to c++
@@ -189,6 +197,6 @@ pub fn run(
                                 smoothed_res_mat_iter,
                                 smoothed_res_vec_iter)
 
-    // 
+    
     // unimplemented!()
 }

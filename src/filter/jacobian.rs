@@ -15,17 +15,19 @@ pub fn linear(
     distance: Real
     ) -> Mat5{
 
-    println!{"IN JACOBIAN"}
+    // dbg!{"IN JACOBIAN"};
 
     get_unchecked!{
         prev_state_vec[ePHI] => phi,
         prev_state_vec[eTHETA] => theta
     }
 
+
     // struct containing all the required sin / cos of phi / theta
     let mut angles = angles::Angles::new_from_angles(*phi, *theta);
 
-    dbg!{&angles};
+    // dbg!{&angles};
+
 
     let loc_2_glob : Mat8x5 = local_to_global_jac(&angles);
     let glob_2_loc : Mat5x8= global_to_local_jac(&angles);
@@ -50,11 +52,6 @@ fn global_to_local_jac(
     let sin_phi_over_sin_theta = trig_angles.sin_phi / trig_angles.sin_theta;
     let cos_phi_over_sin_theta = trig_angles.cos_phi / trig_angles.sin_theta;
 
-    dbg!{sin_phi_over_sin_theta};
-    dbg!{cos_phi_over_sin_theta};
-    dbg!{inv_sin_theta};
-
-
     change_mat_val!{
         global_to_local_jacobian;
         // [eT, 3] => 1.,   out of bounds
@@ -65,8 +62,7 @@ fn global_to_local_jac(
 
     }
     let val = global_to_local_jacobian.get((ePHI, 5)).expect("coulnt accecss bounds thing");
-    dbg!{val};
-    dbg!{global_to_local_jacobian};
+
     global_to_local_jacobian
 
 }
@@ -91,7 +87,7 @@ fn local_to_global_jac(
         [7, eQOP] => 1.
     }
 
-    dbg!{local_to_global_jacobian};
+    // dbg!{local_to_global_jacobian};
     local_to_global_jacobian
 }
 
@@ -102,12 +98,14 @@ fn linear_transport_jac(
 
     let mut transport_jac = Mat8::identity();      // placeholder since I dont know how to calculate the transport 8x8 yet
 
+
     change_mat_val!{transport_jac;
         [0, 0] => distance * trig_angles.tx(),
         [1,1] => distance * trig_angles.ty(),
         [2,2] => distance * trig_angles.tz()
         // since the other values across the diagonal are 1 and we transport_jac is a identity matrix we leave it here
     }
+
 
     transport_jac
 }
@@ -122,11 +120,15 @@ pub fn linear_state_derivative(
     prev_state_vec: &Vec5,
     distance: Real
     ) -> Mat5 {
+
+    dbg!{"before"};
     
     get_unchecked!{
         prev_state_vec[ePHI] => phi,
         prev_state_vec[eTHETA] => theta
     }
+
+    dbg!{"made past here"};
 
     let mut ang = angles::Angles::new_from_angles(*phi, *theta);
 

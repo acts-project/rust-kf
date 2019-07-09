@@ -117,12 +117,12 @@ pub fn vec_of_vec(num: usize) -> Vec<Vec5> {
     return return_vec
 }
 
-
+#[derive(Debug)]
 pub struct SmoothedData {
-    state_vec: Vec<Vec5>,
-    cov_mat: Vec<Mat5>,
-    res_mat: Vec<Mat2>,
-    res_vec: Vec<Vec2>
+    pub state_vec: Vec<Vec5>,
+    pub cov_mat: Vec<Mat5>,
+    pub res_mat: Vec<Mat2>,
+    pub res_vec: Vec<Vec2>
 }
 
 impl SmoothedData{
