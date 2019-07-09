@@ -9,6 +9,11 @@ pub trait Plane {
 
     fn plane_normal_vec(&self) -> &Vec3;
 
+    // In the equation of a plane Ax + By + Cz = D
+    // this function will return D. used in the prediction of the hit
+    // on the next sensor
+    fn plane_constant(&self) -> Real;
+
     fn global_center(&self) -> &P3;
 }
 

@@ -1,7 +1,7 @@
 use super::super::config::*;
 
 // TODO: Options enums for new values that are calculated: sin_phi_over_cos_theta... etc
-#[derive(PartialOrd, PartialEq)]
+#[derive(PartialOrd, PartialEq, Debug)]
 pub struct Angles{
     pub cos_theta: Real,
     pub cos_phi: Real,
@@ -21,11 +21,11 @@ pub struct Angles{
 // $calculation: the value that the expression will be initialied to should it be `None`
 macro_rules! create_match {
     ($slf:ident.$field:ident, $calculation:expr) => {
-        let mut data = $slf.$field
-        match data{
+        
+        match $slf.$field{
             Some(field) => field,
             None=> {
-                data = Some($calculation);
+                $slf.$field = Some($calculation);
                 $calculation
             }
         }

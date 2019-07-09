@@ -14,5 +14,9 @@ fn main() {
 
     test_data!{mat; 5; sensor_vec, Rectangle}
 
-    kalman_rs::filter::linear::run(&V_vec, &m_k_vec, &sensor_vec);
+    let start = P3::new(0., 0. , 0.);
+
+    kalman_rs::filter::linear::run(&start, &V_vec, &m_k_vec, &sensor_vec);
+
+
 }

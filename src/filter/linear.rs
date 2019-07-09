@@ -92,7 +92,7 @@ pub fn run(
         let pred_residual_mat = prediction::residual_mat(curr_v, &meas_map_mat, &pred_cov_mat);
         let pred_residual_vec = prediction::residual_vec(&curr_m_k, &meas_map_mat, &pred_state_vec);
 
-      
+
         //filtering
         let kalman_gain = filter_gain::kalman_gain(&pred_cov_mat, &meas_map_mat, curr_v);
         let filter_state_vec = filter_gain::state_vector(&pred_state_vec, &kalman_gain, curr_m_k, &meas_map_mat);
@@ -100,6 +100,8 @@ pub fn run(
         let filter_residual_vec = filter_gain::residual_vec(&meas_map_mat, &kalman_gain, &pred_residual_vec);
         let filter_residual_mat = filter_gain::residual_mat(curr_v, &meas_map_mat, &filter_cov_mat);
         let chi_squared_inc = filter_gain::chi_squared_increment(&filter_residual_vec, &filter_residual_mat);
+
+        println!{"filtered state vector: {:?}", filter_state_vec}
 
         // store all the filtered values in their respective iterators
         push!{
@@ -115,6 +117,7 @@ pub fn run(
         // prediction calculations in the next iteration
         previous_covariance = filter_cov_mat;
         previous_state_vec = filter_state_vec;
+
     }
 
     // remove the last value from the filter vector and push it to the smoothed version

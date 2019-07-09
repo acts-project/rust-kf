@@ -152,21 +152,19 @@ macro_rules! empty {
 
 #[macro_export]
 macro_rules! change_mat_val {
-    ($matrix_name:ident: $row_count:expr; $([$row:expr, $col:expr] => $new_value:expr),+) => {
+    ($matrix_name:ident; $([$row:expr, $col:expr] => $new_value:expr),+) => {
         $(
             // indexing for get() methods is done linearly. Instead of .get(3,3) for the bottom right
             // corner of a 4x4 matrix we must do .get(15). This line calculates what that index is.
-            let linear_index = ($col * $row_count) + $row;
-
             let value = 
                 unsafe {
-                    $matrix_name.get_unchecked_mut(linear_index)
+                    $matrix_name.get_mut(($row, $col)).expect("CHAMGE MAT VAL ERROR")
                 };
             *value = $new_value;
 
         )+
     };
-    (multiply; $matrix_name:ident: $row_count:expr; $([$row:expr, $col:expr] => $scalar_multiple:expr),+) => {
+    (multiply; $matrix_name:ident; $([$row:expr, $col:expr] => $scalar_multiple:expr),+) => {
         $(
             // indexing for get() methods is done linearly. Instead of .get(3,3) for the bottom right
             // corner of a 4x4 matrix we must do .get(15). This line calculates what that index is.
@@ -174,21 +172,20 @@ macro_rules! change_mat_val {
 
             let value = 
                 unsafe {
-                    $matrix_name.get_unchecked_mut(linear_index)
+                    $matrix_name.get_unchecked_mut(($row, $col))
                 };
             *value = (*value)*$scalar_multiple;
 
         )+
     };
-    (add; $matrix_name:ident: $row_count:expr; $([$row:expr, $col:expr] => $scalar_add:expr),+) => {
+    (add; $matrix_name:ident; $([$row:expr, $col:expr] => $scalar_add:expr),+) => {
         $(
             // indexing for get() methods is done linearly. Instead of .get(3,3) for the bottom right
             // corner of a 4x4 matrix we must do .get(15). This line calculates what that index is.
-            let linear_index = ($col * $row_count) + $row;
 
             let value = 
                 unsafe {
-                    $matrix_name.get_unchecked_mut(linear_index)
+                    $matrix_name.get_unchecked_mut(($row, $col))
                 };
             *value = (*value) + $scalar_add;
 

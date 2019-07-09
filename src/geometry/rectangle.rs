@@ -14,8 +14,8 @@ pub struct Rectangle {
     half_base: Real,
     half_height: Real,
 
-    to_global: Aff3,    // L => G for point
-    to_local: Aff3,     // G => L for point
+    pub to_global: Aff3,    // L => G for point
+    pub to_local: Aff3,     // G => L for point
 }
 
 impl Rectangle {
@@ -57,13 +57,16 @@ impl Rectangle {
                 let orig = P3::new(0.0, 0.0, 0.0);
 
                 let normal_vector = utils::plane_normal_vector(half_base, half_height);
-
+                
+                
+                let center_global = to_global_transform * orig;
+                let plane_const = (center_global.x * normal_vector.x + center_global.y * normal_vector.y + center_global.z * normal_vector.z);
 
                 let rect = Rectangle{half_base: half_base, 
                              half_height: half_height,
                              normal: normal_vector,
-                             plane_constant: 0.,         //TODO fix this one
-                             center_global: orig,
+                             plane_constant: plane_const,
+                             center_global: center_global,
                              to_global: to_global_transform,
                              to_local: to_local_transform};
                              
@@ -82,6 +85,36 @@ impl Rectangle {
         let to_global = Mat4::new_random();
         Self::new(base, height, to_global).expect("could not generate rect. sensor")
     }
+
+    pub fn new_test_sensor(
+        base: Real,
+        height: Real,
+        to_global: Aff3,
+        to_local: Aff3,
+        non_center_p1: P3,
+        non_center_p2: P3
+    )-> Self {
+        let local_center = P3::origin();
+        let global_center = to_global * local_center;
+
+        let v1 = non_center_p1 - global_center;
+        let v2 = non_center_p2 - global_center;
+        let normal = v1.cross(&v2);
+
+        let plane_constant = 
+            ((normal.x * global_center.x )+ (normal.y *global_center.y) + (normal.z * global_center.z));
+
+        Rectangle{
+            half_base: base/2.,
+            half_height: height / 2.,
+            normal: normal ,
+            plane_constant: plane_constant,
+            center_global: global_center,
+            to_global: to_global,
+            to_local: to_local,
+        }
+    }
+
 
 }
 impl Transform for Rectangle{
@@ -197,4 +230,8 @@ impl Plane for Rectangle{
     fn global_center(&self) -> &P3 {
         &self.center_global
     }
+    fn plane_constant(&self) -> Real {
+        self.plane_constant
+    }
+
 }

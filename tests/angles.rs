@@ -1,8 +1,7 @@
 use kalman_rs::config::*;
 use kalman_rs::filter::angles::Angles;
 use std::ops::Sub;
-// use std::cmp::PartialOrd;
-// use std::ops::Outpus
+use std::cmp::PartialOrd;
 
 fn calc_global(phi: Real, theta: Real) -> (Real, Real, Real) {
     let tx = theta.sin() * phi.cos();
@@ -11,8 +10,6 @@ fn calc_global(phi: Real, theta: Real) -> (Real, Real, Real) {
 
     (tx, ty, tz)
 }
-
-
 
 fn assert(left: Real, right: Real){
     println!{"left is {} \t right is {}", left, right}
@@ -28,54 +25,60 @@ fn local_1 () {
     let (tx, ty, tz) = calc_global(phi, theta);
 
 
-    let mut ang = Angles::new_from_unit_direction(tx, ty, tz);
-    dbg!{"tx"};
+    let mut ang = Angles::new_from_angles(phi, theta);
     assert(ang.tx(), tx);
-    dbg!{"ty"};
     assert(ang.ty(), ty);
-    dbg!{"tz"};
     assert(ang.tz(), tz);
 
-    dbg!{"cos theta"};
     assert(ang.cos_theta, theta.cos());
-    dbg!{"cos phi"};
     assert(ang.cos_phi, phi.cos());
-    dbg!{"sin tehta"};
     assert(ang.sin_theta, theta.sin());
-    dbg!{"sin phi"};
     assert(ang.sin_phi, phi.sin())
 
 }
 
-#[test]                     // This test fails
+#[test]
 fn local_2 () {
-    let phi = PI /4.;
-    let theta = -PI/4.;
+    let phi = 5. *PI /4.;
+    let theta = PI/6.;
     let (tx, ty, tz) = calc_global(phi, theta.clone());
     
-    // let sin_theta = theta.sin();
-    // let abs = sin_theta.clone().abs();
 
     dbg!{tx}; dbg!{ty}; dbg!{tz};
 
-    let mut ang = Angles::new_from_unit_direction(tx, ty, tz);
-    println!{"tx"};
+    let mut ang = Angles::new_from_angles(phi, theta);
     assert(ang.tx(), tx);
-    println!{"ty"};
     assert(ang.ty(), ty);
-    println!{"tz"};
     assert(ang.tz(), tz);
 
-    println!{"cos theta"};
     assert(ang.cos_theta, theta.cos());
-    println!{"cos phi"};
     assert(ang.cos_phi, phi.cos());
-    println!{"sin tehta"};
     assert(ang.sin_theta, theta.sin());
-    println!{"sin phi"};
     assert(ang.sin_phi, phi.sin())
 
 }
+
+#[test]
+fn local_3 () {
+    let phi = 11.*PI /6.;
+    let theta = 3.*PI/4.;
+    let (tx, ty, tz) = calc_global(phi, theta.clone());
+    
+
+    dbg!{tx}; dbg!{ty}; dbg!{tz};
+
+    let mut ang = Angles::new_from_angles(phi, theta);
+    assert(ang.tx(), tx);
+    assert(ang.ty(), ty);
+    assert(ang.tz(), tz);
+
+    assert(ang.cos_theta, theta.cos());
+    assert(ang.cos_phi, phi.cos());
+    assert(ang.sin_theta, theta.sin());
+    assert(ang.sin_phi, phi.sin())
+
+}
+
 
 #[test]
 fn global_1 () {
@@ -85,20 +88,13 @@ fn global_1 () {
 
 
     let mut ang = Angles::new_from_angles(phi, theta);
-    dbg!{"tx"};
     assert(ang.tx(), tx);
-    dbg!{"ty"};
     assert(ang.ty(), ty);
-    dbg!{"tz"};
     assert(ang.tz(), tz);
 
-    dbg!{"cos theta"};
     assert(ang.cos_theta, theta.cos());
-    dbg!{"cos phi"};
     assert(ang.cos_phi, phi.cos());
-    dbg!{"sin tehta"};
     assert(ang.sin_theta, theta.sin());
-    dbg!{"sin phi"};
     assert(ang.sin_phi, phi.sin())
 
 }
@@ -111,20 +107,13 @@ fn global_2 () {
 
 
     let mut ang = Angles::new_from_angles(phi, theta);
-    dbg!{"tx"};
     assert(ang.tx(), tx);
-    dbg!{"ty"};
     assert(ang.ty(), ty);
-    dbg!{"tz"};
     assert(ang.tz(), tz);
 
-    dbg!{"cos theta"};
     assert(ang.cos_theta, theta.cos());
-    dbg!{"cos phi"};
     assert(ang.cos_phi, phi.cos());
-    dbg!{"sin tehta"};
     assert(ang.sin_theta, theta.sin());
-    dbg!{"sin phi"};
     assert(ang.sin_phi, phi.sin())
 
 }

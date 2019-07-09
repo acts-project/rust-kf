@@ -23,7 +23,7 @@ pub fn kalman_gain (
 
     let parens = V + ( sensor_mapping_mat * pred_covariance * sensor_mapping_mat.transpose() );
     let kalman_gain = pred_covariance * sensor_mapping_mat.transpose() * parens.try_inverse().unwrap();
-    
+
     kalman_gain
 }
 

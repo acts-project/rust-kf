@@ -13,7 +13,7 @@ pub fn seed_covariance() -> Mat5 {
 
     // add 1 to everything on the diagonal
     for index in 0..4 {
-        change_mat_val!{add; base : 5;
+        change_mat_val!{add; base;
             [index,index] => 1.
         }
     }
@@ -70,8 +70,6 @@ pub fn seed_state_vec_from_points(
         if y < &0. {true}
         else {false};
 
-    dbg!{adjust_factor};
-
     let xy_projection = Vec3::new(*x, *y, 0.);
 
     let _phi = xy_projection.angle(&x_axis);
@@ -86,7 +84,7 @@ pub fn seed_state_vec_from_points(
 
     let mut seed_vec = Vec5::zeros();
 
-    change_mat_val!{seed_vec : 5;
+    change_mat_val!{seed_vec;
         [eLOC_0,0] => local_destination.x,
         [eLOC_1,0] => local_destination.y,
         [ePHI,0]   => phi,

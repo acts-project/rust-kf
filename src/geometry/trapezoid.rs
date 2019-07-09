@@ -281,4 +281,8 @@ impl Plane for Trapezoid{
     fn global_center(&self) -> &P3 {
         &self.center_global
     }
+
+    fn plane_constant(&self) -> Real {
+        unimplemented!()
+    }
 }
