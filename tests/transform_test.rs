@@ -6,6 +6,10 @@ use geometry::traits::Transform;
 use kalman_rs::config::*;
 use kalman_rs::error::*;
 
+/**
+ * Tests for moving points local -> global and global -> local relative to a sensor
+ * 
+ */
 
 // default rectangle to reduce boilerplate of each test
 fn initialize_rect() -> Rectangle {

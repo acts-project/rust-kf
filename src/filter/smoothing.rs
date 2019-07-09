@@ -6,7 +6,16 @@ pub fn gain_matrix(
     prev_filt_cov_mat: &Mat5    // prev filt C
     ) -> Mat5 {                 // A
 
-    let inv_cov = prev_filt_cov_mat.try_inverse().expect("could not invert in gain matrix");
+    let inv_cov = 
+        match prev_filt_cov_mat.try_inverse() {
+            Some(inverse) => inverse,
+            None => {
+                dbg!{"gain matrix inverse error"};
+                dbg!{prev_filt_cov_mat};
+                Mat5::identity()
+            }
+        };
+
     curr_filt_cov_mat * jacobian.transpose() * inv_cov
 }  
 

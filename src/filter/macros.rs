@@ -22,9 +22,9 @@ macro_rules! push {
             $location.push($item);
         )*
     };
-    (remove: $index:expr; $($pop_vec:ident => $dest_vec:ident),+) =>{
+    (clone: $index:expr; $($pop_vec:ident => $dest_vec:ident),+) =>{
         $(
-            let removed_val = $pop_vec.remove($index);
+            let removed_val = $pop_vec.get($index).expect("could not pop").clone();
             push!{removed_val => $dest_vec};
         )+
     };
@@ -49,6 +49,7 @@ macro_rules! get_unchecked {
             let $destination = 
                 unsafe {
                     $vector.get_unchecked($index)
+                    // $vector.get($index).expect("get_unchecked! paniced")
                 };
         )+
     };
@@ -152,21 +153,20 @@ macro_rules! empty {
 
 #[macro_export]
 macro_rules! change_mat_val {
-    ($matrix_name:ident: $row_count:expr; $([$row:expr, $col:expr] => $new_value:expr),+) => {
+    ($matrix_name:ident; $([$row:expr, $col:expr] => $new_value:expr),+) => {
         $(
             // indexing for get() methods is done linearly. Instead of .get(3,3) for the bottom right
             // corner of a 4x4 matrix we must do .get(15). This line calculates what that index is.
-            let linear_index = ($col * $row_count) + $row;
-
             let value = 
                 unsafe {
-                    $matrix_name.get_unchecked_mut(linear_index)
+                    $matrix_name.get_unchecked_mut(($row, $col))
+                    // $matrix_name.get_mut(($row, $col)).expect("CHAMGE MAT VAL ERROR")
                 };
             *value = $new_value;
 
         )+
     };
-    (multiply; $matrix_name:ident: $row_count:expr; $([$row:expr, $col:expr] => $scalar_multiple:expr),+) => {
+    (multiply; $matrix_name:ident; $([$row:expr, $col:expr] => $scalar_multiple:expr),+) => {
         $(
             // indexing for get() methods is done linearly. Instead of .get(3,3) for the bottom right
             // corner of a 4x4 matrix we must do .get(15). This line calculates what that index is.
@@ -174,12 +174,25 @@ macro_rules! change_mat_val {
 
             let value = 
                 unsafe {
-                    $matrix_name.get_unchecked_mut(linear_index)
+                    $matrix_name.get_unchecked_mut(($row, $col))
+                    // $matrix_name.get_mut(($row, $col)).expect("CHAGNE MAT VAL Multiply error")
                 };
             *value = (*value)*$scalar_multiple;
 
         )+
     };
+    (add; $matrix_name:ident; $([$row:expr, $col:expr] => $scalar_add:expr),+) => {
+        $(
+            // indexing for get() methods is done linearly. Instead of .get(3,3) for the bottom right
+            // corner of a 4x4 matrix we must do .get(15). This line calculates what that index is.
 
+            let value = 
+                unsafe {
+                    $matrix_name.get_unchecked_mut(($row, $col))
+                    // $matrix_name.get_mut(($row, $col)).expect("CHAGNE MAT VAL add error")
+                };
+            *value = (*value) + $scalar_add;
 
+        )+
+    };
 }

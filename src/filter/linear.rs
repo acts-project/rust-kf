@@ -19,6 +19,7 @@ use super::macros;
 /// Monolithic function to handle linear KF calculations
 #[allow(dead_code)] 
 pub fn run(
+    start_location: &P3,                         // start loc used to predict initial filtered state vec
     measurement_noise_coarariance_vector: &Vec<Mat2>,  // vector of V from fruhwirth paper
     measurements_vector: &Vec<Vec2>,            // vector of all the measurements that were registered
     sensor_vector: &Vec<Rectangle>,             // the geometric sensors that correspond to each hit 
@@ -31,8 +32,7 @@ pub fn run(
     else {
         panic!("vector lengths need to be the same length")
     }
-    let input_length = measurements_vector.len();
-
+    let input_length = measurements_vector.len() - 1;
 
     store_vec!{
         input_length; // since we have n sensors, we should have n filtered values
@@ -54,9 +54,12 @@ pub fn run(
         filter_state_vec_iter: Vec5,
         filter_cov_mat_iter: Mat5
     }
+    
+    // fetch the first sensor
+    get_unchecked!{sensor_vector[0]=> first_sensor}
 
     // calculate some seeded values (seeding improvement suggestions welcome)
-    let mut previous_state_vec = super::utils::seed_state_vec();
+    let mut previous_state_vec = super::utils::seed_state_vec_from_sensor(&start_location, first_sensor);
     let mut previous_covariance = super::utils::seed_covariance();
 
     // Store the seeded values in their respective iterators
@@ -67,7 +70,7 @@ pub fn run(
 
 
     for i in 0..input_length{
-        let jacobian = jacobian::linear(&previous_state_vec);
+        dbg!{i};
 
         // fetch the next values of V / m_k / current sensor
         get_unchecked!{i;
@@ -81,12 +84,15 @@ pub fn run(
         }
 
         //predictions
-        let pred_state_vec = prediction::linear_state_vector(curr_sensor, next_sensor, &previous_state_vec).expect("pred location out of bounds");
+        let (pred_state_vec, distance_between) = prediction::linear_state_vector(curr_sensor, next_sensor, &previous_state_vec).expect("pred location out of bounds");
+
+        let jacobian = jacobian::linear(&previous_state_vec, distance_between);
+
         let pred_cov_mat = prediction::covariance_matrix(&jacobian, &previous_covariance);
         let pred_residual_mat = prediction::residual_mat(curr_v, &meas_map_mat, &pred_cov_mat);
         let pred_residual_vec = prediction::residual_vec(&curr_m_k, &meas_map_mat, &pred_state_vec);
 
-      
+
         //filtering
         let kalman_gain = filter_gain::kalman_gain(&pred_cov_mat, &meas_map_mat, curr_v);
         let filter_state_vec = filter_gain::state_vector(&pred_state_vec, &kalman_gain, curr_m_k, &meas_map_mat);
@@ -94,6 +100,9 @@ pub fn run(
         let filter_residual_vec = filter_gain::residual_vec(&meas_map_mat, &kalman_gain, &pred_residual_vec);
         let filter_residual_mat = filter_gain::residual_mat(curr_v, &meas_map_mat, &filter_cov_mat);
         let chi_squared_inc = filter_gain::chi_squared_increment(&filter_residual_vec, &filter_residual_mat);
+
+        // println!{"filtered state vector:"}
+        // dbg!{filter_state_vec};
 
         // store all the filtered values in their respective iterators
         push!{
@@ -109,10 +118,16 @@ pub fn run(
         // prediction calculations in the next iteration
         previous_covariance = filter_cov_mat;
         previous_state_vec = filter_state_vec;
+
     }
 
-    // remove the last value from the filter vector and push it to the smoothed version
-    push!{remove: input_length-1;
+    // println!{"filtered vec length : {}", filter_state_vec_iter.len()};
+
+
+    // Clone the last value of filtered and insert it into smoothed. This is required 
+    // (at least for filter_state_vec_iter and filter_cov_mat_iter) since they are required 
+    // as both the previous filtered values and previous smoothed values
+    push!{clone: input_length-1;
         filter_state_vec_iter => smoothed_state_vec_iter,
         filter_cov_mat_iter => smoothed_cov_mat_iter,
         filter_res_mat_iter => smoothed_res_mat_iter,
@@ -120,7 +135,8 @@ pub fn run(
     }
 
 
-    for i in (0..input_length-1).rev(){
+    for i in (0..input_length).rev(){
+        dbg!{i};
         
         //
         // initializing variables
@@ -144,7 +160,7 @@ pub fn run(
         // grab variables pushed in the last iteration
         // (i+2) since input_length is based on the function argument lengths
         // and we also .remove() one value from each vec
-        get_unchecked!{input_length -(i+2);                         //TODO: double check this indexing
+        get_unchecked!{input_length -(i+1);                         //TODO: double check this indexing
             smoothed_state_vec_iter => prev_smth_state_vec,
             smoothed_cov_mat_iter => prev_smth_cov_mat
         }
@@ -172,6 +188,7 @@ pub fn run(
         }
 
     }
+    // println!{"smoothed vec length : {}", smoothed_state_vec_iter.len()};
     
     // put all data into a struct that will contain all the methods to return 
     // the data back to c++
@@ -180,6 +197,6 @@ pub fn run(
                                 smoothed_res_mat_iter,
                                 smoothed_res_vec_iter)
 
-    // 
+    
     // unimplemented!()
 }
