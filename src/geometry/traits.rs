@@ -2,11 +2,11 @@ use super::super::config::*;
 
 /// Finding the attributes of a generic sensor's plane
 pub trait Plane {
-    // needs to be & mut since it will call plane() which expects 
-    // mutable access
+     
     /// Checks that a given point is located on a plane
     fn on_plane(&self, input_point: &P3) -> bool;
 
+    /// Returns the normal vector of the plane the sensor lies on
     fn plane_normal_vec(&self) -> &Vec3;
 
     // In the equation of a plane Ax + By + Cz = D
@@ -14,6 +14,7 @@ pub trait Plane {
     // on the next sensor
     fn plane_constant(&self) -> Real;
 
+    /// Returns the center of the sensor in global coordinates
     fn global_center(&self) -> &P3;
 }
 

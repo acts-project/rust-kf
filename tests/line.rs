@@ -1,6 +1,15 @@
 use kalman_rs::geometry::trapezoid::Line;
 use kalman_rs::config::*;
 
+
+/* 
+
+    kalman_rs::geometry::trapezoid::Line is used to represent the equation of a line
+    since closures stored in a struct would need to be heap allocated. These are basic tests
+    to make sure the calculation of the line is as expected. Not a lot to go wrong here.module_path!
+
+*/
+
 #[test]
 fn line1 () {
     let p1 = P2::new(2.0, 2.0);

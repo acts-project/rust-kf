@@ -3,6 +3,11 @@ use kalman_rs::filter::utils::seed_state_vec_from_points as seed_vec;
 use kalman_rs::geometry::Rectangle;
 
 
+/**
+ *  Tests for initial seeding of the filtered state vector since the prediction phase
+ *  requires a previous filtered vector. 
+ * 
+ */
 fn start_location() -> P3 {
     P3::new(0.,0.,0.)
 }

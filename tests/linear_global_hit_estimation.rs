@@ -2,6 +2,15 @@ use kalman_rs as krs;
 use krs::filter::{prediction, angles::Angles};
 use krs::config::*;
 
+/*
+
+    These are extensive tests for kalman_rs::filter::prediciton::linear_global_hit_estimation
+    which is used to extrapolate the phi / theta and the current global position of the particle.
+    These tests are pretty extensive as the function was very error prone when making the unit
+    test for the linear KF
+    
+*/
+
 
 /// basic macro for asserting multiple fields equaling each other
 macro_rules! group_assert {

@@ -4,6 +4,11 @@ use geometry::{Rectangle, Trapezoid};
 use geometry::traits::Plane;
 use kalman_rs::config::*;
 
+/*
+ *  Tests the kalman_rs::geometry::Plane traits that are used for detecting if a 
+ *  point is on the same plane as the sensor
+ * 
+ */
 
 // default rectangle to reduce boilerplate of each test
 fn initialize_rect() -> Rectangle {

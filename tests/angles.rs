@@ -3,6 +3,13 @@ use kalman_rs::filter::angles::Angles;
 use std::ops::Sub;
 use std::cmp::PartialOrd;
 
+/*
+
+    tests for kalman_rs::filter::angles::Angle{} which is used to lazily evaluate various angle combinations.
+    This was primarily created to isolate problems with the linear KF.
+
+*/
+
 fn calc_global(phi: Real, theta: Real) -> (Real, Real, Real) {
     let tx = theta.sin() * phi.cos();
     let ty = theta.sin() * phi.sin();
