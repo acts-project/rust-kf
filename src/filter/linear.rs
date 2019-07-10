@@ -173,7 +173,7 @@ pub fn run(
         // state vector. I am uncertain as to what the actual answer is as andi still has not gotten back to me about it.
         let gain_matrix = smoothing::gain_matrix(curr_filt_cov_mat, curr_jacobian, prev_filt_cov_mat); 
         let smoothed_state_vec = smoothing::state_vector(curr_filt_state_vec, &gain_matrix, prev_smth_state_vec, prev_filt_state_vec);
-        let smoothed_cov_mat = smoothing::covariance_matrix(curr_filt_cov_mat, &gain_matrix, prev_filt_cov_mat, prev_smth_cov_mat);
+        let smoothed_cov_mat = smoothing::covariance_matrix(curr_filt_cov_mat, &gain_matrix,prev_smth_cov_mat, prev_filt_cov_mat);
         let smoothed_res_mat = smoothing::residual_mat(curr_v, &meas_map_mat, &smoothed_cov_mat);
         let smoothed_res_vec = smoothing::residual_vec(curr_measurement, &meas_map_mat, &smoothed_state_vec);
 

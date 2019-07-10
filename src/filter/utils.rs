@@ -11,14 +11,9 @@ pub fn seed_covariance() -> Mat5 {
     let mut base = Mat5::zeros();
     base.fill(0.1);
 
-    // add 1 to everything on the diagonal
-    for index in 0..4 {
-        change_mat_val!{add; base;
-            [index,index] => 1.
-        }
-    }
+    let id = Mat5::identity();
 
-    base
+    return base + id;
 
 }
 
@@ -33,12 +28,8 @@ pub fn seed_state_vec_from_sensor<T: Plane + Transform>(
     first_sensor: &T
     ) -> Vec5 {
 
-    let mut base = Vec5::zeros();
-    let zero_vec = Vec3::zeros();
-
     let global_end = first_sensor.global_center();
     let local_end = first_sensor.to_local(*global_end);     // TODO store local_center so we dont need this conversion
-
 
     seed_state_vec_from_points(&start_location, &global_end, &local_end)
 
@@ -53,11 +44,13 @@ pub fn seed_state_vec_from_points(
     local_destination: &P2
     ) -> Vec5{
 
+    // position vector from begining point to ending point
     let vector_to_sensor = global_destination - global_start_location;
 
+    // fetch local hit measurements
     get_unchecked!{vector; vector_to_sensor;
-        0 => x,
-        1 => y
+        eLOC_0 => x,
+        eLOC_1 => y
     }
 
     let z_axis = Vec3::new(0., 0., 1.);
@@ -81,7 +74,6 @@ pub fn seed_state_vec_from_points(
 
     let theta = vector_to_sensor.angle(&z_axis);
     
-
     let mut seed_vec = Vec5::zeros();
 
     change_mat_val!{seed_vec;

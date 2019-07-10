@@ -11,13 +11,13 @@ pub fn gain_matrix(
             Some(inverse) => inverse,
             None => {
                 dbg!{"gain matrix inverse error"};
-                dbg!{prev_filt_cov_mat};
+                // dbg!{prev_filt_cov_mat};
                 Mat5::identity()
             }
         };
 
     curr_filt_cov_mat * jacobian.transpose() * inv_cov
-}  
+}
 
 pub fn state_vector(
     curr_filt_state_vec: &Vec5,     // curr filt x
@@ -36,8 +36,8 @@ pub fn state_vector(
 pub fn covariance_matrix(
     curr_filt_cov_mat: &Mat5,   // curr filt C  
     gain_mat: &Mat5,            // A
+    prev_smth_cov_mat: &Mat5,    // prev smth C
     prev_filt_cov_mat: &Mat5,   // prev filt C
-    prev_smth_cov_mat: &Mat5    // prev smth C
     ) -> Mat5 {                 // smth C
 
     let parens = prev_smth_cov_mat - prev_filt_cov_mat;
