@@ -112,3 +112,32 @@ fn linear_1() {
 
     group_assert!{last_state, start, x, y}
 }
+
+
+// This test fails currently
+#[test]                 
+fn linear_2() {
+    // parallel to x axis
+    let start = P3::new(0. , 1. , 1.);
+
+    let mut cov_vec = Vec::new();
+    let mut sensor_vec = Vec::new();
+    let mut meas_vec = Vec::new();
+
+
+    let iterations = 5;
+    for i in 0..iterations {
+        gen_cov(&mut cov_vec);
+        gen_sensor(&mut sensor_vec, i as Real);
+        gen_hit(&mut meas_vec);
+
+    }
+
+    let kf_result = krs::filter::linear::run(&start, &cov_vec, &meas_vec, &sensor_vec);
+
+    dbg!{&kf_result};
+
+    let last_state = kf_result.state_vec.get(iterations-1).unwrap();
+
+    group_assert!{last_state, start, x, y}
+}
