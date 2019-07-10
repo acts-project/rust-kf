@@ -40,7 +40,7 @@ pub fn linear(
 
 
 /// Local => global jacobian used for both linear and constant magnetic field situaitons
-/// https://gitlab.cern.ch/acts/acts-core/blob/master/Core/include/Acts/Surfaces/detail/Surface.ipp#L46-80
+/// https://gitlab.cern.ch/acts/acts-core/blob/master/Core/include/Acts/Surfaces/detail/Surface.ipp#L82-106
 fn global_to_local_jac(
     trig_angles: &angles::Angles
     ) -> Mat5x8 {
@@ -61,14 +61,13 @@ fn global_to_local_jac(
         [eQOP, 7] => 1.
 
     }
-    let val = global_to_local_jacobian.get((ePHI, 5)).expect("coulnt accecss bounds thing");
 
     global_to_local_jacobian
 
 }
 
 /// global => local jacobian used for both linear and constant magnetic field situaitons
-/// https://gitlab.cern.ch/acts/acts-core/blob/master/Core/include/Acts/Surfaces/detail/Surface.ipp#L82-106
+/// https://gitlab.cern.ch/acts/acts-core/blob/master/Core/include/Acts/Surfaces/detail/Surface.ipp#L46-80
 fn local_to_global_jac(
     trig_angles: &angles::Angles
     ) -> Mat8x5{
@@ -96,8 +95,7 @@ fn linear_transport_jac(
     distance: Real
     ) -> Mat8{
 
-    let mut transport_jac = Mat8::identity();      // placeholder since I dont know how to calculate the transport 8x8 yet
-
+    let mut transport_jac = Mat8::identity(); 
 
     change_mat_val!{transport_jac;
         [0, 0] => distance * trig_angles.tx(),
