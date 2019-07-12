@@ -331,9 +331,9 @@ pub fn linear_global_hit_estimation(
     let normal_vector = -plane_normal_vector;
 
     // find the slopes of the unit vector from the starting point to the end sensor
-    let x_slope = angles.tx();
-    let y_slope = angles.ty();
-    let z_slope = angles.tz();
+    let x_slope = angles.tx;
+    let y_slope = angles.ty;
+    let z_slope = angles.tz;
 
     // dbg!{normal_vector};dbg!{angles}; dbg!{x_slope}; dbg!{y_slope}; dbg!{z_slope};
 

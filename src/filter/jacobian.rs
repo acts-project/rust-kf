@@ -98,9 +98,9 @@ fn linear_transport_jac(
     let mut transport_jac = Mat8::identity(); 
 
     change_mat_val!{transport_jac;
-        [0, 0] => distance * trig_angles.tx(),
-        [1,1] => distance * trig_angles.ty(),
-        [2,2] => distance * trig_angles.tz()
+        [0, 0] => distance * trig_angles.tx,
+        [1,1] => distance * trig_angles.ty,
+        [2,2] => distance * trig_angles.tz
         // since the other values across the diagonal are 1 and we transport_jac is a identity matrix we leave it here
     }
 
@@ -194,3 +194,114 @@ pub fn linear_state_derivative(
 
     return full_jacobian
 }
+
+
+    // dk1dT(0, 1) = sd.B_first.z();
+    // dk1dT(0, 2) = -sd.B_first.y();
+    // dk1dT(1, 0) = -sd.B_first.z();
+    // dk1dT(1, 2) = sd.B_first.x();
+    // dk1dT(2, 0) = sd.B_first.y();
+    // dk1dT(2, 1) = -sd.B_first.x();
+
+
+pub fn constant_magnetic_transport(
+    prev_filt_state_vec: &Vec5,
+    step_data: &RungeKutta,
+    b_field: &Vec3,
+    angles: &angles::Angles,
+    step_size: Real
+
+    ) -> Mat8{
+    
+    get_unchecked!{
+        prev_filt_state_vec[eQOP] => qop
+    }
+    let qop = *qop;
+
+    let half_step_size = step_size / 2.;
+    let mut transport = Mat8::zeros();
+    let dir = angles.direction;
+
+    submatrix!{transport;
+        0..4 , 0..4 => dFdT,
+        0..4 , 4..8 => dFdL,
+        4..8 , 0..4 => dGdT,
+        4..8 , 4..8 => dGdL
+    }
+
+    let mut dk1dT = Mat4::zeros();
+    let mut dk2dT = Mat4::identity();
+    let mut dk3dT = Mat4::identity();
+    let mut dk4dT = Mat4::identity();
+
+    let dk1dL = dir.cross(&b_field);
+
+    let adjust = dir + (half_step_size * step_data.k1);
+    let dk2dL = adjust.cross(&b_field) + 
+        (qop  * half_step_size * dk1dL.cross(&b_field));
+
+    let adjust = dir + (half_step_size * step_data.k2);
+    let dk3dL = adjust.cross(&b_field) + 
+        (qop * half_step_size * dk2dL.cross(&b_field));
+
+    let adjust = dir + (step_size * step_data.k3);
+    let dk4dL = adjust.cross(&b_field) + 
+        (qop * step_size * dk3dL.cross(&b_field));
+
+
+    
+    
+    
+    unimplemented!()
+}
+
+
+pub struct RungeKutta{
+    k1: Vec3,
+    k2: Vec3,
+    k3: Vec3,
+    k4: Vec3
+}
+impl RungeKutta{
+    fn new(k1: Vec3, k2: Vec3, k3: Vec3, k4: Vec3)-> Self{
+        RungeKutta{
+            k1: k1,
+            k2: k2,
+            k3: k3,
+            k4: k4
+        }
+    }
+}
+
+// based on 
+// https://gitlab.cern.ch/acts/acts-core/blob/master/Core/include/Acts/Propagator/DefaultExtension.hpp#L45-59
+// https://gitlab.cern.ch/acts/acts-core/blob/master/Core/include/Acts/Propagator/EigenStepper.ipp#L215-253
+fn runge_kutta_step(
+    prev_filt_state_vec: &Vec5,
+    angles: angles::Angles,         // one-time time calculated angles
+    b_field: &Vec3,                 // magnetic field vector
+    h: Real                         // step size
+    ) -> RungeKutta {
+
+    get_unchecked!{
+        prev_filt_state_vec[eQOP] => qop
+    }
+
+    let dir = angles.direction;
+    let half_h = h/ 2.;
+
+    let k1 = *qop * dir.cross(&b_field);
+
+        //          qop * (stepper.direction(state.stepping) + h * kprev).cross(bField);
+    let adj_k1 = dir + (half_h * k1);
+    let k2 = *qop * adj_k1.cross(&b_field);
+
+    let adj_k2 = dir + (half_h * k2);
+    let k3  = *qop * adj_k2.cross(&b_field);
+
+    let adj_k3 = dir + (h * k3);
+    let k4 = *qop * adj_k3.cross(&b_field);
+
+
+    RungeKutta::new(k1, k2, k3, k4)
+} 

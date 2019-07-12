@@ -33,9 +33,9 @@ fn local_1 () {
 
 
     let mut ang = Angles::new_from_angles(phi, theta);
-    assert(ang.tx(), tx);
-    assert(ang.ty(), ty);
-    assert(ang.tz(), tz);
+    assert(ang.tx, tx);
+    assert(ang.ty, ty);
+    assert(ang.tz, tz);
 
     assert(ang.cos_theta, theta.cos());
     assert(ang.cos_phi, phi.cos());
@@ -54,9 +54,9 @@ fn local_2 () {
     dbg!{tx}; dbg!{ty}; dbg!{tz};
 
     let mut ang = Angles::new_from_angles(phi, theta);
-    assert(ang.tx(), tx);
-    assert(ang.ty(), ty);
-    assert(ang.tz(), tz);
+    assert(ang.tx, tx);
+    assert(ang.ty, ty);
+    assert(ang.tz, tz);
 
     assert(ang.cos_theta, theta.cos());
     assert(ang.cos_phi, phi.cos());
@@ -75,9 +75,9 @@ fn local_3 () {
     dbg!{tx}; dbg!{ty}; dbg!{tz};
 
     let mut ang = Angles::new_from_angles(phi, theta);
-    assert(ang.tx(), tx);
-    assert(ang.ty(), ty);
-    assert(ang.tz(), tz);
+    assert(ang.tx, tx);
+    assert(ang.ty, ty);
+    assert(ang.tz, tz);
 
     assert(ang.cos_theta, theta.cos());
     assert(ang.cos_phi, phi.cos());
@@ -95,9 +95,9 @@ fn global_1 () {
 
 
     let mut ang = Angles::new_from_angles(phi, theta);
-    assert(ang.tx(), tx);
-    assert(ang.ty(), ty);
-    assert(ang.tz(), tz);
+    assert(ang.tx, tx);
+    assert(ang.ty, ty);
+    assert(ang.tz, tz);
 
     assert(ang.cos_theta, theta.cos());
     assert(ang.cos_phi, phi.cos());
@@ -114,9 +114,9 @@ fn global_2 () {
 
 
     let mut ang = Angles::new_from_angles(phi, theta);
-    assert(ang.tx(), tx);
-    assert(ang.ty(), ty);
-    assert(ang.tz(), tz);
+    assert(ang.tx, tx);
+    assert(ang.ty, ty);
+    assert(ang.tz, tz);
 
     assert(ang.cos_theta, theta.cos());
     assert(ang.cos_phi, phi.cos());

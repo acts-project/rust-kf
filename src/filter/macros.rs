@@ -196,3 +196,39 @@ macro_rules! change_mat_val {
         )+
     };
 }
+
+#[macro_export]
+macro_rules! submatrix {
+    ($($matrix_name:ident; ($s1:expr, $s2:expr), ($sh1:expr, $sh2:expr) => $out_var:ident),+) => {
+        $(
+            let mut $out_var = 
+                unsafe{
+                    $matrix_name.slice_mut(($s1, $s2), ($sh1, $sh2))
+                }
+        )+
+    };
+    ($($matrix_name:ident; $($rows:expr, $cols:expr => $out_var:ident),+),+) =>{
+        $(
+            $(
+            let mut $out_var = 
+                unsafe{
+                    $matrix_name.get_unchecked_mut(($rows, $cols))
+                }
+            )+
+        )+
+    };
+}
+
+// poor mans version of dbg!{} that will uses Display instead of Debug for formatting.
+// This is because Debug does not display nice matrix output
+#[macro_export]
+macro_rules! print {
+    ($($val:expr),*) => {
+        $(
+
+        println!("[{}:{}] {} = {}",
+            file!(), line!(), stringify!($val), $val);
+
+        )*
+    };
+}
