@@ -68,6 +68,10 @@ pub fn run(
         previous_state_vec => filter_state_vec_iter
     );
 
+    dbg!{"before entering KF loop the seeded state vector is "};
+    dbg!{previous_state_vec};
+    dbg!{previous_covariance};
+
 
     for i in 0..input_length{
         dbg!{i};
@@ -101,8 +105,9 @@ pub fn run(
         let filter_residual_mat = filter_gain::residual_mat(curr_v, &meas_map_mat, &filter_cov_mat);
         let chi_squared_inc = filter_gain::chi_squared_increment(&filter_residual_vec, &filter_residual_mat);
 
-        // println!{"filtered state vector:"}
-        // dbg!{filter_state_vec};
+        dbg!{pred_state_vec};
+        dbg!{filter_state_vec};
+        dbg!{jacobian};
 
         // store all the filtered values in their respective iterators
         push!{
@@ -119,6 +124,7 @@ pub fn run(
         previous_covariance = filter_cov_mat;
         previous_state_vec = filter_state_vec;
 
+        dbg!{"FINISH STEP"};
     }
 
     // println!{"filtered vec length : {}", filter_state_vec_iter.len()};

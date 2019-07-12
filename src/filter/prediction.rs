@@ -102,9 +102,9 @@ pub fn linear_state_vector<T: Transform + Plane>(
         // might be able to avoid cloning here
         let mut new_state_vec = prev_filt_state_vec.clone();
 
-        change_mat_val!{new_state_vec;
-            [eLOC_0, 0] => local_pred_point.x,
-            [eLOC_1, 0] => local_pred_point.y
+        edit_matrix!{new_state_vec;
+            [eLOC_0] = local_pred_point.x,
+            [eLOC_1] = local_pred_point.y
         }
         // println!{"full predicted state vector"}
         // dbg!{&new_state_vec};

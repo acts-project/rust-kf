@@ -23,10 +23,10 @@ macro_rules! group_assert {
 }
 
 
-const UNCERTAINTY : Real = 10.;
+const UNCERTAINTY : Real = 1.;
 
 fn gen_cov(cov_vec: &mut Vec<Mat2>) -> (){
-    let base_cov = Mat2::identity() * 3. * UNCERTAINTY;     // high covariance across the main diagonal
+    let base_cov = Mat2::identity() * UNCERTAINTY;     // high covariance across the main diagonal
     let cov_noise = Mat2::new_random() * UNCERTAINTY;       // every index random # in [0,1] * uncertainty
     let covariance = base_cov + cov_noise;
 
@@ -84,7 +84,7 @@ fn gen_sensor(sensor_vec: &mut Vec<Rectangle>, index: Real) {
 }
 
 fn gen_hit(meas_vec: &mut Vec<Vec2>) {
-    let hit = Vec2::new_random() * UNCERTAINTY;
+    let hit = Vec2::new_random() / 3.;
     
     meas_vec.push(hit);
 }

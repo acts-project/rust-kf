@@ -152,8 +152,8 @@ macro_rules! empty {
 
 
 #[macro_export]
-macro_rules! change_mat_val {
-    ($matrix_name:ident; $([$row:expr, $col:expr] => $new_value:expr),+) => {
+macro_rules! edit_matrix {
+    ($matrix_name:ident; $([$row:expr, $col:expr] $operation:tt $new_value:expr),+) => {
         $(
             // indexing for get() methods is done linearly. Instead of .get(3,3) for the bottom right
             // corner of a 4x4 matrix we must do .get(15). This line calculates what that index is.
@@ -162,36 +162,15 @@ macro_rules! change_mat_val {
                     $matrix_name.get_unchecked_mut(($row, $col))
                     // $matrix_name.get_mut(($row, $col)).expect("CHAMGE MAT VAL ERROR")
                 };
-            *value = $new_value;
+            *value $operation $new_value;
 
         )+
     };
-    (multiply; $matrix_name:ident; $([$row:expr, $col:expr] => $scalar_multiple:expr),+) => {
+
+    // allows for vectors to be edited without referencing column 0 every time
+    ($vector_name:ident; $([$row:expr] $operation:tt $new_value:expr),+) => {
         $(
-            // indexing for get() methods is done linearly. Instead of .get(3,3) for the bottom right
-            // corner of a 4x4 matrix we must do .get(15). This line calculates what that index is.
-            let linear_index = ($col * $row_count) + $row;
-
-            let value = 
-                unsafe {
-                    $matrix_name.get_unchecked_mut(($row, $col))
-                    // $matrix_name.get_mut(($row, $col)).expect("CHAGNE MAT VAL Multiply error")
-                };
-            *value = (*value)*$scalar_multiple;
-
-        )+
-    };
-    (add; $matrix_name:ident; $([$row:expr, $col:expr] => $scalar_add:expr),+) => {
-        $(
-            // indexing for get() methods is done linearly. Instead of .get(3,3) for the bottom right
-            // corner of a 4x4 matrix we must do .get(15). This line calculates what that index is.
-
-            let value = 
-                unsafe {
-                    $matrix_name.get_unchecked_mut(($row, $col))
-                    // $matrix_name.get_mut(($row, $col)).expect("CHAGNE MAT VAL add error")
-                };
-            *value = (*value) + $scalar_add;
+            edit_matrix!{$vector_name; [$row, 0] $operation $new_value}
 
         )+
     };
@@ -199,14 +178,20 @@ macro_rules! change_mat_val {
 
 #[macro_export]
 macro_rules! submatrix {
-    ($($matrix_name:ident; ($s1:expr, $s2:expr), ($sh1:expr, $sh2:expr) => $out_var:ident),+) => {
+    // fetches mutable submatrix based on index and shape, 
+    // Example: submatrix!{matrix_name; (0,0), (3,3)=> submat_name}
+    ($($matrix_name:ident; $(($s1:expr, $s2:expr), ($sh1:expr, $sh2:expr) => $out_var:ident),+),+) => {
         $(
+            $(
             let mut $out_var = 
                 unsafe{
                     $matrix_name.slice_mut(($s1, $s2), ($sh1, $sh2))
                 }
+            )+
         )+
     };
+    // fetches mutables submatrix based on ranges
+    // Example: submatrix!{matrix_name; 1..3, 1..3 => submat_name}
     ($($matrix_name:ident; $($rows:expr, $cols:expr => $out_var:ident),+),+) =>{
         $(
             $(
@@ -230,5 +215,21 @@ macro_rules! print {
             file!(), line!(), stringify!($val), $val);
 
         )*
+    };
+}
+
+
+#[macro_export]
+macro_rules! equals_static_vec {
+    ($static_vec:ident => $dyn_vec:ident, $dim:expr) => {
+        for i in 0..$dim {
+            let (stat_val, dyn_val) =
+                unsafe{
+                    let a = $static_vec.get_unchecked(i);
+                    let b = $dyn_vec.get_unchecked_mut(i);
+                    (a,b)
+                };
+            *dyn_val = *stat_val;
+        }
     };
 }

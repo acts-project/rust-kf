@@ -5,6 +5,7 @@ use super::super::geometry::traits::{Plane, Transform};
 #[macro_use]
 use super::macros;
 
+
 /// Placeholder function for some form of effective seeding for Mat5's
 pub fn seed_covariance() -> Mat5 {
     // create a matrix with every element being .1
@@ -76,12 +77,12 @@ pub fn seed_state_vec_from_points(
     
     let mut seed_vec = Vec5::zeros();
 
-    change_mat_val!{seed_vec;
-        [eLOC_0,0] => local_destination.x,
-        [eLOC_1,0] => local_destination.y,
-        [ePHI,0]   => phi,
-        [eTHETA,0] => theta,
-        [eQOP, 0] => 1.
+    edit_matrix!{seed_vec;
+        [eLOC_0] = local_destination.x,
+        [eLOC_1] = local_destination.y,
+        [ePHI]   = phi,
+        [eTHETA] = theta,
+        [eQOP] = 1.
     }
 
     seed_vec
@@ -131,5 +132,56 @@ impl SmoothedData{
     pub fn FFI_return() {
         unimplemented!()
     }
+}
+
+pub fn matrix_cross_product(matrix: &mut Mat4, vector: &Vec3) {
+    for i in 0..4{
+        submatrix!{matrix;
+            (i,0), (3,1) => mut_column
+        }
+        
+        // since mut_column is a dynamic matrix we cannot dereference and set equal
+        let cross_result = mut_column.cross(&vector);
+
+        edit_matrix!{mut_column;
+            [0,0] = cross_result.x,
+            [1,0] = cross_result.y,
+            [2,0] = cross_result.z
+        }
+
+    }
+}
+
+
+pub fn simulate_cross_product(input_matrix:&mut Mat4, b_field: &Vec3, direction: &Vec3, qop: Real) {
+
+
+    get_unchecked!{vector;b_field;
+        0 => mag_x,
+        1 => mag_y,
+        2 => mag_z
+    }
+
+    get_unchecked!{vector;direction;
+        0 => dir_x,
+        1 => dir_y,
+        2 => dir_z
+    }
+
+    edit_matrix!{input_matrix;
+        [0,1] = qop*mag_z,
+        [0,2] = -qop *mag_y,
+        [0,3] = (dir_y * mag_z) - (dir_z * mag_y),
+
+        [1,0] = -qop*mag_z,
+        [1,2] = qop *mag_x,
+        [1,3] = (dir_z * mag_x) - (dir_x * mag_z),
+        
+        [2,0] = qop *mag_y,
+        [2,1] = -qop * mag_x,
+        [2,3] = (dir_x * mag_y) - (dir_y * mag_x)
+
+    }
+    
 }
 

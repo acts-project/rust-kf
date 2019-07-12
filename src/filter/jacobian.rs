@@ -1,4 +1,5 @@
 use super::super::config;
+use super::utils;
 use config::*;
 
 use nalgebra as na;
@@ -52,13 +53,13 @@ fn global_to_local_jac(
     let sin_phi_over_sin_theta = trig_angles.sin_phi / trig_angles.sin_theta;
     let cos_phi_over_sin_theta = trig_angles.cos_phi / trig_angles.sin_theta;
 
-    change_mat_val!{
+    // neglects eT
+    edit_matrix!{
         global_to_local_jacobian;
-        // [eT, 3] => 1.,   out of bounds
-        [ePHI, 4] => -sin_phi_over_sin_theta,
-        [ePHI, 5] => cos_phi_over_sin_theta,
-        [eTHETA, 6] => -inv_sin_theta,
-        [eQOP, 7] => 1.
+        [ePHI, 4] = -sin_phi_over_sin_theta,
+        [ePHI, 5] = cos_phi_over_sin_theta,
+        [eTHETA, 6] = -inv_sin_theta,
+        [eQOP, 7] = 1.
 
     }
 
@@ -75,15 +76,15 @@ fn local_to_global_jac(
     let mut local_to_global_jacobian = Mat8x5::zeros();
 
     // add values into transport jacobian
-    change_mat_val!{
+    edit_matrix!{
         local_to_global_jacobian;
         // [3, eT] => 1.,     // This is from the ACTS code. This might go to zero (?) since time is not being tracked
-        [4, ePHI] => (-trig_angles.sin_theta) * trig_angles.sin_phi,
-        [4, eTHETA] => trig_angles.cos_theta * trig_angles.cos_phi,
-        [5, ePHI] =>  trig_angles.sin_theta * trig_angles.cos_phi,
-        [5, eTHETA] => trig_angles.cos_theta * trig_angles.sin_phi,
-        [6, eTHETA] =>  -trig_angles.sin_theta,
-        [7, eQOP] => 1.
+        [4, ePHI] = (-trig_angles.sin_theta) * trig_angles.sin_phi,
+        [4, eTHETA] = trig_angles.cos_theta * trig_angles.cos_phi,
+        [5, ePHI] =  trig_angles.sin_theta * trig_angles.cos_phi,
+        [5, eTHETA] = trig_angles.cos_theta * trig_angles.sin_phi,
+        [6, eTHETA] =  -trig_angles.sin_theta,
+        [7, eQOP] = 1.
     }
 
     // dbg!{local_to_global_jacobian};
@@ -97,10 +98,10 @@ fn linear_transport_jac(
 
     let mut transport_jac = Mat8::identity(); 
 
-    change_mat_val!{transport_jac;
-        [0, 0] => distance * trig_angles.tx,
-        [1,1] => distance * trig_angles.ty,
-        [2,2] => distance * trig_angles.tz
+    edit_matrix!{transport_jac;
+        [0, 0] = distance * trig_angles.tx,
+        [1,1] = distance * trig_angles.ty,
+        [2,2] = distance * trig_angles.tz
         // since the other values across the diagonal are 1 and we transport_jac is a identity matrix we leave it here
     }
 
@@ -119,14 +120,12 @@ pub fn linear_state_derivative(
     distance: Real
     ) -> Mat5 {
 
-    dbg!{"before"};
     
     get_unchecked!{
         prev_state_vec[ePHI] => phi,
         prev_state_vec[eTHETA] => theta
     }
 
-    dbg!{"made past here"};
 
     let mut ang = angles::Angles::new_from_angles(*phi, *theta);
 
@@ -140,21 +139,21 @@ pub fn linear_state_derivative(
     */
     let mut jac_to_curv = Mat5x8::zeros();
 
-    change_mat_val!{
+    edit_matrix!{
         jac_to_curv;
-        [0,0] => -ang.sin_phi,
-        [0,1] => ang.cos_phi,
-        [1,0] => ang.cos_phi * ang.cos_theta,
-        [1,1] => ang.sin_phi * ang.cos_theta,
-        [1,2] => ang.sin_theta,
+        [0,0] = -ang.sin_phi,
+        [0,1] = ang.cos_phi,
+        [1,0] = ang.cos_phi * ang.cos_theta,
+        [1,1] = ang.sin_phi * ang.cos_theta,
+        [1,2] = ang.sin_theta,
         // ^^^^^^^ does not account for numerically unstable coordinate system
         // time parameter
-        [5,3] => 1.,
+        [5,3] = 1.,
         // direction  / momentum parameters for curvilinear
-        [2,4] => ang.sin_phi * inv_sin_theta,
-        [2,5] => ang.cos_phi * inv_sin_theta,
-        [3,6] => -inv_sin_theta,
-        [4,7] => 1.
+        [2,4] = ang.sin_phi * inv_sin_theta,
+        [2,5] = ang.cos_phi * inv_sin_theta,
+        [3,6] = -inv_sin_theta,
+        [4,7] = 1.
     }
 
     /*
@@ -166,26 +165,26 @@ pub fn linear_state_derivative(
 
     let mut jac_to_global = Mat8x5::zeros();
 
-    change_mat_val!{
+    edit_matrix!{
         jac_to_global;
 
-        [0, eLOC_0] => -ang.sin_phi,
-        [0, eLOC_1] => -ang.cos_phi * ang.cos_theta,
+        [0, eLOC_0] = -ang.sin_phi,
+        [0, eLOC_1] = -ang.cos_phi * ang.cos_theta,
 
-        [1, eLOC_0] => ang.cos_phi,
-        [1, eLOC_1] => -ang.sin_phi * ang.cos_theta,
+        [1, eLOC_0] = ang.cos_phi,
+        [1, eLOC_1] = -ang.sin_phi * ang.cos_theta,
 
-        [2, eLOC_1] => ang.sin_theta,
-        [3, eT] => 1.,
+        [2, eLOC_1] = ang.sin_theta,
+        [3, eT] = 1.,
 
-        [4, ePHI] => -ang.sin_theta * ang.sin_phi,
-        [4, eTHETA] => ang.cos_theta * ang.cos_phi,
+        [4, ePHI] = -ang.sin_theta * ang.sin_phi,
+        [4, eTHETA] = ang.cos_theta * ang.cos_phi,
 
-        [5, ePHI] => ang.sin_theta *  ang.cos_phi,
-        [5, eTHETA] => ang.cos_theta * ang.sin_phi,
+        [5, ePHI] = ang.sin_theta *  ang.cos_phi,
+        [5, eTHETA] = ang.cos_theta * ang.sin_phi,
 
-        [6, eTHETA] => -ang.sin_theta,
-        [7, eQOP] => 1.
+        [6, eTHETA] = -ang.sin_theta,
+        [7, eQOP] = 1.
     }
 
     let transport_jac = linear_transport_jac(&mut ang, distance);
@@ -209,7 +208,7 @@ pub fn constant_magnetic_transport(
     step_data: &RungeKutta,
     b_field: &Vec3,
     angles: &angles::Angles,
-    step_size: Real
+    h: Real
 
     ) -> Mat8{
     
@@ -218,16 +217,10 @@ pub fn constant_magnetic_transport(
     }
     let qop = *qop;
 
-    let half_step_size = step_size / 2.;
+    let half_h = h / 2.;
     let mut transport = Mat8::zeros();
     let dir = angles.direction;
 
-    submatrix!{transport;
-        0..4 , 0..4 => dFdT,
-        0..4 , 4..8 => dFdL,
-        4..8 , 0..4 => dGdT,
-        4..8 , 4..8 => dGdL
-    }
 
     let mut dk1dT = Mat4::zeros();
     let mut dk2dT = Mat4::identity();
@@ -236,23 +229,81 @@ pub fn constant_magnetic_transport(
 
     let dk1dL = dir.cross(&b_field);
 
-    let adjust = dir + (half_step_size * step_data.k1);
+    let adjust = dir + (half_h * step_data.k1);
     let dk2dL = adjust.cross(&b_field) + 
-        (qop  * half_step_size * dk1dL.cross(&b_field));
+        (qop  * half_h * dk1dL.cross(&b_field));
 
-    let adjust = dir + (half_step_size * step_data.k2);
+    let adjust = dir + (half_h * step_data.k2);
     let dk3dL = adjust.cross(&b_field) + 
-        (qop * half_step_size * dk2dL.cross(&b_field));
+        (qop * half_h * dk2dL.cross(&b_field));
 
-    let adjust = dir + (step_size * step_data.k3);
+    let adjust = dir + (h * step_data.k3);
     let dk4dL = adjust.cross(&b_field) + 
-        (qop * step_size * dk3dL.cross(&b_field));
+        (qop * h * dk3dL.cross(&b_field));
 
 
+    edit_matrix!{dk1dT;
+        [0,1] =  b_field.z,
+        [0,2] = -b_field.y,
+        [1,0] = -b_field.z,
+        [1,2] =  b_field.x,
+        [2,0] =  b_field.y,
+        [2,1] = -b_field.x
+    }
+    dk1dT *= qop;
+
+    dk2dT += half_h * dk1dT;
+    utils::matrix_cross_product(&mut dk2dT, &b_field);
+    dk2dT *= qop;
+
+    dk3dT += half_h * dk2dT;
+    utils::matrix_cross_product(&mut dk3dT, &b_field);
+    dk3dT *= qop;
+
+    dk4dT += half_h * dk3dT;
+    utils::matrix_cross_product(&mut dk4dT, &b_field);
+    dk4dT *= qop;
+
+////
+    submatrix!{transport;
+        (0,4) , (3,3) => dFdT
+    }
+
+    let rk_sum = dk1dT + dk2dT + dk3dT;
+    let rk_prod = dk1dT + (2. * (dk2dT + dk3dT)) + dk4dT;
+
+    dFdT.fill_with_identity();
+    dFdT += (h/6.) * rk_sum;
+    dFdT *= h;
+
+
+    submatrix!{transport;
+        (0,7) , (3,1) => dFdL
+    }
+
+    // move the values of temp into dFdL. this is done since dFdL is a dynamic vector 
+    // and temp is a 3 row vector. They cannot be set equal manually.
+    let temp= (h * h / 6.)   * rk_sum;
+    equals_static_vec!{temp => dFdL, 3}
     
+////
+    submatrix!{transport;
+        (4,4) , (3,3) => dGdT
+    }
+
+    let temp =  (h / 6.) * rk_prod;
+    dGdT += temp;
+
+////
+    submatrix!{transport;
+        (4,7) , (3,1) => dGdL
+    }
     
+    equals_static_vec!{temp => dGdL, 3}
+
+    print!{"RK transport", transport}
     
-    unimplemented!()
+    return transport
 }
 
 
