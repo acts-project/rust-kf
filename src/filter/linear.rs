@@ -70,7 +70,6 @@ pub fn run(
 
 
     for i in 0..input_length{
-        dbg!{i};
 
         // fetch the next values of V / m_k / current sensor
         get_unchecked!{i;
@@ -101,8 +100,14 @@ pub fn run(
         let filter_residual_mat = filter_gain::residual_mat(curr_v, &meas_map_mat, &filter_cov_mat);
         let chi_squared_inc = filter_gain::chi_squared_increment(&filter_residual_vec, &filter_residual_mat);
 
-        // println!{"filtered state vector:"}
-        // dbg!{filter_state_vec};
+        print!{"NEW ITERATION THROUGH SENSOR",
+            jacobian,
+            pred_cov_mat,
+            filter_cov_mat,
+            kalman_gain,
+            pred_state_vec,
+            filter_state_vec
+        }
 
         // store all the filtered values in their respective iterators
         push!{

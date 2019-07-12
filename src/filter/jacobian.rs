@@ -8,14 +8,12 @@ use super::macros;
 use super::angles;
 
 
-
 /// Calculate the jacobian between sensors for a linear case
 pub fn linear(
     prev_state_vec: &Vec5,
     distance: Real
     ) -> Mat5{
 
-    // dbg!{"IN JACOBIAN"};
 
     get_unchecked!{
         prev_state_vec[ePHI] => phi,
@@ -33,6 +31,7 @@ pub fn linear(
     let glob_2_loc : Mat5x8= global_to_local_jac(&angles);
     let transport_jac: Mat8 = linear_transport_jac(&mut angles, distance);
 
+    print!{"IN JACOBIAN", loc_2_glob, glob_2_loc, transport_jac};
 
     return glob_2_loc * transport_jac * loc_2_glob
     

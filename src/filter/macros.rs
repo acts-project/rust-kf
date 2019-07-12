@@ -196,3 +196,18 @@ macro_rules! change_mat_val {
         )+
     };
 }
+
+
+// poor mans version of dbg!{} that will uses Display instead of Debug for formatting.
+// This is because Debug does not display nice matrix output
+#[macro_export]
+macro_rules! print {
+    ($($val:expr),*) => {
+        $(
+
+        println!("[{}:{}] {} = {}",
+            file!(), line!(), stringify!($val), $val);
+
+        )*
+    };
+}
