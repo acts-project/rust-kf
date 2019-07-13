@@ -195,21 +195,14 @@ pub fn linear_state_derivative(
 }
 
 
-    // dk1dT(0, 1) = sd.B_first.z();
-    // dk1dT(0, 2) = -sd.B_first.y();
-    // dk1dT(1, 0) = -sd.B_first.z();
-    // dk1dT(1, 2) = sd.B_first.x();
-    // dk1dT(2, 0) = sd.B_first.y();
-    // dk1dT(2, 1) = -sd.B_first.x();
 
-
+/// Caculation of transport jacobian at a single time step 
+/// in a constant magnetic field. 
 pub fn constant_magnetic_transport(
     prev_filt_state_vec: &Vec5,
-    step_data: &RungeKutta,
+    step_data: &RungeKuttaStep,
     b_field: &Vec3,
     angles: &angles::Angles,
-    h: Real
-
     ) -> Mat8{
     
     get_unchecked!{
@@ -217,15 +210,16 @@ pub fn constant_magnetic_transport(
     }
     let qop = *qop;
 
+    let h = step_data.h;
     let half_h = h / 2.;
     let mut transport = Mat8::zeros();
     let dir = angles.direction;
 
 
-    let mut dk1dT = Mat4::zeros();
-    let mut dk2dT = Mat4::identity();
-    let mut dk3dT = Mat4::identity();
-    let mut dk4dT = Mat4::identity();
+    let mut dk1dT = Mat3::zeros();
+    let mut dk2dT = Mat3::identity();
+    let mut dk3dT = Mat3::identity();
+    let mut dk4dT = Mat3::identity();
 
     let dk1dL = dir.cross(&b_field);
 
@@ -264,42 +258,28 @@ pub fn constant_magnetic_transport(
     utils::matrix_cross_product(&mut dk4dT, &b_field);
     dk4dT *= qop;
 
-////
-    submatrix!{transport;
-        (0,4) , (3,3) => dFdT
-    }
-
-    let rk_sum = dk1dT + dk2dT + dk3dT;
-    let rk_prod = dk1dT + (2. * (dk2dT + dk3dT)) + dk4dT;
-
+    // dF/dT 
+    let mut dFdT = transport.fixed_slice_mut::<U3, U3>(0, 4);
     dFdT.fill_with_identity();
-    dFdT += (h/6.) * rk_sum;
+    dFdT += ((h/6.) * (dk1dT + dk2dT + dk3dT));
     dFdT *= h;
 
 
-    submatrix!{transport;
-        (0,7) , (3,1) => dFdL
-    }
+    // dF/dL
+    let mut dFdL = transport.fixed_slice_mut::<U3, U1>(0,7);
+    let _temp= (h * h / 6.)   * (dk1dL + dk2dL + dk3dL);
+    dFdL.copy_from(&_temp);
 
-    // move the values of temp into dFdL. this is done since dFdL is a dynamic vector 
-    // and temp is a 3 row vector. They cannot be set equal manually.
-    let temp= (h * h / 6.)   * rk_sum;
-    equals_static_vec!{temp => dFdL, 3}
-    
-////
-    submatrix!{transport;
-        (4,4) , (3,3) => dGdT
-    }
 
-    let temp =  (h / 6.) * rk_prod;
-    dGdT += temp;
+    // dG/dT
+    let mut dGdT = transport.fixed_slice_mut::<U3, U3>(4,4);
+    dGdT += (h / 6.) * (dk1dT + (2. * (dk2dT + dk3dT)) + dk4dT);
 
-////
-    submatrix!{transport;
-        (4,7) , (3,1) => dGdL
-    }
-    
-    equals_static_vec!{temp => dGdL, 3}
+
+    // dG/dL
+    let mut dGdL = transport.fixed_slice_mut::<U3, U1>(4,7);
+    let _temp = h / 6. * (dk1dL + 2. * (dk2dL + dk3dL) + dk4dL);
+    dGdL.copy_from(&_temp);
 
     print!{"RK transport", transport}
     
@@ -307,19 +287,21 @@ pub fn constant_magnetic_transport(
 }
 
 
-pub struct RungeKutta{
-    k1: Vec3,
-    k2: Vec3,
-    k3: Vec3,
-    k4: Vec3
+pub struct RungeKuttaStep{
+    pub k1: Vec3,
+    pub k2: Vec3,
+    pub k3: Vec3,
+    pub k4: Vec3,
+    pub h: Real
 }
-impl RungeKutta{
-    fn new(k1: Vec3, k2: Vec3, k3: Vec3, k4: Vec3)-> Self{
-        RungeKutta{
+impl RungeKuttaStep{
+    fn new(k1: Vec3, k2: Vec3, k3: Vec3, k4: Vec3, step_size: Real)-> Self{
+        RungeKuttaStep{
             k1: k1,
             k2: k2,
             k3: k3,
-            k4: k4
+            k4: k4,
+            h: step_size
         }
     }
 }
@@ -332,27 +314,28 @@ fn runge_kutta_step(
     angles: angles::Angles,         // one-time time calculated angles
     b_field: &Vec3,                 // magnetic field vector
     h: Real                         // step size
-    ) -> RungeKutta {
+    ) -> RungeKuttaStep {
 
     get_unchecked!{
         prev_filt_state_vec[eQOP] => qop
     }
+    let qop = *qop;
 
     let dir = angles.direction;
     let half_h = h/ 2.;
 
-    let k1 = *qop * dir.cross(&b_field);
+    let k1 = qop * dir.cross(&b_field);
 
         //          qop * (stepper.direction(state.stepping) + h * kprev).cross(bField);
     let adj_k1 = dir + (half_h * k1);
-    let k2 = *qop * adj_k1.cross(&b_field);
+    let k2 = qop * adj_k1.cross(&b_field);
 
     let adj_k2 = dir + (half_h * k2);
-    let k3  = *qop * adj_k2.cross(&b_field);
+    let k3  = qop * adj_k2.cross(&b_field);
 
     let adj_k3 = dir + (h * k3);
-    let k4 = *qop * adj_k3.cross(&b_field);
+    let k4 = qop * adj_k3.cross(&b_field);
 
 
-    RungeKutta::new(k1, k2, k3, k4)
+    RungeKuttaStep::new(k1, k2, k3, k4, h)
 } 

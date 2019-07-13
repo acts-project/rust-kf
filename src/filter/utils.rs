@@ -1,6 +1,7 @@
 use nalgebra as na;
 use super::super::config::*;
 use super::super::geometry::traits::{Plane, Transform};
+use super::angles;
 
 #[macro_use]
 use super::macros;
@@ -134,27 +135,22 @@ impl SmoothedData{
     }
 }
 
-pub fn matrix_cross_product(matrix: &mut Mat4, vector: &Vec3) {
-    for i in 0..4{
-        submatrix!{matrix;
-            (i,0), (3,1) => mut_column
-        }
-        
-        // since mut_column is a dynamic matrix we cannot dereference and set equal
-        let cross_result = mut_column.cross(&vector);
 
-        edit_matrix!{mut_column;
-            [0,0] = cross_result.x,
-            [1,0] = cross_result.y,
-            [2,0] = cross_result.z
-        }
+/// For every row in a 3x3 matrix equal to the cross product of that row 
+/// with a given vector.
+pub fn matrix_cross_product(matrix: &mut Mat3, vector: &Vec3) {
+    for i in 0..3{
+        let mut column = matrix.fixed_slice_mut::<U3, U1>(0,i);
+        
+        let cross_result = column.cross(&vector);
+
+        column.copy_from(&cross_result);
 
     }
 }
 
 
 pub fn simulate_cross_product(input_matrix:&mut Mat4, b_field: &Vec3, direction: &Vec3, qop: Real) {
-
 
     get_unchecked!{vector;b_field;
         0 => mag_x,
@@ -185,3 +181,59 @@ pub fn simulate_cross_product(input_matrix:&mut Mat4, b_field: &Vec3, direction:
     
 }
 
+
+/// pull the global location of a particle from a global state vector
+pub fn global_point_from_rk_state(rk_state_vec: &Vec8) -> P3 {
+    get_unchecked!{vector;rk_state_vec;
+        0 =>  x,
+        1 => y,
+        2 => z
+    }
+    P3::new(*x, *y, *z)
+}
+
+/// make angles struct from a global state vector
+pub fn angles_from_rk_state(rk_staete_vec: &Vec8) -> angles::Angles {
+    get_unchecked!{vector;rk_staete_vec;
+        4 => tx,
+        5 => ty,
+        6 => tz
+    }
+
+    angles::Angles::new_from_unit_direction(*tx, *ty, *tz)
+}
+
+
+
+/// Transform a 8-row rk state vector in global coordinates to a 
+/// 5-row vector in local coordinates relative to a destination sensor
+pub fn rk_state_vec_to_local_state_vec<T:Transform + Plane> (
+    rk_state_vec: Vec8,
+    destination_sensor: &T
+    ) -> (Vec5, angles::Angles) {
+
+    get_unchecked!{vector; rk_state_vec;
+        7 => qop
+    }
+
+    let global_point = global_point_from_rk_state(&rk_state_vec);
+    let angles = angles_from_rk_state(&rk_state_vec);
+
+    let phi = angles.cos_phi.acos();
+    let theta = angles.cos_theta.acos();
+
+    let local_point = destination_sensor.to_local(global_point);
+
+
+    let state = 
+        Vec5::new(
+            local_point.x,
+            local_point.y,
+            phi,
+            theta,
+            *qop
+        );
+
+    (state, angles)
+
+}

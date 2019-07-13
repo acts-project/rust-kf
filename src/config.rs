@@ -4,6 +4,8 @@ use super::macros;
 
 pub use std::f64::consts::PI; // re-export pi
 
+pub use nalgebra::{U1, U2, U3, U4, U5, U6, U7, U8}; // nalgebra type dimensions
+
 // reusable types to be referenced from functions;
 pub type Real = f64;
 
@@ -11,6 +13,7 @@ pub type Vec2 = Vector2<Real>;
 pub type Vec3 = Vector3<Real>;
 pub type Vec4 = Vector4<Real>;
 pub type Vec5 = Vector5<Real>;
+pub type Vec8 = VectorN<Real, U8>;
 
 pub type P2 = Point2<Real>;
 pub type P3 = Point3<Real>;

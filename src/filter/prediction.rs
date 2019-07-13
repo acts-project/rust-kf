@@ -3,7 +3,7 @@ use super::super::error::*;
 use super::super::geometry::traits::{Plane, Transform};
 use super::super::geometry::*;
 use super::angles;
-
+use super::jacobian::RungeKuttaStep;
 #[macro_use]
 use super::macros;
 
@@ -371,3 +371,33 @@ pub fn linear_global_hit_estimation(
 
     return (global_pred_point, distance)
 }
+
+
+/// Adjusts the Runge-Kutta state vector based on the current state vector.
+///NOTE: Since u and u' are 4-row vectors and k1-4 are 3-row vectors I interpret 
+///      This to mean the top 3 components of u and u' are mutated since there is no 
+///      energy loss. I am not entirely sure if this is correct.
+pub fn rk_current_global_location(
+    step_data: &RungeKuttaStep,
+    previous_rk_state_vector: &mut Vec8
+    ) -> (){
+
+    print!{"before RK state adjust: ", previous_rk_state_vector}
+    
+    // adjust u
+    let uprime_slice = previous_rk_state_vector.fixed_slice::<U3, U1>(4,0);                         // <U3, U1> is a potential source of error. better ask about.
+    let sum = (step_data.h * uprime_slice) + 
+        ( (step_data.h * step_data.h/ 6.) * (step_data.k1 + step_data.k2 + step_data.k3) );
+    
+    let mut u_slice = previous_rk_state_vector.fixed_slice_mut::<U3, U1>(0,0);                      // same here
+
+    u_slice += sum;
+
+    // adjust u'
+    let mut uprime_slice = previous_rk_state_vector.fixed_slice_mut::<U3, U1>(4,0);
+    uprime_slice +=  (step_data.h / 6.) * (step_data.k1 + (2.* step_data.k2) + (2.* step_data.k3) + step_data.k4);
+
+    print!{"after RK state adjust: ", previous_rk_state_vector}
+
+}
+
