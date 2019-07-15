@@ -71,10 +71,13 @@ pub fn run(
     let mut previous_covariance = super::utils::seed_covariance();
 
     // Store the seeded values in their respective iterators
-    // push!(
-    //     previous_covariance => filter_cov_mat_iter, 
-    //     previous_state_vec => filter_state_vec_iter
-    // );
+    push!(
+        previous_covariance => filter_cov_mat_iter, 
+        previous_state_vec => filter_state_vec_iter,
+
+        previous_state_vec => predicted_state_vec_iter,
+        previous_covariance => predicted_cov_mat_iter
+    );
 
 
     for i in 0..input_length{
@@ -108,14 +111,15 @@ pub fn run(
         let filter_residual_mat = filter_gain::residual_mat(curr_v, &meas_map_mat, &filter_cov_mat);
         let chi_squared_inc = filter_gain::chi_squared_increment(&filter_residual_vec, &filter_residual_mat);
 
-        print!{"NEW ITERATION THROUGH SENSOR", i,
-            jacobian,
-            pred_cov_mat,
-            filter_cov_mat,
-            kalman_gain,
-            pred_state_vec,
-            filter_state_vec
-        }
+        // print!{
+            // "NEW ITERATION THROUGH SENSOR", i,
+            // jacobian,
+        //     pred_cov_mat,
+            // filter_cov_mat,
+        //     kalman_gain,
+        //     pred_state_vec,
+            // filter_state_vec
+        // }
 
 
         // store all the filtered values in their respective iterators
@@ -144,9 +148,9 @@ pub fn run(
 
     }
 
-    println!{"\n\n\n\n\n\nFINISH FILTERING\nSTART SMOOTHINGING\n\n\n\n\n\n"};
+    // println!{"\n\n\n\n\n\nFINISH FILTERING\nSTART SMOOTHINGING\n\n\n\n\n\n"};
     // println!{"{} {} {} {}", filter_cov_mat_iter.len(), filter_state_vec_iter.len(), filter_res_mat_iter.len(), filter_res_vec_iter.len()}
-
+    // print!{filter_state_vec_iter.len()}
 
     // Clone the last value of filtered and insert it into smoothed. This is required 
     // (at least for filter_state_vec_iter and filter_cov_mat_iter) since they are required 
@@ -179,7 +183,7 @@ pub fn run(
 
 
         // since we move backwards, previous variables are at i+1
-        get_unchecked!{i;
+        get_unchecked!{i+1;
             filter_state_vec_iter => prev_filt_state_vec,
             filter_cov_mat_iter => prev_filt_cov_mat
         }
@@ -204,13 +208,14 @@ pub fn run(
         let smoothed_res_vec = smoothing::residual_vec(curr_measurement, &meas_map_mat, &smoothed_state_vec);
 
 
-        print!{"NEW SMOOTHING ITERATION", i,
-            gain_matrix,
-            curr_filt_state_vec,
-            smoothed_state_vec,
-            curr_filt_cov_mat,
-            smoothed_cov_mat,
-            curr_jacobian
+        print!{
+            // "NEW SMOOTHING ITERATION", i,
+        //     gain_matrix,
+            // curr_filt_state_vec,
+            // smoothed_state_vec//,
+        //     curr_filt_cov_mat,
+        //     smoothed_cov_mat,
+        //     curr_jacobian
         }
 
         //
@@ -225,7 +230,11 @@ pub fn run(
         // println!{"{} {} {} {}", smoothed_cov_mat_iter.len(), smoothed_state_vec_iter.len(), smoothed_res_mat_iter.len(), smoothed_res_vec_iter.len()}
 
     }
-    // println!{"smoothed vec length : {}", smoothed_state_vec_iter.len()};
+    // println!{"smoothed vec length : {}\nfilter vec len: {}\npred vec len {}", 
+    // smoothed_state_vec_iter.len(),
+    // filter_state_vec_iter.len(),
+    // predicted_state_vec_iter.len()
+    // };
     
     // put all data into a struct that will contain all the methods to return 
     // the data back to c++

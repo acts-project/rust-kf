@@ -46,7 +46,7 @@ pub fn generate_track<T:Distribution<Real>>(
             (phi, theta)
         };
 
-    print!{phi, theta};
+    // print!{phi, theta};
 
     // create a virtual sensor at the starting position. this is used to easily calculate
     // the hits on the sensors
@@ -67,6 +67,8 @@ pub fn generate_track<T:Distribution<Real>>(
         let x_loc_of_sensor = ip1 * sensor_distance;
         sensor_vec.push(gen_sensor(x_loc_of_sensor));
     }
+
+    // print!{sensor_vec.len()}
 
 
 
@@ -112,7 +114,7 @@ pub fn generate_track<T:Distribution<Real>>(
             let x_diff = (smear.x - truth.x).abs();
             let y_diff = (smear.y - truth.y).abs();
 
-            println!{"truth x:{}\tsmear x: {}\tdiff:{}  \t truth y: {}\tsmear y: {}\t diff: {}",truth.x, smear.x, x_diff, truth.y, smear.y, y_diff}
+            // println!{"truth x:{}\tsmear x: {}\tdiff:{}  \t truth y: {}\tsmear y: {}\t diff: {}",truth.x, smear.x, x_diff, truth.y, smear.y, y_diff}
         });
     
 
@@ -156,7 +158,7 @@ fn gen_sensor(x_point: Real) -> Rectangle {
     let to_local = to_global.try_inverse().unwrap();
 
 
-    print!{"SENSOR CENTER WILL BE AT ", to_global * P3::origin() }
+    // print!{"SENSOR CENTER WILL BE AT ", to_global * P3::origin() }
 
     let p1 = P3::new(x_point, 1., 1.);
     let p2 = P3::new(x_point, 0., 1.);

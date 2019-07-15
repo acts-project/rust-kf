@@ -26,12 +26,12 @@ pub fn state_vector(
     let prod = gain_mat * parens;
     let sum =  curr_filt_state_vec + prod;
 
-    print!{
-        "SMOOTHING STATE VECTOR:",
-        parens,
-        prod,
-        sum
-    }
+    // print!{
+    //     "SMOOTHING STATE VECTOR:",
+    //     parens,
+    //     prod,
+    //     sum
+    // }
 
 
     return sum

@@ -42,7 +42,8 @@ pub fn collect_stats(
     }
 
     let kf_results_vec = 
-        iter.par_iter()
+        // iter.par_iter()
+        iter.iter()
             .map(|(num_sensor, sensor_distance, angles, std_dev)| {
             generate_track(
                 *num_sensor,
@@ -73,11 +74,12 @@ pub fn collect_stats(
 /// of that point. The data from `collect_stats` can be directly 
 /// piped into this function
 pub fn fetch_kf_residuals(
-    create_statistics_data: Vec<(KFData<Rectangle>, SuperData)>
+    create_statistics_data: &Vec<(KFData<Rectangle>, SuperData)>
     ) -> Vec<Residuals> {
     // 
 
-    create_statistics_data.par_iter()
+    // create_statistics_data.par_iter()
+    create_statistics_data.iter()
         .map(|(truth, kf_ver)| {
             create_residuals(truth, kf_ver)
         })
@@ -104,14 +106,14 @@ fn create_residuals(
     let smth_state_vec = &kf_data.smth.state_vec;
     let smth_resid = calc_residual(smth_state_vec,truth_points, len);
 
-    // filtered
-    let filt_state_vec = &kf_data.filt.state_vec;
-    let filt_res= calc_residual(filt_state_vec,truth_points, len);
-
     // predicted
     let pred_state_vec = &kf_data.pred.state_vec;
     let pred_res = calc_residual(pred_state_vec, truth_points, len);
 
+
+    // filtered
+    let filt_state_vec = &kf_data.filt.state_vec;
+    let filt_res= calc_residual(filt_state_vec,truth_points, len);
 
     Residuals {
         smth: smth_resid,
@@ -122,7 +124,6 @@ fn create_residuals(
 }
 
 
-
 fn calc_residual(
     state_vectors: &Vec<Vec5>,
     truth_points: &Vec<Vec2>,
@@ -131,9 +132,10 @@ fn calc_residual(
 
     let mut diff_vec = Vec::with_capacity(len);
 
+
     for i in 0..len {
 
-
+        // print!{"before"}
         get_unchecked!{
             state_vectors[i] => curr_state_vec,
             truth_points[i] => curr_truth_point
@@ -142,6 +144,7 @@ fn calc_residual(
             eLOC_0 => x,
             eLOC_1 => y
         }
+        // print!{"after"}
 
         let diff = Vec2::new(*x, *y) - curr_truth_point;
         diff_vec.push(diff);

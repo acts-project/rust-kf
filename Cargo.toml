@@ -16,3 +16,6 @@ rand_distr = "0.2.1"
 hdrhistogram = "6.3.4"
 
 rayon = "1.1.0"
+
+csv = "1.1.1"
+serde = { version = "1.0.94", features = ["derive"] }

@@ -43,7 +43,7 @@ pub fn linear<T: Transform + Plane>(
     let glob_2_loc : Mat5x8= global_to_local_jac(&angles, end_sensor.rotation_to_global() ); 
     let transport_jac: Mat8 = linear_transport_jac(&mut angles, distance);
 
-    print!{"IN JACOBIAN", loc_2_glob, glob_2_loc, transport_jac};
+    // print!{"IN JACOBIAN", loc_2_glob, glob_2_loc, transport_jac};
 
     return glob_2_loc * transport_jac * loc_2_glob
     
