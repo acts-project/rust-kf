@@ -109,81 +109,41 @@ pub fn vec_of_vec(num: usize) -> Vec<Vec5> {
     return return_vec
 }
 
+
+// TODO Name is similar to other structs. figure out a new one
 #[derive(Debug)]
-pub struct SmoothedData {
+pub struct Data {
     pub state_vec: Vec<Vec5>,
     pub cov_mat: Vec<Mat5>,
     pub res_mat: Vec<Mat2>,
     pub res_vec: Vec<Vec2>
 }
 
-impl SmoothedData{
-    pub fn new(state_vec: Vec<Vec5>,
-            cov_mat: Vec<Mat5>,
-            res_mat: Vec<Mat2>,
-            res_vec: Vec<Vec2>) -> Self {
-
-        return SmoothedData{state_vec: state_vec, 
-                            cov_mat: cov_mat, 
-                            res_mat: res_mat, 
-                            res_vec:res_vec}
-    }
-    pub fn FFI_return() {
-        unimplemented!()
-    }
-}
-
-#[derive(Debug)]
-pub struct PredictedData {
-    pub state_vec: Vec<Vec5>,
-    pub cov_mat: Vec<Mat5>,
-    pub res_mat: Vec<Mat2>,
-    pub res_vec: Vec<Vec2>
-}
-
-impl PredictedData{
-    pub fn new(state_vec: Vec<Vec5>,
-            cov_mat: Vec<Mat5>,
-            res_mat: Vec<Mat2>,
-            res_vec: Vec<Vec2>) -> Self {
-
-        return PredictedData{state_vec: state_vec, 
-                            cov_mat: cov_mat, 
-                            res_mat: res_mat, 
-                            res_vec:res_vec}
-    }
-}
-
-#[derive(Debug)]
-pub struct FilteredData {
-    pub state_vec: Vec<Vec5>,
-    pub cov_mat: Vec<Mat5>,
-    pub res_mat: Vec<Mat2>,
-    pub res_vec: Vec<Vec2>
-}
-
-impl FilteredData{
-    pub fn new(state_vec: Vec<Vec5>,
-            cov_mat: Vec<Mat5>,
-            res_mat: Vec<Mat2>,
-            res_vec: Vec<Vec2>) -> Self {
-
-        return FilteredData{state_vec: state_vec, 
-                            cov_mat: cov_mat, 
-                            res_mat: res_mat, 
-                            res_vec:res_vec}
-    }
-}
-
-
-pub struct Data{
-    pub smth: SmoothedData,
-    pub filt: FilteredData,
-    pub pred: PredictedData
-}
 impl Data{
-    pub fn new(smth: SmoothedData, filt: FilteredData, pred: PredictedData) -> Self{
-        Data{
+    pub fn new(state_vec: Vec<Vec5>,
+            cov_mat: Vec<Mat5>,
+            res_mat: Vec<Mat2>,
+            res_vec: Vec<Vec2>) -> Self {
+
+        return Data{state_vec: state_vec, 
+                            cov_mat: cov_mat, 
+                            res_mat: res_mat, 
+                            res_vec:res_vec}
+    }
+}
+
+
+
+// TODO: come up with a better name for this
+#[derive(Debug)]
+pub struct SuperData{
+    pub smth: Data,
+    pub filt: Data,
+    pub pred: Data
+}
+impl SuperData{
+    pub fn new(smth: Data, filt: Data, pred: Data) -> Self{
+        SuperData{
             smth: smth,
             filt: filt,
             pred: pred

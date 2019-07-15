@@ -31,17 +31,6 @@ macro_rules! group_assert {
 }
 
 
-const UNCERTAINTY : Real = 2.;
-
-fn gen_cov() -> Mat2{
-    let base_cov = Mat2::identity();     // high covariance across the main diagonal
-    let cov_noise = Mat2::new_random() / UNCERTAINTY;       // every index random # in [0,1] * uncertainty
-    let covariance = base_cov + cov_noise;
-    covariance
-}
-
-
-
 // #[test]
 fn linear_1() {
     let distance_between_sensors: Real = 0.001;

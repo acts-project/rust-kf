@@ -11,7 +11,7 @@ use super::super::geometry::Rectangle;
 use super::super::geometry::traits::{Plane, Transform};
 
 use super::super::error::*;
-use super::utils::{SmoothedData, FilteredData, PredictedData, Data};
+use super::utils::{SuperData, Data};
 
 #[macro_use]
 use super::macros;
@@ -23,7 +23,7 @@ pub fn run(
     measurement_noise_coarariance_vector: &Vec<Mat2>,  // vector of V from fruhwirth paper
     measurements_vector: &Vec<Vec2>,            // vector of all the measurements that were registered
     sensor_vector: &Vec<Rectangle>,             // the geometric sensors that correspond to each hit 
-    )  -> Data{
+    )  -> SuperData{
 
     let meas_map_mat = Mat2x5::new(1. , 0. , 0. , 0. , 0. ,
                                    0. , 1. , 0. , 0. , 0. );
@@ -229,24 +229,24 @@ pub fn run(
     
     // put all data into a struct that will contain all the methods to return 
     // the data back to c++
-    let smth =  SmoothedData::new(smoothed_state_vec_iter,
+    let smth =  Data::new(smoothed_state_vec_iter,
                                 smoothed_cov_mat_iter,
                                 smoothed_res_mat_iter,
                                 smoothed_res_vec_iter);
 
-    let filt = FilteredData::new(
+    let filt = Data::new(
         filter_state_vec_iter,
         filter_cov_mat_iter,
         filter_res_mat_iter,
         filter_res_vec_iter
     );
 
-    let pred = PredictedData::new(
+    let pred = Data::new(
         predicted_state_vec_iter,
         predicted_cov_mat_iter,
         predicted_res_mat_iter,
         predicted_res_vec_iter
     );
 
-    Data::new(smth, filt, pred)
+    SuperData::new(smth, filt, pred)
 }
