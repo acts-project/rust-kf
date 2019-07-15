@@ -11,6 +11,7 @@ pub mod geometry;
 #[macro_use]
 pub mod filter;
 pub mod error;
+pub mod generate_data;
 
 pub use geometry::rectangle::Rectangle;
 pub use geometry::trapezoid::Trapezoid;

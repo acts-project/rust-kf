@@ -1,6 +1,7 @@
 use super::super::config;
-use config::*;
+use super::super::geometry::traits::{Transform, Plane};
 
+use config::*;
 use nalgebra as na;
 
 #[macro_use]
@@ -9,9 +10,11 @@ use super::angles;
 
 
 /// Calculate the jacobian between sensors for a linear case
-pub fn linear(
+pub fn linear<T: Transform + Plane>(
     prev_state_vec: &Vec5,
-    distance: Real
+    distance: Real,
+    start_sensor: &T,
+    end_sensor: &T
     ) -> Mat5{
 
 
@@ -26,9 +29,18 @@ pub fn linear(
 
     // dbg!{&angles};
 
+        ////////////////////////////////////////////////// CHANGE ME BAKC TO START SENSOR AND END SENSOR CORRECTLY!!!!!!!!
+        ////////////////////////////////////////////////// CHANGE ME BAKC TO START SENSOR AND END SENSOR CORRECTLY!!!!!!!!
+        ////////////////////////////////////////////////// CHANGE ME BAKC TO START SENSOR AND END SENSOR CORRECTLY!!!!!!!!
+        ////////////////////////////////////////////////// CHANGE ME BAKC TO START SENSOR AND END SENSOR CORRECTLY!!!!!!!!
+        ////////////////////////////////////////////////// CHANGE ME BAKC TO START SENSOR AND END SENSOR CORRECTLY!!!!!!!!
+        ///                                                 . .. . . . .. . . . . 
 
-    let loc_2_glob : Mat8x5 = local_to_global_jac(&angles);
-    let glob_2_loc : Mat5x8= global_to_local_jac(&angles);
+
+    // let loc_2_glob : Mat8x5 = local_to_global_jac(&angles, end_sensor.rotation_to_global() );
+    // let glob_2_loc : Mat5x8= global_to_local_jac(&angles, start_sensor.rotation_to_local() ); 
+    let loc_2_glob : Mat8x5 = local_to_global_jac(&angles, start_sensor.rotation_to_local() );
+    let glob_2_loc : Mat5x8= global_to_local_jac(&angles, end_sensor.rotation_to_global() ); 
     let transport_jac: Mat8 = linear_transport_jac(&mut angles, distance);
 
     print!{"IN JACOBIAN", loc_2_glob, glob_2_loc, transport_jac};
@@ -41,15 +53,26 @@ pub fn linear(
 /// Local => global jacobian used for both linear and constant magnetic field situaitons
 /// https://gitlab.cern.ch/acts/acts-core/blob/master/Core/include/Acts/Surfaces/detail/Surface.ipp#L82-106
 fn global_to_local_jac(
-    trig_angles: &angles::Angles
+    trig_angles: &angles::Angles,
+    rotation_mat: &Mat4
     ) -> Mat5x8 {
 
     let mut global_to_local_jacobian = Mat5x8::zeros();
+
+    let mut g2l_slice = global_to_local_jacobian.fixed_slice_mut::<U2, U3>(0,0);
+    
+    let rot_mat_transposed = rotation_mat.transpose();
+    let rot_slice = rot_mat_transposed.fixed_slice::<U2, U3>(0,0);
+
+    g2l_slice.copy_from(&rot_slice);
+
 
     let inv_sin_theta = 1. / trig_angles.sin_theta;
 
     let sin_phi_over_sin_theta = trig_angles.sin_phi / trig_angles.sin_theta;
     let cos_phi_over_sin_theta = trig_angles.cos_phi / trig_angles.sin_theta;
+
+
 
     change_mat_val!{
         global_to_local_jacobian;
@@ -68,10 +91,16 @@ fn global_to_local_jac(
 /// global => local jacobian used for both linear and constant magnetic field situaitons
 /// https://gitlab.cern.ch/acts/acts-core/blob/master/Core/include/Acts/Surfaces/detail/Surface.ipp#L46-80
 fn local_to_global_jac(
-    trig_angles: &angles::Angles
+    trig_angles: &angles::Angles,
+    rotation_mat: &Mat4
     ) -> Mat8x5{
 
     let mut local_to_global_jacobian = Mat8x5::zeros();
+
+    let mut l2g_slice = local_to_global_jacobian.fixed_slice_mut::<U3, U2>(0,0);
+    let rot_slice = rotation_mat.fixed_slice::<U3, U2>(0,0);
+
+    l2g_slice.copy_from(&rot_slice);
 
     // add values into transport jacobian
     change_mat_val!{
@@ -94,17 +123,18 @@ fn linear_transport_jac(
     distance: Real
     ) -> Mat8{
 
-    let mut transport_jac = Mat8::identity(); 
+    let transport_jac = Mat8::identity(); 
+    let mut secondary= Mat8::zeros();
 
-    change_mat_val!{transport_jac;
+    change_mat_val!{secondary;
         [0, 0] => distance * trig_angles.tx(),
         [1,1] => distance * trig_angles.ty(),
         [2,2] => distance * trig_angles.tz()
         // since the other values across the diagonal are 1 and we transport_jac is a identity matrix we leave it here
     }
 
+    return transport_jac + secondary
 
-    transport_jac
 }
 
 
@@ -118,14 +148,12 @@ pub fn linear_state_derivative(
     distance: Real
     ) -> Mat5 {
 
-    dbg!{"before"};
     
     get_unchecked!{
         prev_state_vec[ePHI] => phi,
         prev_state_vec[eTHETA] => theta
     }
 
-    dbg!{"made past here"};
 
     let mut ang = angles::Angles::new_from_angles(*phi, *theta);
 

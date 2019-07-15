@@ -10,5 +10,9 @@ description = "Kalman filter implementation in rust (WIP)"
 nalgebra = "0.18.0"
 lazy_static = "1.3.0"
 
-rand = "0.7.0"
+rand = {version = "0.7.0", features = ["small_rng"]}
 rand_distr = "0.2.1"
+
+hdrhistogram = "6.3.4"
+
+rayon = "1.1.0"

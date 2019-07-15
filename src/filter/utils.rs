@@ -133,3 +133,60 @@ impl SmoothedData{
     }
 }
 
+#[derive(Debug)]
+pub struct PredictedData {
+    pub state_vec: Vec<Vec5>,
+    pub cov_mat: Vec<Mat5>,
+    pub res_mat: Vec<Mat2>,
+    pub res_vec: Vec<Vec2>
+}
+
+impl PredictedData{
+    pub fn new(state_vec: Vec<Vec5>,
+            cov_mat: Vec<Mat5>,
+            res_mat: Vec<Mat2>,
+            res_vec: Vec<Vec2>) -> Self {
+
+        return PredictedData{state_vec: state_vec, 
+                            cov_mat: cov_mat, 
+                            res_mat: res_mat, 
+                            res_vec:res_vec}
+    }
+}
+
+#[derive(Debug)]
+pub struct FilteredData {
+    pub state_vec: Vec<Vec5>,
+    pub cov_mat: Vec<Mat5>,
+    pub res_mat: Vec<Mat2>,
+    pub res_vec: Vec<Vec2>
+}
+
+impl FilteredData{
+    pub fn new(state_vec: Vec<Vec5>,
+            cov_mat: Vec<Mat5>,
+            res_mat: Vec<Mat2>,
+            res_vec: Vec<Vec2>) -> Self {
+
+        return FilteredData{state_vec: state_vec, 
+                            cov_mat: cov_mat, 
+                            res_mat: res_mat, 
+                            res_vec:res_vec}
+    }
+}
+
+
+pub struct Data{
+    pub smth: SmoothedData,
+    pub filt: FilteredData,
+    pub pred: PredictedData
+}
+impl Data{
+    pub fn new(smth: SmoothedData, filt: FilteredData, pred: PredictedData) -> Self{
+        Data{
+            smth: smth,
+            filt: filt,
+            pred: pred
+        }
+    }
+}

@@ -58,7 +58,10 @@ pub struct Trapezoid{
     right_line: Line,  //   ''
 
     max_half_width: Real,
-    min_half_width: Real
+    min_half_width: Real,
+
+    pub to_global_rot: Mat4,
+    pub to_local_rot: Mat4
 }
 
 impl Trapezoid{
@@ -79,56 +82,58 @@ impl Trapezoid{
     /// let base_bot = 10.;
     /// let height = 4.;
     /// 
-    /// let sensor = Trapezoid::new(base_top, base_bot, transform_mat, height);
+    /// let sensor = Trapezoid::new(base_top, base_bot, transform_mat, transform_mat, height);
     /// ```
     pub fn new(base_top: Real, 
             base_bot: Real, 
-            to_global_tfm_matrix: Mat4, 
+            to_global_translation: Mat4,
+            to_global_rotation: Mat4,
             height: Real) -> Result<Trapezoid, MatrixError> {
         
-        let to_global_transform = Aff3::from_matrix_unchecked(to_global_tfm_matrix);
+        let compose = to_global_translation * to_global_rotation;
 
-        match to_global_transform.try_inverse(){
-            
-            //TODO: find noraml vector calculation of the trapezoid
+        let to_global_transform = Aff3::from_matrix_unchecked(compose);
+        let to_local_transform = to_global_transform.try_inverse().expect("local -> global trap matrix non invertible");
 
-            Some(to_local_transform) => {
-
-                // calculate half lengths
-                let half_b1 = base_top/(2 as Real);
-                let half_b2 = base_bot/(2 as Real);
-                let half_height = height / (2 as Real);
-
-                // normal vector calculation
-                let normal_vector = utils::plane_normal_vector(half_b1, half_height);
-                
-                // equations of lines along slope of trapezoid for bounding checks
-                let top_right_corner = P2::new(half_b1, half_height);
-                let bottom_right_corner = P2::new(half_b2, -half_height);
-                let right_line_eq = Line::new_from_points(&top_right_corner, &bottom_right_corner);
-                let left_line_eq = Line::new_from_y_axis_reflection(&right_line_eq);
-
-                let local_center = P3::new(0., 0., 0.);
-                let global_center = to_global_transform * local_center;
+        let to_local_rotation = to_global_rotation.try_inverse().expect("local -> global trap matrix non invertible");
 
 
-                let trap = Trapezoid{
-                            half_height: half_height,
-                            normal: normal_vector,
-                            center_global: global_center,
-                            to_global: to_global_transform,
-                            to_local: to_local_transform,
-                            left_line: left_line_eq,
-                            right_line: right_line_eq,
-                            max_half_width: half_b1.max(half_b2),
-                            min_half_width: half_b1.min(half_b2)};
-                             
-                Ok(trap)
+        // calculate half lengths
+        let half_b1 = base_top/(2 as Real);
+        let half_b2 = base_bot/(2 as Real);
+        let half_height = height / (2 as Real);
 
-                },
-            None => return Err(MatrixError::NonInvertible)
+        // normal vector calculation
+        let normal_vector = utils::plane_normal_vector(half_b1, half_height);
+        
+        // equations of lines along slope of trapezoid for bounding checks
+        let top_right_corner = P2::new(half_b1, half_height);
+        let bottom_right_corner = P2::new(half_b2, -half_height);
+        let right_line_eq = Line::new_from_points(&top_right_corner, &bottom_right_corner);
+        let left_line_eq = Line::new_from_y_axis_reflection(&right_line_eq);
 
-        }
+        let local_center = P3::new(0., 0., 0.);
+        let global_center = to_global_transform * local_center;
+
+
+        let trap = 
+            Trapezoid{
+                half_height: half_height,
+                normal: normal_vector,
+                center_global: global_center,
+                to_global: to_global_transform,
+                to_local: to_local_transform,
+                left_line: left_line_eq,
+                right_line: right_line_eq,
+                max_half_width: half_b1.max(half_b2),
+                min_half_width: half_b1.min(half_b2),
+                to_global_rot: to_global_rotation,
+                to_local_rot: to_local_rotation
+            };
+                        
+        Ok(trap)
+
+
     }
     ///quickly generates arbitrary sensor data
     pub fn default() -> Self {
@@ -137,8 +142,9 @@ impl Trapezoid{
         let height = 2.;
 
         let to_global = Mat4::new_random();
+        let rot = Mat4::new_random();
         
-        Self::new(base_top, base_bot, to_global, height).expect("could not generate trap. sensor")
+        Self::new(base_top, base_bot, to_global,rot, height).expect("could not generate trap. sensor")
         
     }
 }
@@ -230,6 +236,12 @@ impl Transform for Trapezoid{
             return false
         }
 
+    }
+    fn rotation_to_global(&self) -> &Mat4{
+        &self.to_global_rot
+    }
+    fn rotation_to_local(&self) -> &Mat4{
+        &self.to_local_rot
     }
 }
 

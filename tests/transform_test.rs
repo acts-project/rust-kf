@@ -18,7 +18,7 @@ fn initialize_rect() -> Rectangle {
 
     let tfm_matrix= Mat4::identity(); //arbitrary transform matrix
 
-    Rectangle::new(base_len, height_len, tfm_matrix).unwrap()
+    Rectangle::new(base_len, height_len, tfm_matrix.clone(), tfm_matrix.clone()).unwrap()
 }
 
 // default trapezoid for testing
@@ -29,7 +29,7 @@ fn initialize_trap() -> Trapezoid {
 
     let tfm = Mat4::identity();     
 
-    Trapezoid::new(top_base, bottom_base, tfm, height).unwrap()
+    Trapezoid::new(top_base, bottom_base, tfm, tfm, height).unwrap()
 }
 
 
