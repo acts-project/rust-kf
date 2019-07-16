@@ -6,7 +6,12 @@ use nalgebra as na;
 
 use kalman_rs::generate_data::run;
 
+use rayon::{self, prelude::*};
+
+
 fn main() {
+
+    rayon::ThreadPoolBuilder::new().num_threads(100).build_global().unwrap();
     
     test_data!{5;
         V_vec, Mat2, 
@@ -19,6 +24,6 @@ fn main() {
 
     // kalman_rs::filter::linear::run(&start, &V_vec, &m_k_vec, &sensor_vec);
 
-    run::run();
+    run::run_all_stats();
 
 }

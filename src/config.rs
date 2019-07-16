@@ -49,3 +49,7 @@ def_constant!{Real;
 }
 
 
+def_constant!{&str;
+    CSV_SAVE_LOCATION = r"E:\kf_csvs\"
+
+}

@@ -16,6 +16,7 @@ use rand_distr::{Normal, Distribution};
 use rayon;
 use rayon::prelude::*;
 
+use super::run::Uncertainty;
 
 /// Runs batches of kf calculations in parallel and returns their result data
 pub fn collect_stats(
@@ -23,12 +24,12 @@ pub fn collect_stats(
     mut sensor_distance: Vec<Real>, 
     mut base_angles: Vec<Option<(f64, f64)>>,
     mut point_std_dev: Vec<Real>,
+    distr_rng: &Uncertainty
     ) -> Vec<(KFData<Rectangle>, SuperData)> {
 
-    let diagonal_rng = Normal::new(3., 1.5).unwrap();
-    let corner_rng = Normal::new(0., 1.).unwrap();
+    let diagonal_rng = Normal::new(distr_rng.diag_mean, distr_rng.diag_std).unwrap();
+    let corner_rng = Normal::new(distr_rng.corner_mean, distr_rng.corner_std).unwrap();
     let rng = SmallRng::from_entropy();
-
 
     let len = num_sensors.len();
     let mut  iter = Vec::with_capacity(len);

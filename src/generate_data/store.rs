@@ -4,6 +4,11 @@ use std::fs;
 
 use csv::Writer;
 use serde::Serialize;
+use serde_json;
+
+
+use super::run::State;
+
 
 #[derive(Debug,Serialize)]
 pub struct StorageData {
@@ -32,4 +37,15 @@ pub fn write_csv(name: &str, data: Vec<StorageData>) -> () {
     wtr.flush().expect("CSV could not be flushed");
 
 
+}
+
+pub fn write_json(json_data: &State) -> () {
+    let mut save_base = json_data.save_folder.clone();
+    save_base.push_str(r"\info.json");
+
+    dbg!{&save_base};
+
+    let file = fs::File::create(save_base).expect("json file could not be made");
+
+    serde_json::to_writer(file, json_data).expect("json could not be serialized to the file");
 }
