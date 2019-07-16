@@ -11,7 +11,7 @@ use rayon::{self, prelude::*};
 
 fn main() {
 
-    rayon::ThreadPoolBuilder::new().num_threads(100).build_global().unwrap();
+    // rayon::ThreadPoolBuilder::new().num_threads(30).build_global().unwrap();
     
     test_data!{5;
         V_vec, Mat2, 

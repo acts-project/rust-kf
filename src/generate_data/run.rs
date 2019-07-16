@@ -11,27 +11,6 @@ use serde::Serialize;
 
 use rayon::{self, prelude::*};
 
-/// Quickly create a repetitive value and collect it to a variable
-/// $take: number of times to repeat the value
-/// $name: name of variable to save to
-/// $value: the value that will be repeated $take times
-macro_rules! collect {
-    ($take:expr; $($name:ident : $value:expr),+) => {
-        $(
-            let $name = iter::repeat($value).take($take).collect::<Vec<_>>();
-        )+
-    };
-}
-
-
-/// Quickly create vectors with a given capacity
-macro_rules! with_capacity {
-    ($cap:expr; $($name:ident),+) => {
-        $(
-            let mut  $name = Vec::with_capacity($cap)
-        )+
-    };
-}
 
 /// Quickly clone and push to make paths
 macro_rules! path {
@@ -59,9 +38,9 @@ impl State{
     pub fn default(folder_name : String, hist_name: String) -> Self{
         Self{
             histogram_name: hist_name,
-            iterations: 1000,
+            iterations: 100_000,
             num_sensors: 10,
-            sensor_distance: 0.01,
+            sensor_distance: 0.1,
             angles: None,
             stdevs: Uncertainty::default(),
             save_folder: folder_name
@@ -83,11 +62,11 @@ pub struct Uncertainty {
 impl Uncertainty {
     pub fn default() -> Self {
         Self{
-            point_std: 0.001,
+            point_std: 0.01,
             diag_std: 1.5,
             corner_std: 1.,
-            diag_mean: 3.,
-            corner_mean: 0.
+            diag_mean: 5.,
+            corner_mean: 2.
         }
     }
 }
@@ -102,38 +81,32 @@ fn batch_execute(mut data: Vec<State> ) -> () {
 
 
 fn run(data: State) {
+    
+    println!{"running"}
 
-    // let iter = data.iterations;
-    collect!{
-        data.iterations;
-        num_sensors : data.num_sensors,
-        sensor_distances : data.sensor_distance,
-        angles : data.angles,
-        point_stdev: data.stdevs.point_std
-    }
 
     let kf_packaged_data = 
-        statistics::collect_stats(num_sensors, sensor_distances, angles, point_stdev, &data.stdevs);
+        statistics::collect_stats(&data);
 
     println!{"got kf data"}
 
     let mut residuals : Vec<Residuals> = 
         statistics::fetch_kf_residuals(&kf_packaged_data);
 
-    println!{"got residuals"}
+    println!{"finished KF operations for {}", &data.histogram_name}
 
-    let len = data.num_sensors as usize;
+    let len = (data.num_sensors as usize) * data.iterations;
 
-    with_capacity!{len*data.iterations; smth, filt, pred}
+    let mut smth = Vec::with_capacity(len);
+    let mut filt = Vec::with_capacity(len);
+    let mut pred = Vec::with_capacity(len);
 
 
-    for _ in 0..data.iterations {
-        let residual_struct = residuals.remove(0);
-
-        residual_to_vec(&mut smth, &residual_struct.smth);
-        residual_to_vec(&mut filt, &residual_struct.filt);
-        residual_to_vec(&mut pred, &residual_struct.pred);
-    }
+    residuals.iter().for_each(|res| {
+        residual_to_vec(&mut smth, &res.smth);
+        residual_to_vec(&mut filt, &res.filt);
+        residual_to_vec(&mut pred, &res.pred);
+        });
 
 
     let mut save_folder = data.save_folder.clone();
@@ -154,9 +127,50 @@ fn run(data: State) {
     store::write_csv(&pred_path, pred);
 
     store::write_json(&data);
+
+    println!{"finished {}", &data.histogram_name}
+
 }
 
+fn fetch_kf_randomness_residuals(data: &State) {
+    let kf_packaged_data = statistics::collect_stats(data);
 
+    let kf_data :Vec<StorageData>= 
+        kf_packaged_data.iter().map(|(x, _ )| {
+           
+            statistics::smear_residuals(&x)
+
+        })
+        .flatten()
+        .map(|x| {
+            StorageData::new(x.x, x.y)
+        })
+        .collect::<Vec<_>>();
+
+    /*
+
+        configure folders and save destinations
+
+    */
+    let mut save_folder = data.save_folder.clone();
+    save_folder.push_str(r"\");
+
+    fs::create_dir(&save_folder);
+
+    // create extensions on the folder path for each csv
+    path!{save_folder;
+        "smth.csv" => smth_path
+    }
+
+    /*
+        write data to files
+    */
+
+    store::write_csv(&smth_path, kf_data);
+
+    store::write_json(&data);
+
+}
 
 // TODO move this inside the parallelized calculation
 fn residual_to_vec(
@@ -183,48 +197,48 @@ macro_rules! generate_data {
 
     // alterantive brnach. for modifying something in the stdev fields you need a `.` operator, which the other macro wont pick up on 
     ($value_iterable:ident, $folder_save_string:expr, $hist_save_string:expr, $field_one:ident . $field_two:ident) => {
-        let mut counter = 0;
-        let iter = 
-        $value_iterable.into_iter()
-            .map(|x|{
-                let hist_save_name = format!{$hist_save_string, counter};
-                counter += 1;
+
+        let len = $value_iterable.len();
+        let new_iter = $value_iterable.into_iter().zip(0..len).collect::<Vec<_>>();
+
+
+        new_iter.par_iter()
+            .for_each(|(x, count)|{
+                let hist_save_name = format!{$hist_save_string, count};
 
                 let mut path = CSV_SAVE_LOCATION.clone().to_string();
                 path.push_str(&format!{$folder_save_string, x});
                 
                 let mut data_struct = State::default(path, hist_save_name);
-                data_struct.$field_one.$field_two = *x;     // this line is the only difference
+                data_struct.$field_one.$field_two = **x;     // this line is the only difference
 
-                data_struct
-            }).collect::<Vec<_>>();
+                run(data_struct)
+            });
 
 
-        batch_execute(iter);
     };
 
     // main branch
     ($value_iterable:ident, $folder_save_string:expr, $hist_save_string:expr, $field_to_change:ident) => {
-        let mut counter = 0;
+        // zip together the value we are replacing the default of State with and the count at which it occurs.generate_data
+        // this is done becuase we cant usea mutable reference outside the iterator because its parallel
+        let len = $value_iterable.len();
+        let new_iter = $value_iterable.into_iter().zip(0..len).collect::<Vec<_>>();
 
-        let iter = 
-        $value_iterable.into_iter()
-            .map(|x|{
-                let hist_save_name = format!{$hist_save_string, counter};
-                counter += 1;
+
+        new_iter.par_iter()
+            .for_each(|(x, count)|{
+                let hist_save_name = format!{$hist_save_string, count};
 
                 let mut path = CSV_SAVE_LOCATION.clone().to_string();
                 path.push_str(&format!{$folder_save_string, x});
 
                 let mut data_struct = State::default(path, hist_save_name);
-                data_struct.$field_to_change = *x;
+                data_struct.$field_to_change = **x;
 
-                data_struct
-            }).collect::<Vec<_>>();
+                run(data_struct)
+            });
 
-
-        batch_execute(iter);
-        
     };
 }
 
@@ -269,13 +283,18 @@ pub fn scaling_sensor_count() -> (){
     generate_data!{counts, "scaling_sensor_count{}", "{}_sensor_count.png", num_sensors}
 }
 
+fn test_generated_residuals() -> () {
+    let state = State::default("generated_truth_smear_residuals".to_string(),  "_truth_smear_residuals.png".to_string());
+    fetch_kf_randomness_residuals(&state);
+}
 
 pub fn run_all_stats() {
 
     // scaling_corner_mean();
-    // scaling_diagonal_mean();
     // scaling_point_std_dev();
+    // scaling_diagonal_mean();
     // scaling_sensor_dist();
-    scaling_sensor_count();
+    // scaling_sensor_count();
 
+    test_generated_residuals()
 }

@@ -16,55 +16,72 @@ use rand_distr::{Normal, Distribution};
 use rayon;
 use rayon::prelude::*;
 
-use super::run::Uncertainty;
+use super::run::{Uncertainty, State};
 
-/// Runs batches of kf calculations in parallel and returns their result data
+use itertools::izip;
+
+/// Quickly create a repetitive value
+/// $name: name of variable to save to
+/// $value: the value that will be repeated $take times
+macro_rules! take {
+    ($take:expr; $($name:ident , $value:expr),+) => {
+        $(
+            let $name = std::iter::repeat($value).take($take);
+        )+
+    };
+}
+
+
+/// Runs batches of kf calculations. Parallelization happens upstream
 pub fn collect_stats(
-    mut num_sensors: Vec<u32>, 
-    mut sensor_distance: Vec<Real>, 
-    mut base_angles: Vec<Option<(f64, f64)>>,
-    mut point_std_dev: Vec<Real>,
-    distr_rng: &Uncertainty
+    state: &State
     ) -> Vec<(KFData<Rectangle>, SuperData)> {
-
+    // ) -> () {
+    let distr_rng = &state.stdevs;
     let diagonal_rng = Normal::new(distr_rng.diag_mean, distr_rng.diag_std).unwrap();
     let corner_rng = Normal::new(distr_rng.corner_mean, distr_rng.corner_std).unwrap();
     let rng = SmallRng::from_entropy();
 
-    let len = num_sensors.len();
-    let mut  iter = Vec::with_capacity(len);
-    for i in 0..len{
-        let a = num_sensors.remove(0);
-        let b = sensor_distance.remove(0);
-        let c = base_angles.remove(0);
-        let d = point_std_dev.remove(0);
-        
-        iter.push((a, b, c ,d))
+    // create iterators of repetitve values
+    take!{state.iterations;
+        num_sensors, state.num_sensors,
+        distances, state.sensor_distance,
+        angles, state.angles,
+        point_std, state.stdevs.point_std
     }
 
-    let kf_results_vec = 
-        // iter.par_iter()
-        iter.iter()
-            .map(|(num_sensor, sensor_distance, angles, std_dev)| {
+    // zip the iterators together
+    let iter = izip!{num_sensors, distances, angles, point_std};
+
+
+    let kf_results_vec : Vec<(KFData<Rectangle>, SuperData)> = 
+        iter.map(|(num_sensor, sensor_distance, angles, std_dev)| {
+
+            // generate a truth track
             generate_track(
-                *num_sensor,
-                *sensor_distance,
-                *angles,
+                num_sensor,
+                sensor_distance,
+                angles,
                 rng.clone(),
-                *std_dev,
+                std_dev,
                 diagonal_rng.clone(),
                 corner_rng.clone()
             )
+
         })
         .map(|data|{
+
+            // put the smeared data from the truth track into the kf
             let kf_data = linear::run(
                 &data.start,
                 &data.cov,
                 &data.smear_hits,
                 &data.sensors
             );
+
+            // print!{"made here"}
             (data, kf_data)
-        }).collect::<Vec<_>>();
+        }).collect();
 
     kf_results_vec
 }
@@ -79,10 +96,9 @@ pub fn fetch_kf_residuals(
     ) -> Vec<Residuals> {
     // 
 
-    // create_statistics_data.par_iter()
     create_statistics_data.iter()
         .map(|(truth, kf_ver)| {
-            create_residuals(truth, kf_ver)
+            create_residuals(truth, kf_ver)         // change this line to compare truth with smeared
         })
         .collect::<Vec<_>>()
 } 
@@ -111,7 +127,6 @@ fn create_residuals(
     let pred_state_vec = &kf_data.pred.state_vec;
     let pred_res = calc_residual(pred_state_vec, truth_points, len);
 
-
     // filtered
     let filt_state_vec = &kf_data.filt.state_vec;
     let filt_res= calc_residual(filt_state_vec,truth_points, len);
@@ -121,6 +136,20 @@ fn create_residuals(
         filt: filt_res,
         pred: pred_res
     }
+}
+
+pub fn smear_residuals(
+    kf_data: &KFData<Rectangle>
+    ) -> Vec<Vec2> {
+
+    let smears = &kf_data.smear_hits;
+    let truths = &kf_data.truth_hits;
+
+    truths.iter().zip(smears.iter())
+        .map(|(t, s)| {
+            t-s
+        })
+        .collect::<Vec<Vec2>>()
     
 }
 

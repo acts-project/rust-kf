@@ -25,11 +25,14 @@ pub fn seed_covariance() -> Mat5 {
 //          for ease of writing tests
 pub fn seed_state_vec_from_sensor<T: Plane + Transform>(
     start_location: &P3, 
-    first_sensor: &T
+    first_sensor: &T,
+    first_sensor_hit: &Vec2
     ) -> Vec5 {
 
+    let local_hit_point = P3::new(first_sensor_hit.x, first_sensor_hit.y, 0.);
+        
     let global_end = first_sensor.global_center();
-    let local_end = first_sensor.to_local(*global_end);     // TODO store local_center so we dont need this conversion
+    let local_end = first_sensor.to_local(local_hit_point);     // TODO store local_center so we dont need this conversion
 
     seed_state_vec_from_points(&start_location, &global_end, &local_end)
 

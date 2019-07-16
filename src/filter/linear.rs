@@ -64,10 +64,13 @@ pub fn run(
     }
     
     // fetch the first sensor
-    get_unchecked!{sensor_vector[0]=> first_sensor}
+    get_unchecked!{
+        sensor_vector[0]=> first_sensor,
+        measurements_vector[0] => first_hit
+        }
 
     // calculate some seeded values (seeding improvement suggestions welcome)
-    let mut previous_state_vec = super::utils::seed_state_vec_from_sensor(&start_location, first_sensor);
+    let mut previous_state_vec = super::utils::seed_state_vec_from_sensor(&start_location, first_sensor,first_hit);
     let mut previous_covariance = super::utils::seed_covariance();
 
     // Store the seeded values in their respective iterators
@@ -78,6 +81,7 @@ pub fn run(
         previous_state_vec => predicted_state_vec_iter,
         previous_covariance => predicted_cov_mat_iter
     );
+
 
 
     for i in 0..input_length{
@@ -112,13 +116,13 @@ pub fn run(
         let chi_squared_inc = filter_gain::chi_squared_increment(&filter_residual_vec, &filter_residual_mat);
 
         // print!{
-            // "NEW ITERATION THROUGH SENSOR", i,
-            // jacobian,
+        //     "NEW ITERATION THROUGH SENSOR", i,
+        //     jacobian,
         //     pred_cov_mat,
-            // filter_cov_mat,
+        //     filter_cov_mat,
         //     kalman_gain,
         //     pred_state_vec,
-            // filter_state_vec
+        //     filter_state_vec
         // }
 
 
@@ -161,6 +165,7 @@ pub fn run(
         filter_res_mat_iter => smoothed_res_mat_iter,
         filter_res_vec_iter => smoothed_res_vec_iter
     }
+
 
 
     for i in (0..input_length).rev() {
@@ -208,7 +213,9 @@ pub fn run(
         let smoothed_res_vec = smoothing::residual_vec(curr_measurement, &meas_map_mat, &smoothed_state_vec);
 
 
-        print!{
+        // print!{i};
+
+        // print!{
             // "NEW SMOOTHING ITERATION", i,
         //     gain_matrix,
             // curr_filt_state_vec,
@@ -216,7 +223,7 @@ pub fn run(
         //     curr_filt_cov_mat,
         //     smoothed_cov_mat,
         //     curr_jacobian
-        }
+        // }
 
         //
         //  group push variables to vectors
@@ -230,6 +237,7 @@ pub fn run(
         // println!{"{} {} {} {}", smoothed_cov_mat_iter.len(), smoothed_state_vec_iter.len(), smoothed_res_mat_iter.len(), smoothed_res_vec_iter.len()}
 
     }
+
     // println!{"smoothed vec length : {}\nfilter vec len: {}\npred vec len {}", 
     // smoothed_state_vec_iter.len(),
     // filter_state_vec_iter.len(),

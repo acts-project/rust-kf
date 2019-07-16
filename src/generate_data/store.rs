@@ -43,7 +43,6 @@ pub fn write_json(json_data: &State) -> () {
     let mut save_base = json_data.save_folder.clone();
     save_base.push_str(r"\info.json");
 
-    dbg!{&save_base};
 
     let file = fs::File::create(save_base).expect("json file could not be made");
 
