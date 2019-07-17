@@ -1,75 +1,13 @@
 use super::{statistics, store};
-use statistics::Residuals;
-use store::StorageData;
+
+use super::structs::{StorageData, State, Residuals};
 
 use std::fs;
 
 use super::super::config::*;
-use std::iter;
-
-use serde::Serialize;
 
 use rayon::{self, prelude::*};
 
-
-/// Quickly clone and push to make paths
-macro_rules! path {
-    ($base:ident; $($to_push:expr => $varname:ident),+) => {
-        $(
-            let mut $varname = $base.clone();
-            $varname.push_str(r"\");
-            $varname.push_str(&$to_push);
-        )+
-    };
-}
-
-
-#[derive(Serialize)]
-pub struct State{
-    pub histogram_name: String,
-    pub iterations: usize,
-    pub num_sensors: u32,
-    pub sensor_distance: Real,
-    pub angles: Option<(Real, Real)>,
-    pub stdevs: Uncertainty,
-    pub save_folder: String
-}
-impl State{
-    pub fn default(folder_name : String, hist_name: String) -> Self{
-        Self{
-            histogram_name: hist_name,
-            iterations: 10000,
-            num_sensors: 10,
-            sensor_distance: 0.01,
-            angles: None,
-            stdevs: Uncertainty::default(),
-            save_folder: folder_name
-        }
-    }
-
-}
-
-
-#[derive(Serialize)]
-pub struct Uncertainty {
-    pub point_std: Real,
-    pub diag_std: Real,
-    pub corner_std: Real,
-    pub diag_mean: Real,
-    pub corner_mean: Real
-}
-
-impl Uncertainty {
-    pub fn default() -> Self {
-        Self{
-            point_std: 0.0001,
-            diag_std: 1.5,
-            corner_std: 1.,
-            diag_mean: 5.,
-            corner_mean: 0.
-        }
-    }
-}
 
 fn batch_execute(mut data: Vec<State> ) -> () {
     for i in 0..data.len(){
@@ -183,63 +121,6 @@ fn residual_to_vec(
             storage.push(StorageData::new(vec_res.x, vec_res.y))
         });
     
-}
-
-/// Quickly map and create folder names, histogram names, etc for any changing values.generate_data
-/// 
-/// $value_iterable: the values that will be mappened into the State struct. These are the values
-///                  we are testing. everything else in the struct will remain constant
-/// $folder_save_string: the extension for how the folder will be named. This will be concatenated onto the 
-///                  save location from config.rs
-/// $hist_save_string: what we will name the histogram once it is named (python handles this )
-/// $field_to_change: the field on the State structwhose value will be replaced by each index of $value iterable. 
-macro_rules! generate_data {
-
-    // alterantive brnach. for modifying something in the stdev fields you need a `.` operator, which the other macro wont pick up on 
-    ($value_iterable:ident, $folder_save_string:expr, $hist_save_string:expr, $field_one:ident . $field_two:ident) => {
-
-        let len = $value_iterable.len();
-        let new_iter = $value_iterable.into_iter().zip(0..len).collect::<Vec<_>>();
-
-
-        new_iter.par_iter()
-            .for_each(|(x, count)|{
-                let hist_save_name = format!{$hist_save_string, count};
-
-                let mut path = CSV_SAVE_LOCATION.clone().to_string();
-                path.push_str(&format!{$folder_save_string, x});
-                
-                let mut data_struct = State::default(path, hist_save_name);
-                data_struct.$field_one.$field_two = **x;     // this line is the only difference
-
-                run(data_struct)
-            });
-
-
-    };
-
-    // main branch
-    ($value_iterable:ident, $folder_save_string:expr, $hist_save_string:expr, $field_to_change:ident) => {
-        // zip together the value we are replacing the default of State with and the count at which it occurs.generate_data
-        // this is done becuase we cant usea mutable reference outside the iterator because its parallel
-        let len = $value_iterable.len();
-        let new_iter = $value_iterable.into_iter().zip(0..len).collect::<Vec<_>>();
-
-
-        new_iter.par_iter()
-            .for_each(|(x, count)|{
-                let hist_save_name = format!{$hist_save_string, count};
-
-                let mut path = CSV_SAVE_LOCATION.clone().to_string();
-                path.push_str(&format!{$folder_save_string, x});
-
-                let mut data_struct = State::default(path, hist_save_name);
-                data_struct.$field_to_change = **x;
-
-                run(data_struct)
-            });
-
-    };
 }
 
 

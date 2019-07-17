@@ -7,11 +7,11 @@ use geometry::Rectangle;
 use super::super::filter;
 use filter::prediction;
 
-use rand::{thread_rng, Rng};
-use rand::rngs::{SmallRng, ThreadRng};
+use rand::Rng;
+use rand::rngs::SmallRng;
 use rand_distr::{Normal, Distribution};
 
-use super::store;
+use super::structs::KFData;
 
 
 pub fn generate_track<T:Distribution<Real>>(
@@ -97,7 +97,7 @@ pub fn generate_track<T:Distribution<Real>>(
     
     // smear the hit locations
     let smeared_hits = 
-        truth_hits.clone().into_iter()
+        truth_hits.iter()
             .map(|point|{
                 let x_distr = Normal::new(point.x, point_std_dev).expect("std dev err");
                 let y_distr = Normal::new(point.y, point_std_dev).expect("std dev err");
@@ -142,8 +142,8 @@ pub fn generate_track<T:Distribution<Real>>(
 
 fn gen_sensor(x_point: Real) -> Rectangle {
     // sensor dimensions
-    let base = 10000000.;
-    let height = 10000000.;
+    let base = 1000.;
+    let height = 1000.;
 
 
     let y_axis = Vec3::new(0. , 1., 0.);
@@ -181,63 +181,3 @@ fn gen_sensor(x_point: Real) -> Rectangle {
 
 }
 
-
-pub struct KFData <T: Transform + Plane>{
-    pub start: P3,
-    pub original_angles: (Real, Real),
-    pub sensors: Vec<T>,
-    pub cov: Vec<Mat2>,
-    pub smear_hits: Vec<Vec2>,
-    pub truth_hits: Vec<Vec2>
-}
-impl <T> KFData<T> where T: Transform + Plane {
-    fn new(
-        sensors: Vec<T>, 
-        covariance_mat: Vec<Mat2>,
-        smeared_measurements: Vec<Vec2>,
-        truth_measurements: Vec<Vec2>,
-        original_angles: (Real, Real)
-    ) -> Self{
-
-        KFData {
-            start: P3::origin(),
-            sensors: sensors, 
-            cov: covariance_mat, 
-            smear_hits: smeared_measurements, 
-            truth_hits: truth_measurements,
-            original_angles: original_angles
-            }
-    }
-
-}
-
-/*
-
-let mut counter = 0;
-    let kf_hits =
-        kf_state_vec.iter()
-        .map(|vec|{
-            get_unchecked!{
-                vec[eLOC_0] => x,
-                vec[eLOC_1] => y
-            }
-            Vec2::new(*x, *y)
-        })
-        .collect::<Vec<_>>();
-    self.truth_hits.iter()
-        .zip(kf_hits.iter())
-        .map(|(truth, smear)| {
-            let diff = truth - smear;
-            println!{"total diff: {}\ttruth x:{}\tpred x: {}\tdiff:{}  \t truth y: {}\tpred y: {}\t diff: {}", diff.norm(), truth.x, smear.x, diff.x, truth.y, smear.y, diff.y}
-            (truth, smear)
-        })
-        .collect::<Vec<_>>()
-        .into_iter()
-        .for_each(|(truth, smear)|{
-            println!{"{}", counter}
-            counter += 1;
-            group_assert!{truth, smear, x, y}
-        });
-    
-         
-*/

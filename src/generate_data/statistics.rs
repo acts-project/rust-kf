@@ -1,35 +1,19 @@
 use super::super::config::*;
 use super::super::geometry::Rectangle;
-use super::setup;
-use setup::{generate_track, KFData};
-
 use super::super::filter;
-#[macro_use]
-use filter::macros;
+
+use super::setup;
+use setup::generate_track;
+
+use super::structs::{KFData, Residuals, State};
+
 use filter::{linear, utils::SuperData};
 
-use rand::{thread_rng, Rng, SeedableRng};
+use rand::{thread_rng, SeedableRng};
 use rand::rngs::SmallRng;
-
-use rand_distr::{Normal, Distribution};
-
-use rayon;
-use rayon::prelude::*;
-
-use super::run::{Uncertainty, State};
+use rand_distr::Normal;
 
 use itertools::izip;
-
-/// Quickly create a repetitive value
-/// $name: name of variable to save to
-/// $value: the value that will be repeated $take times
-macro_rules! take {
-    ($take:expr; $($name:ident , $value:expr),+) => {
-        $(
-            let $name = std::iter::repeat($value).take($take);
-        )+
-    };
-}
 
 
 /// Runs batches of kf calculations. Parallelization happens upstream
@@ -108,13 +92,8 @@ pub fn fetch_kf_residuals(
         .collect::<Vec<_>>()
 } 
 
-
-pub struct Residuals{
-    pub smth: Vec<Vec2>,
-    pub filt: Vec<Vec2>,
-    pub pred: Vec<Vec2>
-}
-
+/// Handles calculating all residuals of the truth hits vs KF outputs
+/// and returns a struct of all smoothed / filtered / predicted residuals
 fn create_residuals(
     truth_data: &KFData<Rectangle>,
     kf_data: &SuperData
@@ -143,6 +122,9 @@ fn create_residuals(
     }
 }
 
+
+/// Calculates the residuals between truth points and their
+/// smeared counterparts
 pub fn smear_residuals(
     kf_data: &KFData<Rectangle>
     ) -> Vec<Vec2> {
@@ -158,7 +140,7 @@ pub fn smear_residuals(
     
 }
 
-
+/// Residual between KF outputs and truth hits
 fn calc_residual(
     state_vectors: &Vec<Vec5>,
     truth_points: &Vec<Vec2>,
@@ -170,16 +152,15 @@ fn calc_residual(
 
     for i in 0..len {
 
-        // print!{"before"}
         get_unchecked!{
             state_vectors[i] => curr_state_vec,
             truth_points[i] => curr_truth_point
         }
+
         get_unchecked!{vector;curr_state_vec;
             eLOC_0 => x,
             eLOC_1 => y
         }
-        // print!{"after"}
 
         let diff = Vec2::new(*x, *y) - curr_truth_point;
         diff_vec.push(diff);
