@@ -48,3 +48,29 @@ pub fn write_json(json_data: &State) -> () {
 
     serde_json::to_writer(file, json_data).expect("json could not be serialized to the file");
 }
+
+
+
+pub fn write_random_values(x: &Vec<Vec2>, i: u32) {
+    
+    let mut w = 
+        if i == 0{
+            Writer::from_path(r".\data\smth.csv").unwrap()
+        }
+        else if i == 1{
+            Writer::from_path(r".\data\filt.csv").unwrap()
+        }
+        else if i == 2{
+            Writer::from_path(r".\data\pred.csv").unwrap()
+        }
+        else{
+            panic!{"asdasd"}
+        };
+    
+    x.into_iter()
+        .for_each(|x|{
+            w.serialize(StorageData::new(x.x, x.y)).expect("coult not seriailze")
+        });
+
+    w.flush().expect("coult not flush");
+}

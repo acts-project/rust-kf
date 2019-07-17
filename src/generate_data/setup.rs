@@ -8,9 +8,10 @@ use super::super::filter;
 use filter::prediction;
 
 use rand::{thread_rng, Rng};
-use rand::rngs::SmallRng;
+use rand::rngs::{SmallRng, ThreadRng};
 use rand_distr::{Normal, Distribution};
 
+use super::store;
 
 
 pub fn generate_track<T:Distribution<Real>>(
@@ -22,6 +23,7 @@ pub fn generate_track<T:Distribution<Real>>(
     diagonal_rng: T,
     corner_rng: T,
     ) -> KFData<Rectangle> {
+
 
     let (phi, theta) =
         if let Some((phi, theta)) = base_angles{
@@ -83,7 +85,7 @@ pub fn generate_track<T:Distribution<Real>>(
                 &virtual_sensor,
                 &curr_sensor,
                 &start_state_vec
-            ).expect("out of bounds");
+            ).expect("out of bounds when generating track");
 
         get_unchecked!{
             pred_sv[eLOC_0] => x_hit,
@@ -133,14 +135,15 @@ pub fn generate_track<T:Distribution<Real>>(
         })
         .collect::<Vec<_>>();
 
+
     KFData::new(sensor_vec, covariance_vec, smeared_hits, truth_hits, (phi, theta))
 }
 
 
 fn gen_sensor(x_point: Real) -> Rectangle {
     // sensor dimensions
-    let base = 10000.;
-    let height = 10000.;
+    let base = 10000000.;
+    let height = 10000000.;
 
 
     let y_axis = Vec3::new(0. , 1., 0.);

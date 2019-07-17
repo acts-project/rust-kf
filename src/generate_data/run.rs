@@ -38,9 +38,9 @@ impl State{
     pub fn default(folder_name : String, hist_name: String) -> Self{
         Self{
             histogram_name: hist_name,
-            iterations: 100_000,
+            iterations: 10000,
             num_sensors: 10,
-            sensor_distance: 0.1,
+            sensor_distance: 0.01,
             angles: None,
             stdevs: Uncertainty::default(),
             save_folder: folder_name
@@ -62,11 +62,11 @@ pub struct Uncertainty {
 impl Uncertainty {
     pub fn default() -> Self {
         Self{
-            point_std: 0.01,
+            point_std: 0.0001,
             diag_std: 1.5,
             corner_std: 1.,
             diag_mean: 5.,
-            corner_mean: 2.
+            corner_mean: 0.
         }
     }
 }
@@ -290,11 +290,11 @@ fn test_generated_residuals() -> () {
 
 pub fn run_all_stats() {
 
-    // scaling_corner_mean();
-    // scaling_point_std_dev();
-    // scaling_diagonal_mean();
-    // scaling_sensor_dist();
-    // scaling_sensor_count();
+    scaling_corner_mean();
+    scaling_point_std_dev();
+    scaling_diagonal_mean();
+    scaling_sensor_dist();
+    scaling_sensor_count();
 
-    test_generated_residuals()
+    // test_generated_residuals()
 }

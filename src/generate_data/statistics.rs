@@ -37,10 +37,15 @@ pub fn collect_stats(
     state: &State
     ) -> Vec<(KFData<Rectangle>, SuperData)> {
     // ) -> () {
-    let distr_rng = &state.stdevs;
-    let diagonal_rng = Normal::new(distr_rng.diag_mean, distr_rng.diag_std).unwrap();
-    let corner_rng = Normal::new(distr_rng.corner_mean, distr_rng.corner_std).unwrap();
-    let rng = SmallRng::from_entropy();
+    let uncertainties = &state.stdevs;
+
+    let diagonal_rng = Normal::new(uncertainties.diag_mean, uncertainties.diag_std).unwrap();
+    let corner_rng = Normal::new(uncertainties.corner_mean, uncertainties.corner_std).unwrap();
+    
+    let mut base_rng = thread_rng();
+    let small_rngs_iterator = std::iter::repeat(()).map(|_|SmallRng::from_rng(&mut base_rng).unwrap()).take(state.iterations);
+
+
 
     // create iterators of repetitve values
     take!{state.iterations;
@@ -51,18 +56,18 @@ pub fn collect_stats(
     }
 
     // zip the iterators together
-    let iter = izip!{num_sensors, distances, angles, point_std};
+    let iter = izip!{num_sensors, distances, angles, point_std, small_rngs_iterator};
 
 
     let kf_results_vec : Vec<(KFData<Rectangle>, SuperData)> = 
-        iter.map(|(num_sensor, sensor_distance, angles, std_dev)| {
+        iter.map(|(num_sensor, sensor_distance, angles, std_dev,rng)| {
 
             // generate a truth track
             generate_track(
                 num_sensor,
                 sensor_distance,
                 angles,
-                rng.clone(),
+                rng,
                 std_dev,
                 diagonal_rng.clone(),
                 corner_rng.clone()
@@ -98,7 +103,7 @@ pub fn fetch_kf_residuals(
 
     create_statistics_data.iter()
         .map(|(truth, kf_ver)| {
-            create_residuals(truth, kf_ver)         // change this line to compare truth with smeared
+            create_residuals(truth, kf_ver)
         })
         .collect::<Vec<_>>()
 } 
