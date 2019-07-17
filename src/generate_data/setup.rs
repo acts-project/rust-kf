@@ -111,7 +111,7 @@ pub fn generate_track<T:Distribution<Real>>(
 
     // print out truth vs smeared hits
     smeared_hits.iter()
-        .zip(truth_hits.iter())
+        .zip( truth_hits.iter() )
         .for_each(|(smear, truth)| {
             let x_diff = (smear.x - truth.x).abs();
             let y_diff = (smear.y - truth.y).abs();
@@ -120,6 +120,7 @@ pub fn generate_track<T:Distribution<Real>>(
         });
     
 
+    // TODO hold these constant  - Mr Paul
 
     let covariance_vec = 
         (0..sensor_vec.len()).into_iter()
@@ -136,9 +137,25 @@ pub fn generate_track<T:Distribution<Real>>(
         .collect::<Vec<_>>();
 
 
-    KFData::new(sensor_vec, covariance_vec, smeared_hits, truth_hits, (phi, theta))
+    let smear_state_vec = smear_state_vector(&mut rng, point_std_dev, &start_state_vec);
+
+    KFData::new(sensor_vec, covariance_vec, smeared_hits, truth_hits, (phi, theta), smear_state_vec, start_state_vec)
 }
 
+
+fn smear_state_vector(rng: &mut SmallRng, std_dev: Real, state_vec: &Vec5) -> Vec5{
+    let mut new_vec = Vec5::zeros();
+
+    for i in 0..5{
+        get_unchecked!{vector;state_vec; i=> var}
+        let distr = Normal::new(*var, std_dev).unwrap();
+        let new_val = distr.sample(rng);
+        change_mat_val!{new_vec; [i, 0] => new_val}
+    }
+
+    new_vec
+
+}
 
 fn gen_sensor(x_point: Real) -> Rectangle {
     // sensor dimensions

@@ -20,13 +20,8 @@ fn batch_execute(mut data: Vec<State> ) -> () {
 
 fn run(data: State) {
     
-    println!{"running"}
-
-
     let kf_packaged_data = 
         statistics::collect_stats(&data);
-
-    println!{"got kf data"}
 
     let mut residuals : Vec<Residuals> = 
         statistics::fetch_kf_residuals(&kf_packaged_data);
@@ -70,6 +65,9 @@ fn run(data: State) {
 
 }
 
+
+/// Calls all child functions for calculating the residuals for truth vs smeared
+/// points
 fn fetch_kf_randomness_residuals(data: &State) {
     let kf_packaged_data = statistics::collect_stats(data);
 
@@ -110,7 +108,49 @@ fn fetch_kf_randomness_residuals(data: &State) {
 
 }
 
-// TODO move this inside the parallelized calculation
+
+fn fetch_separated_kf_data(data: &State) {
+    let kf_packaged_data = statistics::collect_stats(&data);
+
+    let vec_residuals = 
+        statistics::truth_kf_output_residuals(kf_packaged_data);
+
+    
+    let mut sensor_separated_residuals = 
+        (0..(data.num_sensors as usize)).into_iter()
+        .map(|_| Vec::new())
+        .collect::<Vec<_>>();
+
+    for i in 0..(data.num_sensors as usize) {
+        let inner = sensor_separated_residuals.get_mut(i).expect("statistics out of bounds");
+        
+        vec_residuals.iter()
+            .for_each(|x|{
+                inner.push(x.smth[i]);               // this line changes what field we are looking at
+            });
+    }
+
+    // serialize into vector of structs to serialize
+
+    sensor_separated_residuals.into_iter().zip(0..data.num_sensors)
+        .map(|(vector, count)|{
+            let vec = vector.into_iter().map(|resid| {StorageData::new(resid.x, resid.y)}).collect::<Vec<_>>();
+
+            (vec, count)
+        
+        })
+        .for_each(move|(vec_vec2, count)|{
+            let sub_path = format!{r"\sensor_{}.csv", count};
+            let path = data.save_folder.clone() + &sub_path;
+            print!{path};
+            store::write_csv(&path, vec_vec2)
+        });
+        
+
+    
+}
+
+
 fn residual_to_vec(
     storage: &mut Vec<StorageData>,
     res: &Vec<Vec2>
@@ -164,18 +204,34 @@ pub fn scaling_sensor_count() -> (){
     generate_data!{counts, "scaling_sensor_count{}", "{}_sensor_count.png", num_sensors}
 }
 
+
+// residuals between truth vs smeared values 
 fn test_generated_residuals() -> () {
     let state = State::default("generated_truth_smear_residuals".to_string(),  "_truth_smear_residuals.png".to_string());
     fetch_kf_randomness_residuals(&state);
 }
 
+// residuals between truth and sensor (pred/  filt/ smth) at each sensor
+fn test_initial_predictions() -> () {
+    print!{"here"}
+    let state = State::default(r".\data\initial_prediction_data\".to_string(), "this_does_not_matter.png".to_string());
+    fetch_separated_kf_data(&state);
+}
+
+fn run_one_test() -> () {
+    let state = State::default(r"E:\kf_csvs\default_parameters".to_string(), "default_parameters.png".to_string());
+    run(state);
+}
 pub fn run_all_stats() {
 
-    scaling_corner_mean();
-    scaling_point_std_dev();
-    scaling_diagonal_mean();
-    scaling_sensor_dist();
-    scaling_sensor_count();
+    // scaling_corner_mean();
+    // scaling_point_std_dev();
+    // scaling_diagonal_mean();
+    // scaling_sensor_dist();
+    // scaling_sensor_count();
 
-    // test_generated_residuals()
+    // test_generated_residuals();
+    // test_initial_predictions();
+
+    run_one_test();
 }

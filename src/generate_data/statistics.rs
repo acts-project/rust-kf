@@ -65,10 +65,12 @@ pub fn collect_stats(
                 &data.start,
                 &data.cov,
                 &data.smear_hits,
-                &data.sensors
+                &data.sensors,
+                Some(&data.smear_initial_vector)
             );
+            
 
-            // print!{"made here"}
+            // print!{"finish kf pass"}
             (data, kf_data)
         }).collect();
 
@@ -137,8 +139,56 @@ pub fn smear_residuals(
             t-s
         })
         .collect::<Vec<Vec2>>()
-    
 }
+
+pub fn truth_kf_output_residuals(
+    output: Vec<(KFData<Rectangle>, SuperData)>
+    ) -> Vec<Residuals> {
+    //
+
+    output.into_iter()
+        .map(|(truth_data, kf_out)| {
+            let truth_vals = truth_data.truth_hits.into_iter();
+            let prediction = vec5_to_vec2(kf_out.pred.state_vec).into_iter();
+            let filtered = vec5_to_vec2(kf_out.filt.state_vec).into_iter();
+            let smoothed = vec5_to_vec2(kf_out.smth.state_vec).into_iter();
+
+            // truth_vals.zip(prediction);
+            let zipped_iter = izip!{truth_vals, prediction, filtered, smoothed};
+
+            let grouped_residuals = 
+            zipped_iter.map(|(truth, pred, filt, smth)|{
+                let p_ = truth - pred;
+                let f_ = truth - filt;
+                let s_ = truth - smth;
+                
+                (s_, f_, p_)
+                })
+            .collect::<Vec<_>>();
+
+            Residuals::new_grouped(grouped_residuals)
+
+        })
+        .collect::<Vec<_>>()
+
+}
+
+fn vec5_to_vec2(vector_sv: Vec<Vec5>) -> Vec<Vec2> {
+    vector_sv.into_iter()
+        .map(|x| state_vec_to_hit_vec(x))
+        .collect::<Vec<_>>()
+}
+
+fn state_vec_to_hit_vec(vec: Vec5)-> Vec2{
+    // let new_vec = Vec2::zeros();
+    get_unchecked!{vector;vec;
+        eLOC_0 => x,
+        eLOC_1 => y
+    }
+    Vec2::new(*x, *y)
+}
+
+
 
 /// Residual between KF outputs and truth hits
 fn calc_residual(

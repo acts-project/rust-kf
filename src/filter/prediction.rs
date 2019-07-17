@@ -110,7 +110,7 @@ pub fn linear_state_vector<T: Transform + Plane>(
         Ok((new_state_vec, global_distance))
     }
     else {
-        Err(SensorError::OutsideSensorBounds)
+        Err(SensorError::OutsideSensorBounds(local_pred_point))
     }
 
 }

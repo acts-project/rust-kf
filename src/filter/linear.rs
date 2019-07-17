@@ -22,7 +22,8 @@ pub fn run(
     start_location: &P3,                         // start loc used to predict initial filtered state vec
     measurement_noise_coarariance_vector: &Vec<Mat2>,  // vector of V from fruhwirth paper
     measurements_vector: &Vec<Vec2>,            // vector of all the measurements that were registered
-    sensor_vector: &Vec<Rectangle>,             // the geometric sensors that correspond to each hit 
+    sensor_vector: &Vec<Rectangle>,             // the geometric sensors that correspond to each hit ,
+    intitial_seed_vec: Option<&Vec5>
     )  -> SuperData{
 
     let meas_map_mat = Mat2x5::new(1. , 0. , 0. , 0. , 0. ,
@@ -69,10 +70,15 @@ pub fn run(
         measurements_vector[0] => first_hit
         }
 
-    // calculate some seeded values (seeding improvement suggestions welcome)
-    let mut previous_state_vec = super::utils::seed_state_vec_from_sensor(&start_location, first_sensor,first_hit);
+    let mut previous_state_vec =
+    if let Some(state_vec) = intitial_seed_vec {
+        state_vec.clone()
+    }
+    else{
+        // calculate some seeded values (seeding improvement suggestions welcome)
+        super::utils::seed_state_vec_from_sensor(&start_location, first_sensor,first_hit)
+    };
     let mut previous_covariance = super::utils::seed_covariance();
-
     // Store the seeded values in their respective iterators
     push!(
         previous_covariance => filter_cov_mat_iter, 
@@ -98,7 +104,14 @@ pub fn run(
         }
 
         //predictions
-        let (pred_state_vec, distance_between) = prediction::linear_state_vector(curr_sensor, next_sensor, &previous_state_vec).expect("pred location out of bounds");
+        let (pred_state_vec, distance_between) = 
+            match prediction::linear_state_vector(curr_sensor, next_sensor, &previous_state_vec) {
+                Ok(x) => x,
+                Err(e) => {
+                    dbg!{e};
+                    panic!{"out of bounds panic happened"}
+                }
+            };
 
         let jacobian = jacobian::linear(&previous_state_vec, distance_between, curr_sensor, next_sensor);
 

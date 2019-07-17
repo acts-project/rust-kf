@@ -26,7 +26,9 @@ pub struct KFData <T: Transform + Plane>{
     pub sensors: Vec<T>,
     pub cov: Vec<Mat2>,
     pub smear_hits: Vec<Vec2>,
-    pub truth_hits: Vec<Vec2>
+    pub truth_hits: Vec<Vec2>,
+    pub smear_initial_vector: Vec5,
+    pub truth_initial_vector: Vec5
 }
 impl <T> KFData<T> where T: Transform + Plane {
     pub fn new(
@@ -34,7 +36,9 @@ impl <T> KFData<T> where T: Transform + Plane {
         covariance_mat: Vec<Mat2>,
         smeared_measurements: Vec<Vec2>,
         truth_measurements: Vec<Vec2>,
-        original_angles: (Real, Real)
+        original_angles: (Real, Real),
+        smear_state_vec: Vec5,
+        truth_state_vec: Vec5
     ) -> Self{
 
         KFData {
@@ -43,7 +47,9 @@ impl <T> KFData<T> where T: Transform + Plane {
             cov: covariance_mat, 
             smear_hits: smeared_measurements, 
             truth_hits: truth_measurements,
-            original_angles: original_angles
+            original_angles: original_angles,
+            smear_initial_vector: smear_state_vec,
+            truth_initial_vector: truth_state_vec
             }
     }
 
@@ -66,7 +72,7 @@ impl State{
     pub fn default(folder_name : String, hist_name: String) -> Self{
         Self{
             histogram_name: hist_name,
-            iterations: 10000,
+            iterations: 1_0000,
             num_sensors: 10,
             sensor_distance: 0.01,
             angles: None,
@@ -99,10 +105,10 @@ pub struct Uncertainty {
 impl Uncertainty {
     pub fn default() -> Self {
         Self{
-            point_std: 0.0001,
-            diag_std: 1.5,
+            point_std: 0.001,
+            diag_std: 1.,
             corner_std: 1.,
-            diag_mean: 5.,
+            diag_mean: 4.,
             corner_mean: 0.
         }
     }
@@ -114,4 +120,35 @@ pub struct Residuals{
     pub smth: Vec<Vec2>,
     pub filt: Vec<Vec2>,
     pub pred: Vec<Vec2>
+}
+impl Residuals {
+    pub fn new_grouped(grouped_vec: Vec<(Vec2, Vec2, Vec2)>) -> Self{
+        let mut s = Vec::new();
+        let mut f = Vec::new();
+        let mut p = Vec::new();
+
+        grouped_vec.into_iter()
+            .for_each(|(smth, filt, pred)| {
+                s.push(smth);
+                f.push(filt);
+                p.push(pred);
+            });
+
+        Residuals{
+            smth: s,
+            filt: f,
+            pred: p
+        }
+    }
+}
+
+
+
+#[derive(Serialize)]
+pub struct SingleField{
+    data: Real
+}
+
+impl SingleField {
+    pub fn new(x: Real) -> Self {SingleField {data: x}}
 }
