@@ -4,6 +4,10 @@ use kalman_rs::geometry::*;
 
 use nalgebra as na;
 
+use kalman_rs::generate_data::run;
+
+use rayon::{self, prelude::*};
+
 
 fn main() {
     
@@ -16,7 +20,8 @@ fn main() {
 
     let start = P3::new(0., 0. , 0.);
 
-    kalman_rs::filter::linear::run(&start, &V_vec, &m_k_vec, &sensor_vec);
+    // kalman_rs::filter::linear::run(&start, &V_vec, &m_k_vec, &sensor_vec);
 
+    run::run_all_stats();
 
 }

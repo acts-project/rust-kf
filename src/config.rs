@@ -4,7 +4,7 @@ use super::macros;
 
 pub use std::f64::consts::PI; // re-export pi
 
-pub use nalgebra::{U1, U2, U3, U4, U5, U6, U7, U8}; // nalgebra type dimensions
+pub use nalgebra::{U1, U2, U3, U4, U5, U6, U7, U8};
 
 // reusable types to be referenced from functions;
 pub type Real = f64;
@@ -51,3 +51,7 @@ def_constant!{Real;
 }
 
 
+def_constant!{&str;
+    CSV_SAVE_LOCATION = r"E:\kf_csvs\"
+
+}

@@ -27,11 +27,14 @@ pub fn seed_covariance() -> Mat5 {
 //          for ease of writing tests
 pub fn seed_state_vec_from_sensor<T: Plane + Transform>(
     start_location: &P3, 
-    first_sensor: &T
+    first_sensor: &T,
+    first_sensor_hit: &Vec2
     ) -> Vec5 {
 
+    let local_hit_point = P3::new(first_sensor_hit.x, first_sensor_hit.y, 0.);
+        
     let global_end = first_sensor.global_center();
-    let local_end = first_sensor.to_local(*global_end);     // TODO store local_center so we dont need this conversion
+    let local_end = first_sensor.to_local(local_hit_point);     // TODO store local_center so we dont need this conversion
 
     seed_state_vec_from_points(&start_location, &global_end, &local_end)
 
@@ -111,27 +114,26 @@ pub fn vec_of_vec(num: usize) -> Vec<Vec5> {
     return return_vec
 }
 
+
+// TODO Name is similar to other structs. figure out a new one
 #[derive(Debug)]
-pub struct SmoothedData {
+pub struct Data {
     pub state_vec: Vec<Vec5>,
     pub cov_mat: Vec<Mat5>,
     pub res_mat: Vec<Mat2>,
     pub res_vec: Vec<Vec2>
 }
 
-impl SmoothedData{
+impl Data{
     pub fn new(state_vec: Vec<Vec5>,
             cov_mat: Vec<Mat5>,
             res_mat: Vec<Mat2>,
             res_vec: Vec<Vec2>) -> Self {
 
-        return SmoothedData{state_vec: state_vec, 
+        return Data{state_vec: state_vec, 
                             cov_mat: cov_mat, 
                             res_mat: res_mat, 
                             res_vec:res_vec}
-    }
-    pub fn FFI_return() {
-        unimplemented!()
     }
 }
 
@@ -236,4 +238,20 @@ pub fn rk_state_vec_to_local_state_vec<T:Transform + Plane> (
 
     (state, angles)
 
+
+// TODO: come up with a better name for this
+#[derive(Debug)]
+pub struct SuperData{
+    pub smth: Data,
+    pub filt: Data,
+    pub pred: Data
+}
+impl SuperData{
+    pub fn new(smth: Data, filt: Data, pred: Data) -> Self{
+        SuperData{
+            smth: smth,
+            filt: filt,
+            pred: pred
+        }
+    }
 }

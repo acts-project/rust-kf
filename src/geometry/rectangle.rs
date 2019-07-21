@@ -16,6 +16,9 @@ pub struct Rectangle {
 
     pub to_global: Aff3,    // L => G for point
     pub to_local: Aff3,     // G => L for point
+    
+    pub to_global_rot: Mat4,
+    pub to_local_rot: Mat4
 }
 
 impl Rectangle {
@@ -36,15 +39,21 @@ impl Rectangle {
     /// let base = 5.;
     /// let height = 4.;
     /// 
-    /// let sensor = Rectangle::new(base, height, transform_mat);
+    /// let sensor = Rectangle::new(base, height, transform_mat, transform_mat);
     /// ```
     pub fn new(
         base: Real, 
         height: Real, 
-        to_global_tfm_matrix: Mat4
+        to_global_translation: Mat4,
+        to_global_rotation: Mat4,
         ) -> Result<Rectangle, MatrixError>{
+
+        
+        let compose_transform = to_global_translation * to_global_rotation;
+
+        let to_local_rotation = to_global_rotation.try_inverse().expect("rotation sensor matrix non invertible");
     
-        let to_global_transform = Aff3::from_matrix_unchecked(to_global_tfm_matrix);
+        let to_global_transform = Aff3::from_matrix_unchecked(compose_transform);
 
         match to_global_transform.try_inverse(){
             
@@ -67,7 +76,9 @@ impl Rectangle {
                              plane_constant: plane_const,
                              center_global: center_global,
                              to_global: to_global_transform,
-                             to_local: to_local_transform};
+                             to_local: to_local_transform,
+                             to_global_rot: to_global_rotation,
+                             to_local_rot: to_local_rotation};
                              
                 // dbg!{&rect};
                 Ok(rect)
@@ -82,7 +93,9 @@ impl Rectangle {
         let base = 4.;
         let height = 4.;
         let to_global = Mat4::new_random();
-        Self::new(base, height, to_global).expect("could not generate rect. sensor")
+        let rot = Mat4::new_random();
+
+        Self::new(base, height, to_global, rot).expect("could not generate rect. sensor")
     }
 
     pub fn new_test_sensor(
@@ -90,6 +103,8 @@ impl Rectangle {
         height: Real,
         to_global: Aff3,
         to_local: Aff3,
+        to_global_rot: Mat4,
+        to_local_rot: Mat4,
         non_center_p1: P3,
         non_center_p2: P3
     )-> Self {
@@ -118,6 +133,8 @@ impl Rectangle {
             center_global: global_center,
             to_global: to_global,
             to_local: to_local,
+            to_global_rot: to_global_rot,
+            to_local_rot: to_local_rot
         }
     }
 
@@ -184,6 +201,12 @@ impl Transform for Rectangle{
         else {
             false
         }
+    }
+    fn rotation_to_global(&self) -> &Mat4{
+        &self.to_global_rot
+    }
+    fn rotation_to_local(&self) -> &Mat4{
+        &self.to_local_rot
     }
 }
 

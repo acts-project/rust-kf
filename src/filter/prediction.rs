@@ -91,10 +91,8 @@ pub fn linear_state_vector<T: Transform + Plane>(
 
     let local_pred_point  = end_sensor.to_local(global_pred_point);
 
-    // println!{"global predicted point:"}
-    // dbg!{global_pred_point};
-    // println!{"local predicted point: "}
-    // dbg!{local_pred_point};
+
+    // print!{"PREDICTIONS", global_pred_point, local_pred_point}
 
 
     // check if the predicted point is on the sensor
@@ -112,7 +110,7 @@ pub fn linear_state_vector<T: Transform + Plane>(
         Ok((new_state_vec, global_distance))
     }
     else {
-        Err(SensorError::OutsideSensorBounds)
+        Err(SensorError::OutsideSensorBounds(local_pred_point))
     }
 }
 

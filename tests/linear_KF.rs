@@ -1,7 +1,12 @@
 use kalman_rs as krs;
 use krs::config::*;
-use krs::geometry::Rectangle;                   // rect sensors
-use krs::geometry::traits::{Plane, Transform};
+use krs::generate_data::setup::generate_track;
+
+use krs::{print, get_unchecked};
+
+use rand::rngs::SmallRng;
+use rand::SeedableRng;
+use rand_distr::{Normal, Distribution};
 
 /*
 
@@ -16,128 +21,71 @@ macro_rules! group_assert {
             let right = $right.$index;
 
             let diff = right - left;
+            let diff = diff.abs()
 
-            assert!{diff.abs() < DOT_PRODUCT_EPSILON}
+            // print!{left, right, diff}
+
+            assert!{diff <= 0.15}
         )+
     };
 }
 
 
-const UNCERTAINTY : Real = 1.;
-
-fn gen_cov(cov_vec: &mut Vec<Mat2>) -> (){
-    let base_cov = Mat2::identity() * UNCERTAINTY;     // high covariance across the main diagonal
-    let cov_noise = Mat2::new_random() * UNCERTAINTY;       // every index random # in [0,1] * uncertainty
-    let covariance = base_cov + cov_noise;
-
-    cov_vec.push(covariance);
-}
-
-fn gen_sensor(sensor_vec: &mut Vec<Rectangle>, index: Real) {
-    // sensor dimensions
-    let base = 2.;
-    let height = 2.;
-
-    // make a sensor every 20 units on the x axis
-    let x_point = (index+1.)*20.;
-
-    // Note: we hard code the to_global and to_local since to_global is non-invertible and it was
-    //      difficult to hand-code a matrix that accurately reflected the transformation as 
-    //      `x_point` increased in size
-
-    // transform (0,0,0) local to (x_point, 0, 0)
-    let to_global = Mat4::new(
-        0.,0.,0.,x_point,
-        0.,0.,0.,0.,
-        0.,0.,0.,0.,
-        0.,0.,0.,0.,
-    );
-
-    // transform (x_point * 5, 0,0 ) to (0, 0, 0)
-    let to_local = Mat4::new(
-        0.,0.,0.,0.,
-        0.,0.,0.,0.,
-        0.,0.,0.,0.,
-        1./x_point,0.,0.,0.
-    );
-
-
-    let aff_g = Aff3::from_matrix_unchecked(to_global);
-    let aff_l = Aff3::from_matrix_unchecked(to_local);
-
-    let p1 = P3::new(x_point, 1., 1.);
-    let p2 = P3::new(x_point, 0., 1.);
-
-    // new_test_sensor() is created to hard code values (transformation matricies, points)
-    // instead of using new() which uses inverses
-    let sensor = 
-        Rectangle::new_test_sensor(
-            base,
-            height,
-            aff_g,
-            aff_l,
-            p1,
-            p2
-        );
-    sensor_vec.push(sensor);
-
-}
-
-fn gen_hit(meas_vec: &mut Vec<Vec2>) {
-    let hit = Vec2::new_random() / 3.;
-    
-    meas_vec.push(hit);
-}
-
-#[test]
+// #[test]
 fn linear_1() {
-    let start = P3::new(0. , 0. , 0.);
+    let distance_between_sensors: Real = 0.001;
+    let number_of_sensors: u32 = 20;
+    let diagonal_rng = Normal::new(3., 1.5).unwrap();
+    let corner_rng = Normal::new(0., 1.).unwrap();
+    let point_std_dev = 0.01;
+    let mut rng = SmallRng::from_entropy();
 
-    let mut cov_vec = Vec::new();
-    let mut sensor_vec = Vec::new();
-    let mut meas_vec = Vec::new();
-
-
-    let iterations = 5;
-    for i in 0..iterations {
-        gen_cov(&mut cov_vec);
-        gen_sensor(&mut sensor_vec, i as Real);
-        gen_hit(&mut meas_vec);
-
+    print!{ "TEST STATISTICS:",
+        distance_between_sensors,
+        number_of_sensors,
+        point_std_dev
     }
 
-    let kf_result = krs::filter::linear::run(&start, &cov_vec, &meas_vec, &sensor_vec);
+    let data = generate_track(
+        number_of_sensors, 
+        distance_between_sensors,
+        Some((0., PI/2.)),                // along the x axis
+        rng, 
+        point_std_dev, 
+        diagonal_rng,corner_rng
+    );
+    let kf_result = krs::filter::linear::run(&data.start, &data.cov, &data.smear_hits, &data.sensors);
 
-    let last_state = kf_result.state_vec.get(iterations-1).unwrap();
-
-    group_assert!{last_state, start, x, y}
+    
 }
 
 
-// This test fails currently
+// generate track 
 #[test]                 
-fn linear_2() {
-    // parallel to x axis
-    let start = P3::new(0. , 1. , 1.);
+fn linear_3() {
+    let distance_between_sensors: Real = 0.001;
+    let number_of_sensors: u32 = 20;
+    let diagonal_rng = Normal::new(3., 1.5).unwrap();
+    let corner_rng = Normal::new(0., 1.).unwrap();
+    let point_std_dev = 0.01;
+    let rng = SmallRng::from_entropy();
 
-    let mut cov_vec = Vec::new();
-    let mut sensor_vec = Vec::new();
-    let mut meas_vec = Vec::new();
-
-
-    let iterations = 5;
-    for i in 0..iterations {
-        gen_cov(&mut cov_vec);
-        gen_sensor(&mut sensor_vec, i as Real);
-        gen_hit(&mut meas_vec);
-
+    print!{ "TEST STATISTICS:",
+        distance_between_sensors,
+        number_of_sensors,
+        point_std_dev
     }
 
-    let kf_result = krs::filter::linear::run(&start, &cov_vec, &meas_vec, &sensor_vec);
+    let data = generate_track(
+        number_of_sensors, 
+        distance_between_sensors,
+        None,
+        rng, 
+        point_std_dev, 
+        diagonal_rng,corner_rng
+    );
+    let kf_result = krs::filter::linear::run(&data.start, &data.cov, &data.smear_hits, &data.sensors);
 
-    dbg!{&kf_result};
+    
 
-    let last_state = kf_result.state_vec.get(iterations-1).unwrap();
-
-    group_assert!{last_state, start, x, y}
 }

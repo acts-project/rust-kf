@@ -48,8 +48,8 @@ macro_rules! get_unchecked {
         $(
             let $destination = 
                 unsafe {
-                    $vector.get_unchecked($index)
-                    // $vector.get($index).expect("get_unchecked! paniced")
+                    // $vector.get_unchecked($index)
+                    $vector.get($index).expect("get_unchecked! paniced")
                 };
         )+
     };
@@ -159,8 +159,8 @@ macro_rules! edit_matrix {
             // corner of a 4x4 matrix we must do .get(15). This line calculates what that index is.
             let value = 
                 unsafe {
-                    $matrix_name.get_unchecked_mut(($row, $col))
-                    // $matrix_name.get_mut(($row, $col)).expect("CHAMGE MAT VAL ERROR")
+                    // $matrix_name.get_unchecked_mut(($row, $col))
+                    $matrix_name.get_mut(($row, $col)).expect("CHAMGE MAT VAL ERROR")
                 };
             *value $operation $new_value;
 
@@ -231,5 +231,20 @@ macro_rules! equals_static_vec {
                 };
             *dyn_val = *stat_val;
         }
+    };
+}
+
+
+// poor mans version of dbg!{} that will uses Display instead of Debug for formatting.
+// This is because Debug does not display nice matrix output
+#[macro_export]
+macro_rules! print {
+    ($($val:expr),*) => {
+        $(
+
+        println!("[{}:{}] {} = {}",
+            file!(), line!(), stringify!($val), $val);
+
+        )*
     };
 }

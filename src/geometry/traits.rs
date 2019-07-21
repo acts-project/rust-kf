@@ -35,4 +35,14 @@ pub trait Transform{
 
     /// Checks if a local point is contained within the bounds of a sensor.
     fn inside(&self, input: &P2) -> bool;
+
+    /// Fetches the rotation matrix from local -> global of the sensor.Default
+    /// This is done so that KF calculations can be generic over sensor types
+    fn rotation_to_global(&self) -> &Mat4;
+
+    
+    /// Fetches the rotation matrix from global -> local of the sensor.Default
+    /// This is done so that KF calculations can be generic over sensor types
+    fn rotation_to_local(&self) -> &Mat4;
+
 }
