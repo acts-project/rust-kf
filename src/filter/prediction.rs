@@ -115,28 +115,6 @@ pub fn linear_state_vector<T: Transform + Plane>(
 }
 
 
-/// Add a scalar to all elements of a vector
-fn add_scalar(vec: &Vec4, scalar: Real) -> Vec4 {
-    // cant fill before matrix is initialized
-    let mut to_fill = Vec4::zeros();
-    to_fill.fill(scalar);
-    
-    vec + to_fill
-}
-
-/// multiply a scalar to every value in a vector
-unsafe fn scalar_multiply(vec: &Vec4, scalar: Real) -> Vec4 {
-    let mut new_vec = Vec4::zeros();
-
-    for i in 0..3{
-        let val = vec.get_unchecked(i);
-        let replace = new_vec.get_unchecked_mut(i);
-        *replace = (*val) * scalar;
-    }
-
-    new_vec
-
-}
 
 /// Encapsultes all the global calculations for `linear_state_vector` without 
 /// needing start and end sensors. This is done so it is easier to construct unit tests

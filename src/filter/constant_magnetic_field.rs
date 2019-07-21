@@ -71,13 +71,13 @@ pub fn run(
         }
 
     let mut previous_state_vec =
-    if let Some(state_vec) = intitial_seed_vec {
-        state_vec.clone()
-    }
-    else{
-        // calculate some seeded values (seeding improvement suggestions welcome)
-        super::utils::seed_state_vec_from_sensor(&start_location, first_sensor,first_hit)
-    };
+        if let Some(state_vec) = intitial_seed_vec {
+            state_vec.clone()
+        } else {
+            // calculate some seeded values (seeding improvement suggestions welcome)
+            super::utils::seed_state_vec_from_sensor(&start_location, first_sensor,first_hit)
+        };
+
     let mut previous_covariance = super::utils::seed_covariance();
     // Store the seeded values in their respective iterators
     push!(
@@ -87,10 +87,6 @@ pub fn run(
         previous_state_vec => predicted_state_vec_iter,
         previous_covariance => predicted_cov_mat_iter
     );
-
-    dbg!{"before entering KF loop the seeded state vector is "};
-    dbg!{previous_state_vec};
-    dbg!{previous_covariance};
 
 
 
@@ -112,7 +108,7 @@ pub fn run(
             match prediction::linear_state_vector(curr_sensor, next_sensor, &previous_state_vec) {
                 Ok(x) => x,
                 Err(e) => {
-                    dbg!{e};
+                    dbg!{e};    // print out the point prediction
                     panic!{"out of bounds panic happened"}
                 }
             };
@@ -234,10 +230,10 @@ pub fn run(
         // print!{i};
 
         // print!{
-            // "NEW SMOOTHING ITERATION", i,
+        //     "NEW SMOOTHING ITERATION", i,
         //     gain_matrix,
-            // curr_filt_state_vec,
-            // smoothed_state_vec//,
+        //     curr_filt_state_vec,
+        //     smoothed_state_vec//,
         //     curr_filt_cov_mat,
         //     smoothed_cov_mat,
         //     curr_jacobian
