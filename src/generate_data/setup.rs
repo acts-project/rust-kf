@@ -150,7 +150,7 @@ fn smear_state_vector(rng: &mut SmallRng, std_dev: Real, state_vec: &Vec5) -> Ve
         get_unchecked!{vector;state_vec; i=> var}
         let distr = Normal::new(*var, std_dev).unwrap();
         let new_val = distr.sample(rng);
-        change_mat_val!{new_vec; [i, 0] => new_val}
+        edit_matrix!{new_vec; [i, 0] = new_val}
     }
 
     new_vec

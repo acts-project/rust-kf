@@ -126,7 +126,7 @@ fn linear_transport_jac(
     let transport_jac = Mat8::identity(); 
     let mut secondary= Mat8::zeros();
 
-    edit_matrix!{transport_jac;
+    edit_matrix!{secondary;
         [0, 0] = distance * trig_angles.tx,
         [1,1] = distance * trig_angles.ty,
         [2,2] = distance * trig_angles.tz

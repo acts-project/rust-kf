@@ -238,6 +238,8 @@ pub fn rk_state_vec_to_local_state_vec<T:Transform + Plane> (
 
     (state, angles)
 
+}
+
 
 // TODO: come up with a better name for this
 #[derive(Debug)]
