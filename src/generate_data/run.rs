@@ -8,6 +8,7 @@ use super::super::config::*;
 
 use rayon::{self, prelude::*};
 
+use itertools::izip;
 
 fn batch_execute(mut data: Vec<State> ) -> () {
     for i in 0..data.len(){
@@ -116,38 +117,63 @@ fn fetch_separated_kf_data(data: &State) {
         statistics::truth_kf_output_residuals(kf_packaged_data);
 
     
-    let mut sensor_separated_residuals = 
+    let mut sensor_predictions = 
         (0..(data.num_sensors as usize)).into_iter()
         .map(|_| Vec::new())
         .collect::<Vec<_>>();
 
+    let mut sensor_filters = sensor_predictions.clone();
+    let mut sensor_smoothes = sensor_predictions.clone();
+
     for i in 0..(data.num_sensors as usize) {
-        let inner = sensor_separated_residuals.get_mut(i).expect("statistics out of bounds");
-        
+        let mut inn_pred = sensor_predictions.get_mut(i).expect("statistics out of bounds");
+        let mut inn_filt = sensor_filters.get_mut(i).expect("asd");
+        let mut inn_smth = sensor_smoothes.get_mut(i).expect("sdf");
+
         vec_residuals.iter()
             .for_each(|x|{
-                inner.push(x.smth[i]);               // this line changes what field we are looking at
+                inn_pred.push(x.pred[i]);               // this line changes what field we are looking at
+                inn_filt.push(x.filt[i]);
+                inn_smth.push(x.smth[i]);
             });
     }
+    
+
+    let counts = 0..data.num_sensors;
+    let zipped_data = izip!{sensor_predictions, sensor_filters, sensor_smoothes, counts };
 
     // serialize into vector of structs to serialize
 
-    sensor_separated_residuals.into_iter().zip(0..data.num_sensors)
-        .map(|(vector, count)|{
-            let vec = vector.into_iter().map(|resid| {StorageData::new(resid.x, resid.y)}).collect::<Vec<_>>();
-
-            (vec, count)
+    zipped_data.into_iter()
+        .map(|(pred, filt, smth, count)|{
+            // converts Vec<Vec2> to Vec<StorageData> to use in serializing to csv
+            let to_storage = |x: Vec<Vec2>| x.into_iter().map(|res| StorageData::new(res.x, res.y)).collect::<Vec<_>>();
+            
+            let p_ = to_storage(pred);
+            let f_ = to_storage(filt);
+            let s_ = to_storage(smth);
+        
+            (p_, f_, s_, count)
         
         })
-        .for_each(move|(vec_vec2, count)|{
-            let sub_path = format!{r"\sensor_{}.csv", count};
-            let path = data.save_folder.clone() + &sub_path;
-            print!{path};
-            store::write_csv(&path, vec_vec2)
+        .for_each(move|(pred, filt, smth, count)|{
+
+            let make_path_and_write = |storage_data, subfolder_name, count| {
+                // make the subdirectoy
+                let folder_path = data.save_folder.clone() + &format!{r"\{}\",subfolder_name};
+                // path to the actual csv we are going to write
+                std::fs::create_dir(&folder_path);
+                let path = folder_path + &format!{r"sensor_{}.csv", count};
+                //write the csv
+                store::write_csv(&path, storage_data);
+            };
+
+            make_path_and_write(pred, stringify!{pred}, count);
+            make_path_and_write(filt, stringify!{filt}, count);
+            make_path_and_write(smth, stringify!{smth}, count);
+            
         });
         
-
-    
 }
 
 
@@ -218,6 +244,7 @@ fn test_initial_predictions() -> () {
     fetch_separated_kf_data(&state);
 }
 
+// Runs a singular test with default State parameters
 fn run_one_test() -> () {
     let state = State::default(r"E:\kf_csvs\default_parameters".to_string(), "default_parameters.png".to_string());
     run(state);
@@ -231,7 +258,7 @@ pub fn run_all_stats() {
     // scaling_sensor_count();
 
     // test_generated_residuals();
-    // test_initial_predictions();
+    test_initial_predictions();
 
-    run_one_test();
+    // run_one_test();
 }

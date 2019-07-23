@@ -29,18 +29,9 @@ pub fn linear<T: Transform + Plane>(
 
     // dbg!{&angles};
 
-        ////////////////////////////////////////////////// CHANGE ME BAKC TO START SENSOR AND END SENSOR CORRECTLY!!!!!!!!
-        ////////////////////////////////////////////////// CHANGE ME BAKC TO START SENSOR AND END SENSOR CORRECTLY!!!!!!!!
-        ////////////////////////////////////////////////// CHANGE ME BAKC TO START SENSOR AND END SENSOR CORRECTLY!!!!!!!!
-        ////////////////////////////////////////////////// CHANGE ME BAKC TO START SENSOR AND END SENSOR CORRECTLY!!!!!!!!
-        ////////////////////////////////////////////////// CHANGE ME BAKC TO START SENSOR AND END SENSOR CORRECTLY!!!!!!!!
-        ///                                                 . .. . . . .. . . . . 
+    let loc_2_glob : Mat8x5 = local_to_global_jac(&angles, end_sensor.rotation_to_global() );
+    let glob_2_loc : Mat5x8= global_to_local_jac(&angles, start_sensor.rotation_to_local() ); 
 
-
-    // let loc_2_glob : Mat8x5 = local_to_global_jac(&angles, end_sensor.rotation_to_global() );
-    // let glob_2_loc : Mat5x8= global_to_local_jac(&angles, start_sensor.rotation_to_local() ); 
-    let loc_2_glob : Mat8x5 = local_to_global_jac(&angles, start_sensor.rotation_to_local() );
-    let glob_2_loc : Mat5x8= global_to_local_jac(&angles, end_sensor.rotation_to_global() ); 
     let transport_jac: Mat8 = linear_transport_jac(&mut angles, distance);
 
     // print!{"IN JACOBIAN", loc_2_glob, glob_2_loc, transport_jac};
