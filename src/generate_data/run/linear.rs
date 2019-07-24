@@ -4,7 +4,7 @@ use super::super::{
     structs::{StorageData, State, Residuals}
     };
 
-// use super::structs::{StorageData, State, Residuals};
+use super::general;
 
 use std::fs;
 
@@ -13,159 +13,7 @@ use super::super::super::config::*;
 use rayon::{self, prelude::*};
 
 
-fn batch_execute(mut data: Vec<State> ) -> () {
-    for i in 0..data.len(){
-        let curr_data = data.remove(0);
 
-        run(curr_data);
-    }
-}
-
-
-fn run(data: State) {
-    
-    let kf_packaged_data = 
-        statistics::collect_stats(&data);
-
-    let mut residuals : Vec<Residuals> = 
-        statistics::fetch_kf_residuals(&kf_packaged_data);
-
-    println!{"finished KF operations for {}", &data.histogram_name}
-
-    let len = (data.num_sensors as usize) * data.iterations;
-
-    let mut smth = Vec::with_capacity(len);
-    let mut filt = Vec::with_capacity(len);
-    let mut pred = Vec::with_capacity(len);
-
-
-    residuals.iter().for_each(|res| {
-        residual_to_vec(&mut smth, &res.smth);
-        residual_to_vec(&mut filt, &res.filt);
-        residual_to_vec(&mut pred, &res.pred);
-        });
-
-
-    let mut save_folder = data.save_folder.clone();
-    save_folder.push_str(r"\");
-
-    fs::create_dir(&save_folder);
-
-    // create extensions on the folder path for each csv
-    path!{save_folder;
-        "smth.csv" => smth_path,
-        "filt.csv" => filt_path,
-        "pred.csv" => pred_path
-    }
-
-
-    store::write_csv(&smth_path, smth);
-    store::write_csv(&filt_path, filt);
-    store::write_csv(&pred_path, pred);
-
-    store::write_json(&data);
-
-    println!{"finished {}", &data.histogram_name}
-
-}
-
-
-/// Calls all child functions for calculating the residuals for truth vs smeared
-/// points
-fn fetch_kf_randomness_residuals(data: &State) {
-    let kf_packaged_data = statistics::collect_stats(data);
-
-    let kf_data :Vec<StorageData>= 
-        kf_packaged_data.iter().map(|(x, _ )| {
-           
-            statistics::smear_residuals(&x)
-
-        })
-        .flatten()
-        .map(|x| {
-            StorageData::new(x.x, x.y)
-        })
-        .collect::<Vec<_>>();
-
-    /*
-
-        configure folders and save destinations
-
-    */
-    let mut save_folder = data.save_folder.clone();
-    save_folder.push_str(r"\");
-
-    fs::create_dir(&save_folder);
-
-    // create extensions on the folder path for each csv
-    path!{save_folder;
-        "smth.csv" => smth_path
-    }
-
-    /*
-        write data to files
-    */
-
-    store::write_csv(&smth_path, kf_data);
-
-    store::write_json(&data);
-
-}
-
-
-fn fetch_separated_kf_data(data: &State) {
-    let kf_packaged_data = statistics::collect_stats(&data);
-
-    let vec_residuals = 
-        statistics::truth_kf_output_residuals(kf_packaged_data);
-
-    
-    let mut sensor_separated_residuals = 
-        (0..(data.num_sensors as usize)).into_iter()
-        .map(|_| Vec::new())
-        .collect::<Vec<_>>();
-
-    for i in 0..(data.num_sensors as usize) {
-        let inner = sensor_separated_residuals.get_mut(i).expect("statistics out of bounds");
-        
-        vec_residuals.iter()
-            .for_each(|x|{
-                inner.push(x.smth[i]);               // this line changes what field we are looking at
-            });
-    }
-
-    // serialize into vector of structs to serialize
-
-    sensor_separated_residuals.into_iter().zip(0..data.num_sensors)
-        .map(|(vector, count)|{
-            let vec = vector.into_iter().map(|resid| {StorageData::new(resid.x, resid.y)}).collect::<Vec<_>>();
-
-            (vec, count)
-        
-        })
-        .for_each(move|(vec_vec2, count)|{
-            let sub_path = format!{r"\sensor_{}.csv", count};
-            let path = data.save_folder.clone() + &sub_path;
-            print!{path};
-            store::write_csv(&path, vec_vec2)
-        });
-        
-
-    
-}
-
-
-fn residual_to_vec(
-    storage: &mut Vec<StorageData>,
-    res: &Vec<Vec2>
-    ) -> () {
-    
-    res.iter()
-        .for_each(|vec_res|{
-            storage.push(StorageData::new(vec_res.x, vec_res.y))
-        });
-    
-}
 
 
 pub fn scaling_sensor_dist() ->() {
@@ -212,19 +60,18 @@ pub fn scaling_sensor_count() -> (){
 // residuals between truth vs smeared values 
 fn test_generated_residuals() -> () {
     let state = State::default("generated_truth_smear_residuals".to_string(),  "_truth_smear_residuals.png".to_string());
-    fetch_kf_randomness_residuals(&state);
+    general::fetch_kf_randomness_residuals(&state);
 }
 
 // residuals between truth and sensor (pred/  filt/ smth) at each sensor
 fn test_initial_predictions() -> () {
-    print!{"here"}
     let state = State::default(r".\data\initial_prediction_data\".to_string(), "this_does_not_matter.png".to_string());
-    fetch_separated_kf_data(&state);
+    general::fetch_separated_kf_data(&state);
 }
 
 fn run_one_test() -> () {
     let state = State::default(r"E:\kf_csvs\default_parameters".to_string(), "default_parameters.png".to_string());
-    run(state);
+    general::run(state);
 }
 pub fn run_all_stats() {
 

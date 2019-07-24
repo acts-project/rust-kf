@@ -257,3 +257,66 @@ impl SuperData{
         }
     }
 }
+
+
+pub fn global_to_local_state_vector<T:Transform + Plane>(global_sv: &Vec8, sensor: &T) -> (Vec5, angles::Angles) {
+    let global_point = global_point_from_rk_state(&global_sv);
+    let angles = angles_from_rk_state(&global_sv);
+
+    get_unchecked!{
+        global_sv[7] => qop
+    }
+
+    let local = sensor.to_local(global_point);
+
+    let sv = 
+    Vec5::new(
+        local.x,
+        local.y,
+        angles.cos_phi.acos(),
+        angles.cos_theta.acos(),
+        *qop
+    );
+
+    (sv, angles)
+
+}
+
+pub fn local_to_global_state_vector<T: Transform + Plane>(local_sv: &Vec5, sensor: &T)-> (Vec8, angles::Angles){
+    get_unchecked!{vector; local_sv;
+        eLOC_0 => x,
+        eLOC_1 => y,
+        ePHI => phi,
+        eTHETA => theta,
+        eQOP => qop
+    }
+
+    let local_point = P3::new(*x, *y, 0.);
+    let global_point = sensor.to_global(local_point);
+
+    let mut angles = angles::Angles::new_from_angles(*phi, *theta);
+
+
+    /*
+        build a 8x1 global state vector
+    */
+
+    // we must do it this way since ::new() does not 
+    // exist for Vec8 since its custom defined in config.rs
+    // and is not pre-defined by nalgbra
+    let mut global_state_vec = Vec8::zeros();
+    edit_matrix!{global_state_vec;
+        [0,0] = global_point.x,
+        [1,0] = global_point.y,
+        [2,0] = global_point.z,
+        [3,0] = 0.,
+
+        [4,0] = angles.tx,
+        [5,0] = angles.ty,
+        [6,0] = angles.tz,
+        [7,0] = *qop
+    }
+
+    (global_state_vec, angles)
+
+}

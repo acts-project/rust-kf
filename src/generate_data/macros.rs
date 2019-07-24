@@ -57,7 +57,7 @@ macro_rules! generate_data {
                 // then the following line expands to datastruct.stdev.point_std = **x
                 data_struct$(.$field_to_change)+ = **x;             
 
-                run(data_struct)
+                $crate::generate_data::run::general::run(data_struct)
             });
 
     };

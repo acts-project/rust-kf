@@ -72,13 +72,13 @@ pub fn run(
         }
 
     let mut previous_state_vec =
-    if let Some(state_vec) = intitial_seed_vec {
-        state_vec.clone()
-    }
-    else{
-        // calculate some seeded values (seeding improvement suggestions welcome)
-        super::utils::seed_state_vec_from_sensor(&start_location, first_sensor,first_hit)
-    };
+        if let Some(state_vec) = intitial_seed_vec {
+            state_vec.clone()
+        } else {
+            // calculate some seeded values (seeding improvement suggestions welcome)
+            super::utils::seed_state_vec_from_sensor(&start_location, first_sensor,first_hit)
+        };
+
     let mut previous_covariance = super::utils::seed_covariance();
     // Store the seeded values in their respective iterators
     push!(
@@ -105,6 +105,7 @@ pub fn run(
         }
 
         //predictions
+
         let (jacobian, pred_state_vec) = jacobian::constant_field(&previous_state_vec, b_field, curr_sensor, next_sensor);
 
         let pred_cov_mat = prediction::covariance_matrix(&jacobian, &previous_covariance);
@@ -155,6 +156,7 @@ pub fn run(
         previous_covariance = filter_cov_mat;
         previous_state_vec = filter_state_vec;
 
+        // dbg!{"FINISH STEP"};
     }
 
     // println!{"\n\n\n\n\n\nFINISH FILTERING\nSTART SMOOTHINGING\n\n\n\n\n\n"};
@@ -221,10 +223,10 @@ pub fn run(
         // print!{i};
 
         // print!{
-            // "NEW SMOOTHING ITERATION", i,
+        //     "NEW SMOOTHING ITERATION", i,
         //     gain_matrix,
-            // curr_filt_state_vec,
-            // smoothed_state_vec//,
+        //     curr_filt_state_vec,
+        //     smoothed_state_vec//,
         //     curr_filt_cov_mat,
         //     smoothed_cov_mat,
         //     curr_jacobian
@@ -251,10 +253,10 @@ pub fn run(
     
     // put all data into a struct that will contain all the methods to return 
     // the data back to c++
-    let smth =  Data::new(smoothed_state_vec_iter.into_iter().rev().collect(),
-                                smoothed_cov_mat_iter.into_iter().rev().collect(),
-                                smoothed_res_mat_iter.into_iter().rev().collect(),
-                                smoothed_res_vec_iter.into_iter().rev().collect());
+    let smth =  Data::new(smoothed_state_vec_iter,
+                                smoothed_cov_mat_iter,
+                                smoothed_res_mat_iter,
+                                smoothed_res_vec_iter);
 
     let filt = Data::new(
         filter_state_vec_iter,

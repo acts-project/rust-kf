@@ -5,48 +5,22 @@ use geometry::traits::{Plane, Transform};
 use geometry::Rectangle;
 
 use super::super::filter;
-use filter::prediction;
+use filter::{prediction, jacobian};
 
 use rand::Rng;
 use rand::rngs::SmallRng;
 use rand_distr::{Normal, Distribution};
 
-use super::structs::KFData;
+use super::structs::{KFData, State};
 
 
-pub fn generate_track<T:Distribution<Real>>(
-    num_sensors: u32, 
-    sensor_distance: Real, 
-    base_angles: Option<(f64, f64)>,
+pub fn generate_linear_track(
+    state: &State,
     mut rng: SmallRng,
-    point_std_dev: Real,
-    diagonal_rng: T,
-    corner_rng: T,
     ) -> KFData<Rectangle> {
 
 
-    let (phi, theta) =
-        if let Some((phi, theta)) = base_angles{
-            (phi,theta)
-        }
-        else{
-            // generates phi as  0 < x < 20 || 340 < x < 360 
-            // first make angle between 0 and 40 degrees
-            let _phi = rng.gen_range(0., 0.6981317);
-            let phi = 
-                if _phi >= 0.3490659 { // if phi between 20 and 40 degrees
-                    // shifts phi by 320 degrees. this moves 20 < _phi < 40 to 340 < x< 360.
-                    _phi + 5.585054   
-                }
-                else {
-                    _phi
-                };
-
-            // between 70 deg and 110 deg (+/- 20 from 90 which is along x axis)
-            let theta = rng.gen_range(1.22173, 1.919862); 
-
-            (phi, theta)
-        };
+    let (phi, theta) = state.angles;
 
     // print!{phi, theta};
 
@@ -64,9 +38,9 @@ pub fn generate_track<T:Distribution<Real>>(
 
     // generate sensors along x axis
     let mut sensor_vec = Vec::new();
-    for i in 0..num_sensors {
+    for i in 0..state.num_sensors {
         let ip1 = (i + 1) as Real;
-        let x_loc_of_sensor = ip1 * sensor_distance;
+        let x_loc_of_sensor = ip1 * state.sensor_distance;
         sensor_vec.push(gen_sensor(x_loc_of_sensor));
     }
 
@@ -99,25 +73,22 @@ pub fn generate_track<T:Distribution<Real>>(
     let smeared_hits = 
         truth_hits.iter()
             .map(|point|{
-                let x_distr = Normal::new(point.x, point_std_dev).expect("std dev err");
-                let y_distr = Normal::new(point.y, point_std_dev).expect("std dev err");
-
-                let smear_x = x_distr.sample(&mut rng);
-                let smear_y = y_distr.sample(&mut rng);
+                let smear_x = state.stdevs.smear_hit(&mut rng, point.x);
+                let smear_y = state.stdevs.smear_hit(&mut rng, point.y);
 
                 Vec2::new(smear_x,  smear_y)
             })
             .collect::<Vec<_>>();
 
-    // print out truth vs smeared hits
-    smeared_hits.iter()
-        .zip( truth_hits.iter() )
-        .for_each(|(smear, truth)| {
-            let x_diff = (smear.x - truth.x).abs();
-            let y_diff = (smear.y - truth.y).abs();
+    // // print out truth vs smeared hits
+    // smeared_hits.iter()
+    //     .zip( truth_hits.iter() )
+    //     .for_each(|(smear, truth)| {
+    //         let x_diff = (smear.x - truth.x).abs();
+    //         let y_diff = (smear.y - truth.y).abs();
 
-            // println!{"truth x:{}\tsmear x: {}\tdiff:{}  \t truth y: {}\tsmear y: {}\t diff: {}",truth.x, smear.x, x_diff, truth.y, smear.y, y_diff}
-        });
+    //         // println!{"truth x:{}\tsmear x: {}\tdiff:{}  \t truth y: {}\tsmear y: {}\t diff: {}",truth.x, smear.x, x_diff, truth.y, smear.y, y_diff}
+    //     });
     
 
     // TODO hold these constant  - Mr Paul
@@ -125,11 +96,11 @@ pub fn generate_track<T:Distribution<Real>>(
     let covariance_vec = 
         (0..sensor_vec.len()).into_iter()
         .map(|_|{
-            let a = diagonal_rng.sample(&mut rng).abs();
-            let d = diagonal_rng.sample(&mut rng).abs();
+            let a = state.stdevs.diagonal_value(&mut rng).abs();
+            let d = state.stdevs.diagonal_value(&mut rng).abs();
 
-            let b = corner_rng.sample(&mut rng).abs();
-            let c = corner_rng.sample(&mut rng).abs();
+            let b = state.stdevs.corner_value(&mut rng).abs();
+            let c = state.stdevs.corner_value(&mut rng).abs();
             
             let m = Mat2::new(a, b, c , d);
             m
@@ -137,10 +108,109 @@ pub fn generate_track<T:Distribution<Real>>(
         .collect::<Vec<_>>();
 
 
-    let smear_state_vec = smear_state_vector(&mut rng, point_std_dev, &start_state_vec);
+    let smear_state_vec = smear_state_vector(&mut rng, state.stdevs.point_std, &start_state_vec);
 
-    KFData::new(sensor_vec, covariance_vec, smeared_hits, truth_hits, (phi, theta), smear_state_vec, start_state_vec)
+    KFData::new(sensor_vec, covariance_vec, smeared_hits, truth_hits, (phi, theta), smear_state_vec, start_state_vec, None)
 }
+
+
+pub fn generate_const_b_track(
+    state: &State,
+    mut rng: SmallRng,
+    ) -> KFData<Rectangle> {
+
+
+    let (phi, theta) = state.angles;
+
+    // print!{phi, theta};
+
+    // create a virtual sensor at the starting position. this is used to easily calculate
+    // the hits on the sensors
+    let virtual_sensor = gen_sensor(0.);
+    let start_state_vec = 
+        Vec5::new(
+            0.,
+            0.,
+            phi,
+            theta,
+            1.
+        );
+
+    // generate sensors along x axis
+    let mut sensor_vec = Vec::new();
+    sensor_vec.push(virtual_sensor);
+
+    for i in 0..state.num_sensors {
+        let ip1 = (i + 1) as Real;
+        let x_loc_of_sensor = ip1 * state.sensor_distance;
+        sensor_vec.push(gen_sensor(x_loc_of_sensor));
+    }
+
+    // print!{sensor_vec.len()}
+
+
+
+    // find the locations of the true sensor hits
+    let mut truth_hits = Vec::new();
+    let mut prev_filt_state_vec = start_state_vec.clone();
+
+    for i in 1..sensor_vec.len() {
+        let start_sensor = &sensor_vec[i-1];
+        let end_sensor   = &sensor_vec[i];
+        
+        let (_, pred_sv) = jacobian::constant_field(&prev_filt_state_vec, &state.b_field, start_sensor, end_sensor);
+
+        get_unchecked!{
+            pred_sv[eLOC_0] => x_hit,
+            pred_sv[eLOC_1] => y_hit
+        }
+        
+        prev_filt_state_vec = pred_sv;
+
+        truth_hits.push(Vec2::new(*x_hit, *y_hit))
+    }
+
+    // pop off the initial state vector we used for the calculation in the above for loop
+    // since its not a sensor on the actual track
+    sensor_vec.remove(0);
+
+
+    
+    // smear the hit locations
+    let smeared_hits = 
+        truth_hits.iter()
+            .map(|point|{
+                let smear_x = state.stdevs.smear_hit(&mut rng, point.x);
+                let smear_y = state.stdevs.smear_hit(&mut rng, point.y);
+
+                Vec2::new(smear_x,  smear_y)
+            })
+            .collect::<Vec<_>>();
+
+    // TODO hold these constant  - Mr Paul
+
+    let covariance_vec = 
+        (0..sensor_vec.len()).into_iter()
+        .map(|_|{
+            let a = state.stdevs.diagonal_value(&mut rng).abs();
+            let d = state.stdevs.diagonal_value(&mut rng).abs();
+
+            let b = state.stdevs.corner_value(&mut rng).abs();
+            let c = state.stdevs.corner_value(&mut rng).abs();
+        
+            let m = Mat2::new(a, b, c , d);
+            m
+        })
+        .collect::<Vec<_>>();
+
+
+    let smear_state_vec = smear_state_vector(&mut rng, state.stdevs.point_std, &start_state_vec);
+
+    KFData::new(sensor_vec, covariance_vec, smeared_hits, truth_hits, (phi, theta), smear_state_vec, start_state_vec, Some(state.b_field))
+
+    // unimplemented!()
+}
+
 
 
 fn smear_state_vector(rng: &mut SmallRng, std_dev: Real, state_vec: &Vec5) -> Vec5{
@@ -154,7 +224,6 @@ fn smear_state_vector(rng: &mut SmallRng, std_dev: Real, state_vec: &Vec5) -> Ve
     }
 
     new_vec
-
 }
 
 fn gen_sensor(x_point: Real) -> Rectangle {

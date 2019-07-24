@@ -3,11 +3,11 @@ use super::super::geometry::Rectangle;
 use super::super::filter;
 
 use super::setup;
-use setup::generate_track;
+use setup::generate_linear_track;
 
 use super::structs::{KFData, Residuals, State};
 
-use filter::{linear, utils::SuperData};
+use filter::{linear,constant_magnetic_field, utils::SuperData};
 
 use rand::{thread_rng, SeedableRng};
 use rand::rngs::SmallRng;
@@ -42,40 +42,41 @@ pub fn collect_stats(
     // zip the iterators together
     let iter = izip!{num_sensors, distances, angles, point_std, small_rngs_iterator};
 
+    // if we use non-linear tracks
+    let b_field_calculations: bool = 
+        if state.b_field != Vec3::zeros() { true }
+        else { false };
+
 
     let kf_results_vec : Vec<(KFData<Rectangle>, SuperData)> = 
         iter.map(|(num_sensor, sensor_distance, angles, std_dev,rng)| {
+            stats_const_b(&state, rng)
 
-            // generate a truth track
-            generate_track(
-                num_sensor,
-                sensor_distance,
-                angles,
-                rng,
-                std_dev,
-                diagonal_rng.clone(),
-                corner_rng.clone()
-            )
+            //if there is a magnetic field use magnetic const-b equations
+            // if b_field_calculations{
+            // }
+            // else{
+            //     stats_linear(&state, rng)
+            // }
 
         })
-        .map(|data|{
-
-            // put the smeared data from the truth track into the kf
-            let kf_data = linear::run(
-                &data.start,
-                &data.cov,
-                &data.smear_hits,
-                &data.sensors,
-                Some(&data.smear_initial_vector)
-            );
-            
-
-            // print!{"finish kf pass"}
-            (data, kf_data)
-        }).collect();
+        .collect();
 
     kf_results_vec
 }
+
+fn stats_linear(state: &State, mut rng: SmallRng) -> (KFData<Rectangle>, SuperData) {
+    let data = setup::generate_linear_track(&state, rng);
+    let kf_outs = linear::run(&data.start, &data.cov, &data.smear_hits, &data.sensors, Some(&data.smear_initial_vector));
+    (data, kf_outs)
+}
+
+fn stats_const_b(state: &State, mut rng: SmallRng) -> (KFData<Rectangle>, SuperData) {
+    let data = setup::generate_const_b_track(&state, rng);
+    let kf_outs = constant_magnetic_field::run(&data.start, &data.cov, &data.smear_hits, &data.sensors, Some(&data.smear_initial_vector), &state.b_field);
+    (data, kf_outs)
+}
+
 
 
 /// Parallelizes calculating the difference between the truth value 

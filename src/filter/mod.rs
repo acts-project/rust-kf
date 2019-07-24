@@ -1,8 +1,10 @@
 #[macro_use]
 pub mod macros;
 
-pub mod angles;
 pub mod linear;
+pub mod constant_magnetic_field;
+
+pub mod angles;
 pub mod jacobian;
 pub mod utils;
 

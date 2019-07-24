@@ -219,48 +219,10 @@ pub fn constant_field<T: Transform + Plane>(
     b_field: &Vec3,
     start_sensor: &T,
     end_sensor: &T
-    )-> Mat5{
+    )-> (Mat5, Vec5){
     //
 
-    /*
-        Build an angles struct that we will mutate depending on the global time step
-    */
-
-    get_unchecked!{vector; prev_filt_state_vec;
-        eLOC_0 => x,
-        eLOC_1 => y,
-        ePHI => phi,
-        eTHETA => theta,
-        eQOP => qop
-    }
-
-    let local_point = P3::new(*x, *y, 0.);
-    let global_point = start_sensor.to_global(local_point);
-
-    let mut angles = angles::Angles::new_from_angles(*phi, *theta);
-
-
-    /*
-        build a 8x1 global state vector
-    */
-
-    let mut global_state_vec = Vec8::zeros();
-    let mut u_slice =  global_state_vec.fixed_slice_mut::<U4, U1>(0,0);
-    edit_matrix!{u_slice;
-        [0,0] = global_point.x,
-        [1,0] = global_point.y,
-        [2,0] = global_point.z,
-        [3,0] = 0.
-    }
-
-    let mut u_prime_slice = global_state_vec.fixed_slice_mut::<U4, U1>(4,0);
-    edit_matrix!{u_prime_slice;
-        [4,0] = angles.tx,
-        [5,0] = angles.ty,
-        [6,0] = angles.tz,
-        [7,0] = *qop
-    }
-
+    let (mut global_state_vec, mut angles) = utils::local_to_global_state_vector(prev_filt_state_vec, start_sensor);
 
     let global_2_local_rotation = end_sensor.rotation_to_local();
     let local_2_global_rotation = start_sensor.rotation_to_global();
@@ -282,7 +244,7 @@ pub fn constant_field<T: Transform + Plane>(
     */
 
     // TODO: make this auto-adjust the stepsize
-    let step_size : Real = 0.05;
+    let step_size : Real = 0.000000000000000000000001;
 
     loop {
         
@@ -320,9 +282,11 @@ pub fn constant_field<T: Transform + Plane>(
 
     }    
 
+    let (local_sv_prediction, _ ) = utils::global_to_local_state_vector(&global_state_vec, end_sensor);
+
     let jacobian = glob_2_loc * transport * loc_2_glob;
 
-    jacobian
+    (jacobian, local_sv_prediction)
 }
 
 
@@ -412,7 +376,7 @@ pub fn constant_magnetic_transport(
     let _temp = h / 6. * (dk1dL + 2. * (dk2dL + dk3dL) + dk4dL);
     dGdL.copy_from(&_temp);
 
-    print!{"RK transport", transport}
+    // print!{"RK transport", transport}
     
     return transport
 }
@@ -469,4 +433,4 @@ pub(crate) fn runge_kutta_step(
 
 
     RungeKuttaStep::new(k1, k2, k3, k4, h)
-} 
+}

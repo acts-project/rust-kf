@@ -15,9 +15,10 @@ use filter::macros;
 
 use super::super::{
     store,
-    structs
+    structs::{self, State}
 };
 
+use super::general;
 
 use rand::{thread_rng, SeedableRng};
 use rand::rngs::SmallRng;
@@ -194,3 +195,25 @@ pub fn residuals_after_steps() {
     // write to file
     store::write_csv(r".\data\runge_kutta_truth_smear_residuals.csv", smeared_results_vec);
 }
+
+
+// residuals between truth vs smeared values
+fn test_generated_residuals() -> () {
+    let state = State::default_const_b(r".\data\generated_truth_smear_residuals".to_string(),  "_truth_smear_residuals.png".to_string());
+    general::fetch_kf_randomness_residuals(&state);
+}
+
+// residuals between truth and sensor (pred/  filt/ smth) at each sensor
+fn test_initial_predictions() -> () {
+    let state = State::default_const_b(r".\data\initial_prediction_data\".to_string(), "this_does_not_matter.png".to_string());
+    general::fetch_separated_kf_data(&state);
+}
+
+
+
+pub fn run_all_stats() {
+    // test_generated_residuals();
+    test_initial_predictions();
+}
+
+

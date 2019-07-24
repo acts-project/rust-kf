@@ -23,6 +23,6 @@ fn main() {
     // kalman_rs::filter::linear::run(&start, &V_vec, &m_k_vec, &sensor_vec);
 
     // run::const_b::runge_kutta_global_locations();
-    run::const_b::residuals_after_steps();
+    run::const_b::run_all_stats();
 
 }
