@@ -305,6 +305,7 @@ pub fn constant_field<T: Transform + Plane>(
         // updates the global state vector in place
         prediction::rk_current_global_location(&step_data, &mut global_state_vec);
 
+        // pull the global point from the global state vector
         let global_location = utils::global_point_from_rk_state(&global_state_vec);
         
         // if we have arrived at the ending sensor in the global place we stop
@@ -417,6 +418,7 @@ pub fn constant_magnetic_transport(
 }
 
 
+#[derive(Debug)]
 pub struct RungeKuttaStep{
     pub k1: Vec3,
     pub k2: Vec3,
@@ -439,7 +441,7 @@ impl RungeKuttaStep{
 // based on 
 // https://gitlab.cern.ch/acts/acts-core/blob/master/Core/include/Acts/Propagator/DefaultExtension.hpp#L45-59
 // https://gitlab.cern.ch/acts/acts-core/blob/master/Core/include/Acts/Propagator/EigenStepper.ipp#L215-253
-fn runge_kutta_step(
+pub(crate) fn runge_kutta_step(
     prev_filt_state_vec: &Vec5,
     angles: &angles::Angles,         // one-time time calculated angles
     b_field: &Vec3,                 // magnetic field vector

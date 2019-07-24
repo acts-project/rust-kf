@@ -182,7 +182,7 @@ pub fn rk_current_global_location(
     previous_rk_state_vector: &mut Vec8
     ) -> (){
 
-    print!{"before RK state adjust: ", previous_rk_state_vector}
+    // print!{"before RK state adjust: ", previous_rk_state_vector}
     
     // adjust u
     let uprime_slice = previous_rk_state_vector.fixed_slice::<U3, U1>(4,0);                         // <U3, U1> is a potential source of error. better ask about.
@@ -197,7 +197,7 @@ pub fn rk_current_global_location(
     let mut uprime_slice = previous_rk_state_vector.fixed_slice_mut::<U3, U1>(4,0);
     uprime_slice +=  (step_data.h / 6.) * (step_data.k1 + (2.* step_data.k2) + (2.* step_data.k3) + step_data.k4);
 
-    print!{"after RK state adjust: ", previous_rk_state_vector}
+    // print!{"after RK state adjust: ", previous_rk_state_vector}
 
 }
 

@@ -1,10 +1,14 @@
-use super::{statistics, store};
+use super::super::{
+    statistics, 
+    store,
+    structs::{StorageData, State, Residuals}
+    };
 
-use super::structs::{StorageData, State, Residuals};
+// use super::structs::{StorageData, State, Residuals};
 
 use std::fs;
 
-use super::super::config::*;
+use super::super::super::config::*;
 
 use rayon::{self, prelude::*};
 
