@@ -1,7 +1,9 @@
 #[macro_use]
 pub mod macros;
 
+pub mod angles;
 pub mod linear;
+pub mod jacobian;
 pub mod utils;
 
 pub mod prediction;

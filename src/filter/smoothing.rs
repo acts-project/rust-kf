@@ -1,14 +1,19 @@
 use super::super::config::*;
 
+#[macro_use]
+use super::macros;
+
 pub fn gain_matrix(
     curr_filt_cov_mat: &Mat5,   //filt C
     jacobian: &Mat5,            // F_k or J
     prev_filt_cov_mat: &Mat5    // prev filt C
     ) -> Mat5 {                 // A
 
-    let inv_cov = prev_filt_cov_mat.try_inverse().expect("could not invert in gain matrix");
+    let inv_cov = prev_filt_cov_mat.try_inverse().expect("non-invertible covariance in gain matrix");
+
+
     curr_filt_cov_mat * jacobian.transpose() * inv_cov
-}  
+}
 
 pub fn state_vector(
     curr_filt_state_vec: &Vec5,     // curr filt x
@@ -21,14 +26,22 @@ pub fn state_vector(
     let prod = gain_mat * parens;
     let sum =  curr_filt_state_vec + prod;
 
+    // print!{
+    //     "SMOOTHING STATE VECTOR:",
+    //     parens,
+    //     prod,
+    //     sum
+    // }
+
+
     return sum
 }
 
 pub fn covariance_matrix(
     curr_filt_cov_mat: &Mat5,   // curr filt C  
     gain_mat: &Mat5,            // A
+    prev_smth_cov_mat: &Mat5,    // prev smth C
     prev_filt_cov_mat: &Mat5,   // prev filt C
-    prev_smth_cov_mat: &Mat5    // prev smth C
     ) -> Mat5 {                 // smth C
 
     let parens = prev_smth_cov_mat - prev_filt_cov_mat;

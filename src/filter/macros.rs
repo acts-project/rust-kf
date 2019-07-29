@@ -22,9 +22,9 @@ macro_rules! push {
             $location.push($item);
         )*
     };
-    (remove: $index:expr; $($pop_vec:ident => $dest_vec:ident),+) =>{
+    (clone: $index:expr; $($pop_vec:ident => $dest_vec:ident),+) =>{
         $(
-            let removed_val = $pop_vec.remove($index);
+            let removed_val = $pop_vec.get($index).expect("could not pop").clone();
             push!{removed_val => $dest_vec};
         )+
     };
@@ -36,20 +36,27 @@ macro_rules! push {
 #[macro_export]
 /// Get a reference to an item in a vector using .get_unchecked(_)
 macro_rules! get_unchecked {
+    // get the same index from multiple vectors
     ($index:expr; $($vector:ident => $destination:ident),+) => {
         $(
-            let $destination = 
-                unsafe {
-                    $vector.get($index).expect("get_unchecked!{} fetched something out of bounds")
-                }
+            get_unchecked!{$vector[$index] => $destination}
         )+
     };
+    // get specific indexes from different vectors
+    // this branch gets called every time
     ($($vector:ident[$index:expr] => $destination:ident),+) => {
         $(
             let $destination = 
                 unsafe {
-                    $vector.get($index).expect("get_unchecked!{} fetched something out of bounds")
-                }
+                    // $vector.get_unchecked($index)
+                    $vector.get($index).expect("get_unchecked! paniced")
+                };
+        )+
+    };
+    // get multiple indexes from the same vector
+    (vector; $vector:ident; $($index:expr => $destination:ident),+) => {
+        $(
+            get_unchecked!{$vector[$index] => $destination}
         )+
     };
 }
@@ -86,9 +93,6 @@ macro_rules! next {
             let $current = $next;
             next!{init: $storage => $next};
             
-            // if $previous.is_none() {
-            //     next!{$storage => $previous, $current, $next};
-            // };
         )+
     };
     //this unwraps each value of the iterator. useful for initializing values for `next`
@@ -143,5 +147,67 @@ macro_rules! empty {
         $(
             let mut $name = std::iter::empty();
         )+
+    };
+}
+
+
+#[macro_export]
+macro_rules! change_mat_val {
+    ($matrix_name:ident; $([$row:expr, $col:expr] => $new_value:expr),+) => {
+        $(
+            // indexing for get() methods is done linearly. Instead of .get(3,3) for the bottom right
+            // corner of a 4x4 matrix we must do .get(15). This line calculates what that index is.
+            let value = 
+                unsafe {
+                    // $matrix_name.get_unchecked_mut(($row, $col))
+                    $matrix_name.get_mut(($row, $col)).expect("CHAMGE MAT VAL ERROR")
+                };
+            *value = $new_value;
+
+        )+
+    };
+    (multiply; $matrix_name:ident; $([$row:expr, $col:expr] => $scalar_multiple:expr),+) => {
+        $(
+            // indexing for get() methods is done linearly. Instead of .get(3,3) for the bottom right
+            // corner of a 4x4 matrix we must do .get(15). This line calculates what that index is.
+            let linear_index = ($col * $row_count) + $row;
+
+            let value = 
+                unsafe {
+                    // $matrix_name.get_unchecked_mut(($row, $col))
+                    $matrix_name.get_mut(($row, $col)).expect("CHAGNE MAT VAL Multiply error")
+                };
+            *value = (*value)*$scalar_multiple;
+
+        )+
+    };
+    (add; $matrix_name:ident; $([$row:expr, $col:expr] => $scalar_add:expr),+) => {
+        $(
+            // indexing for get() methods is done linearly. Instead of .get(3,3) for the bottom right
+            // corner of a 4x4 matrix we must do .get(15). This line calculates what that index is.
+
+            let value = 
+                unsafe {
+                    // $matrix_name.get_unchecked_mut(($row, $col))
+                    $matrix_name.get_mut(($row, $col)).expect("CHAGNE MAT VAL add error")
+                };
+            *value = (*value) + $scalar_add;
+
+        )+
+    };
+}
+
+
+// poor mans version of dbg!{} that will uses Display instead of Debug for formatting.
+// This is because Debug does not display nice matrix output
+#[macro_export]
+macro_rules! print {
+    ($($val:expr),*) => {
+        $(
+
+        println!("[{}:{}] {} = {}",
+            file!(), line!(), stringify!($val), $val);
+
+        )*
     };
 }

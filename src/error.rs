@@ -40,6 +40,8 @@ macro_rules! impl_from {
     };
 }
 
+use super::config::*;
+
 #[derive(Debug)]
 pub enum Error{
     Matrix(MatrixError),
@@ -53,7 +55,7 @@ pub enum MatrixError {
 
 #[derive(Debug)]
 pub enum SensorError {
-    OutsideSensorBounds
+    OutsideSensorBounds(P2)
 }
 
 // this function is only here to ensure that all `std::From` trait implementations 

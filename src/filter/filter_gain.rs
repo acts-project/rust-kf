@@ -14,7 +14,7 @@ pub fn state_vector(
     return pred_state_vec + kalman_product;
 }
 
-//TODO: remove `unwrap` on the inverse
+
 pub fn kalman_gain (                
     pred_covariance : &Mat5,        //C
     sensor_mapping_mat : &Mat2x5,   //H
@@ -22,8 +22,8 @@ pub fn kalman_gain (
     ) -> Mat5x2 {                   // K 
 
     let parens = V + ( sensor_mapping_mat * pred_covariance * sensor_mapping_mat.transpose() );
-    let kalman_gain = pred_covariance * sensor_mapping_mat.transpose() * parens.try_inverse().unwrap();
-    
+    let kalman_gain = pred_covariance * sensor_mapping_mat.transpose() * parens.try_inverse().expect("could not inert in kalman_gain");
+
     kalman_gain
 }
 
@@ -36,7 +36,7 @@ pub fn covariance_matrix(
         
     let parens = Mat5::identity() - (kalman_gain_mat*sensor_mapping_mat);
 
-    return pred_covariance * parens;
+    return parens * pred_covariance
 }
 
 
