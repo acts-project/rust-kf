@@ -96,7 +96,6 @@ fn local_to_global_jac(
     // add values into transport jacobian
     change_mat_val!{
         local_to_global_jacobian;
-        // [3, eT] => 1.,     // This is from the ACTS code. This might go to zero (?) since time is not being tracked
         [4, ePHI] => (-trig_angles.sin_theta) * trig_angles.sin_phi,
         [4, eTHETA] => trig_angles.cos_theta * trig_angles.cos_phi,
         [5, ePHI] =>  trig_angles.sin_theta * trig_angles.cos_phi,
@@ -118,9 +117,9 @@ fn linear_transport_jac(
     let mut secondary= Mat8::zeros();
 
     change_mat_val!{secondary;
-        [0, 0] => distance * trig_angles.tx(),
-        [1,1] => distance * trig_angles.ty(),
-        [2,2] => distance * trig_angles.tz()
+        [0, 0] => distance * trig_angles.tx,
+        [1,1] => distance * trig_angles.ty,
+        [2,2] => distance * trig_angles.tz
         // since the other values across the diagonal are 1 and we transport_jac is a identity matrix we leave it here
     }
 
