@@ -38,12 +38,12 @@ fn gev_to_joules(gev_val: Real) -> Real{
 /// 
 /// This is the foundation of testing the constant magnetic field jacobian 
 /// calculations.
-pub fn runge_kutta_global_locations() {
-    let phi = 0.;
-    let theta = PI/2.;
+pub fn runge_kutta_global_locations(data: &State) {
+    // let phi = 0.;
+    // let theta = PI/2.;
     let qop = gev_to_joules(10.);
 
-
+    let (phi, theta) = data.angles;
     let mut angles = angles::Angles::new_from_angles(phi, theta);
 
     let state_vector = 
@@ -52,26 +52,21 @@ pub fn runge_kutta_global_locations() {
             0.,
             phi, 
             theta,
-            qop
+            data.qop
         );
 
         
     let mut global_state_vec = Vec8::zeros();
 
+    // insert values into the global state vector
+    edit_matrix!{global_state_vec;
+        [4] = angles.tx,
+        [5] = angles.ty,
+        [6] = angles.tz,
+        [7] = data.qop
+    }
 
-    // magnitude of the magnetic field is set, the vector associated with it 
-    // is calculated by assuming all components x / y / z are of equal magnitude
-    let b_magnitude :Real = 2.;
-    let indiv_field = (b_magnitude.powf(2.)/3.).sqrt();
-    let b_field = 
-        Vec3::new(
-            indiv_field,
-            indiv_field,
-            indiv_field
-        );
-
-    dbg!{&qop};
-    print!{&b_field};
+    let b_field = data.b_field;
 
     let step_size = 0.001;
     let iterations = 10_000;
@@ -84,7 +79,7 @@ pub fn runge_kutta_global_locations() {
 
         let global_point = utils::global_point_from_rk_state(&global_state_vec);
 
-        step_results.push(global_point);
+        step_results.push(structs::P3Wrap::new(global_point));
 
         angles = utils::angles_from_rk_state(&global_state_vec);
     }
@@ -94,7 +89,7 @@ pub fn runge_kutta_global_locations() {
 }
 
 
-pub fn residuals_after_steps() {
+pub fn _residuals_after_steps(b_field: Vec3) {
 
     /*
         Initialzie constants
@@ -111,17 +106,8 @@ pub fn residuals_after_steps() {
     let theta = PI/2.;
     let qop = gev_to_joules(10.);
 
-    let step_size = 0.05;
+    let step_size = 0.000000001;
     let iterations = 1000;
-
-    let b_magnitude :Real = 2.;
-    let indiv_field = (b_magnitude.powf(2.)/3.).sqrt();
-    let b_field = 
-        Vec3::new(
-            indiv_field,
-            indiv_field,
-            indiv_field
-        );
     
     // the only thing the RK takes from the local state vector
     // is the QOP in this situation
@@ -209,11 +195,53 @@ fn test_initial_predictions() -> () {
     general::fetch_separated_kf_data(&state);
 }
 
+fn runge_kutta_zero_field() -> () {
+    let state = State::default_const_b(r".\data\runge_kutta_zero_field", "runge_kutta_zero_field.png");
+    // generate::
+}
 
+fn residuals_after_steps_b_field() {
+    
+    let b_magnitude :Real = 2.;
+    let indiv_field = (b_magnitude.powf(2.)/3.).sqrt();
+    let b_field = 
+        Vec3::new(
+            indiv_field,
+            indiv_field,
+            indiv_field
+        );
+
+    _residuals_after_steps(b_field);
+}
+
+/// Does runge-kutta through 3d space and 
+fn global_prop_zero_field() {
+    let mut state = State::default_const_b("_", "_");
+    state.b_field = Vec3::zeros();
+
+    runge_kutta_global_locations(&state);
+}
+
+/// Sensor-separated data of doing runge-kutta with no b-field
+/// This tests if runge-kutta produces a strighat line when there
+/// is no  b_field
+fn zero_field_sensor_sep_data() {
+    let mut state = State::default_const_b(r".\data\zero_field_rk", "_");
+    // make a very small field so that statistics::collect_stats still treats it
+    // as a requiring runge-kutta
+    let field = Vec3::new(0., 0., 0.00000000000000000000000000000000001);
+
+    state.b_field =  field;
+    general::fetch_separated_kf_data(&state);
+}
 
 pub fn run_all_stats() {
     // test_generated_residuals();
-    test_initial_predictions();
+    // test_initial_predictions();
+    // residuals_after_steps_zero_field();
+    // global_prop_zero_field();
+
+    zero_field_sensor_sep_data();
 }
 
 

@@ -134,7 +134,7 @@ impl <'a> State <'a>{
     pub fn default(folder_name : &'a str, hist_name: &'a str) -> Self{
         Self{
             histogram_name: hist_name,
-            iterations: 70_000,
+            iterations: 10_000,
             num_sensors: 10,
             sensor_distance: 0.0001,            
             angles: Self::calculate_angles(),
@@ -204,9 +204,9 @@ impl Uncertainty {
     pub fn default() -> Self {
         Self{
             point_std: 0.1,
-            diag_std: 1.,
+            diag_std: 0.5,
             corner_std: 1.,
-            diag_mean: 2.,
+            diag_mean: 4.,
             corner_mean: 0.,
             
         }
@@ -266,4 +266,21 @@ pub struct SingleField{
 
 impl SingleField {
     pub fn new(x: Real) -> Self {SingleField {data: x}}
+}
+
+#[derive(Serialize)]
+pub struct P3Wrap{
+    x: Real,
+    y: Real,
+    z: Real
+}
+
+impl P3Wrap {
+    pub fn new(p: P3) -> Self {
+        Self{
+            x: p.x,
+            y: p.y,
+            z: p.z
+        }
+    }
 }

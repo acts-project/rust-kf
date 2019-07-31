@@ -41,24 +41,26 @@ pub fn collect_stats(
 
     // zip the iterators together
     let iter = izip!{num_sensors, distances, angles, point_std, small_rngs_iterator};
+    // let iter = iter.collect::<Vec<_>>();
 
     // if we use non-linear tracks
     let b_field_calculations: bool = 
         if state.b_field != Vec3::zeros() { true }
         else { false };
+    
+    if b_field_calculations {print!("doing runge kutta")}
 
 
     let kf_results_vec : Vec<(KFData<Rectangle>, SuperData)> = 
         iter.map(|(num_sensor, sensor_distance, angles, std_dev,rng)| {
-            stats_const_b(&state, rng)
+            // println!{"finish one"}
 
-            //if there is a magnetic field use magnetic const-b equations
-            // if b_field_calculations{
-            // }
-            // else{
-            //     stats_linear(&state, rng)
-            // }
-
+            if b_field_calculations{
+                stats_const_b(&state, rng)
+            }
+            else {
+                stats_linear(&state, rng)
+            }
         })
         .collect();
 

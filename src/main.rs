@@ -24,5 +24,6 @@ fn main() {
 
     // run::const_b::runge_kutta_global_locations();
     run::const_b::run_all_stats();
+    run::linear::run_all_stats();
 
 }

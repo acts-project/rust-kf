@@ -88,9 +88,9 @@ pub fn run(
         previous_covariance => predicted_cov_mat_iter
     );
 
-    dbg!{"before entering KF loop the seeded state vector is "};
-    dbg!{previous_state_vec};
-    dbg!{previous_covariance};
+    // dbg!{"before entering KF loop the seeded state vector is "};
+    // dbg!{previous_state_vec};
+    // dbg!{previous_covariance};
 
 
 
@@ -158,7 +158,7 @@ pub fn run(
         previous_covariance = filter_cov_mat;
         previous_state_vec = filter_state_vec;
 
-        dbg!{"FINISH STEP"};
+        // dbg!{"FINISH STEP"};
     }
 
     // Clone the last value of filtered and insert it into smoothed. This is required 
@@ -229,10 +229,10 @@ pub fn run(
 
     // put all data into a struct that will contain all the methods to return 
     // the data back to c++
-    let smth =  Data::new(smoothed_state_vec_iter,
-                                smoothed_cov_mat_iter,
-                                smoothed_res_mat_iter,
-                                smoothed_res_vec_iter);
+    let smth =  Data::new(smoothed_state_vec_iter.into_iter().rev().collect(),
+                                smoothed_cov_mat_iter.into_iter().rev().collect(),
+                                smoothed_res_mat_iter.into_iter().rev().collect(),
+                                smoothed_res_vec_iter.into_iter().rev().collect());
 
     let filt = Data::new(
         filter_state_vec_iter,

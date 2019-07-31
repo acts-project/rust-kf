@@ -65,7 +65,7 @@ fn test_generated_residuals() -> () {
 
 // residuals between truth and sensor (pred/  filt/ smth) at each sensor
 fn test_initial_predictions() -> () {
-    let state = State::default(r".\data\initial_prediction_data\", "this_does_not_matter.png");
+    let state = State::default(r".\data\initial_prediction_data\", "");
     general::fetch_separated_kf_data(&state);
 }
 
@@ -82,7 +82,7 @@ pub fn run_all_stats() {
     // scaling_sensor_count();
 
     // test_generated_residuals();
-    // test_initial_predictions();
+    test_initial_predictions();
 
-    run_one_test();
+    // run_one_test();
 }

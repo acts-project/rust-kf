@@ -136,6 +136,7 @@ pub fn fetch_separated_kf_data(data: &State) {
 
 
 /// smear / predicted / covariance diagonal elements for the KF
+/// This is to be used w/ ridder's algo
 pub fn sensor_separated_with_truth(data: &State) -> () {
     let mut kf_packaged_data = statistics::collect_stats(&data);
 
@@ -173,6 +174,10 @@ pub fn sensor_separated_with_truth(data: &State) -> () {
 
 }
 
+
+/// create a pull distribution of normalized data based of the intial track parameters, the prediction
+/// at the first sensor, and normlaized by the corresponding element in the diagonal of the covariance
+/// matrix
 pub fn pull_distribution(data: &State) {
     let mut kf_packaged_data = statistics::collect_stats(&data);
     
@@ -258,7 +263,7 @@ pub fn fetch_kf_randomness_residuals(data: &State) {
 
     // create extensions on the folder path for each csv
     path!{save_folder;
-        "smth.csv" => smth_path
+        "truth_smear_residuals.csv" => smth_path
     }
 
     /*

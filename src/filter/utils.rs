@@ -15,8 +15,8 @@ pub fn seed_covariance() -> Mat5 {
 
     let id = Mat5::identity();
 
-    base
-    // id
+    // base
+    id
 }
 
 /// Calculate the first filtered state vector estimate based on the 

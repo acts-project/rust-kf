@@ -263,7 +263,7 @@ pub fn constant_field<T: Transform + Plane>(
     */
 
     // TODO: make this auto-adjust the stepsize
-    let step_size : Real = 0.000000000000000000000001;
+    let step_size : Real = 0.00000000000000001;
 
     loop {
         
