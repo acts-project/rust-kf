@@ -11,12 +11,12 @@ use super::macros;
 pub fn seed_covariance() -> Mat5 {
     // create a matrix with every element being .1
     let mut base = Mat5::zeros();
-    base.fill(0.1);
+    base.fill_diagonal(0.00001);
 
     let id = Mat5::identity();
 
-    return base + id;
-
+    base
+    // id
 }
 
 /// Calculate the first filtered state vector estimate based on the 

@@ -23,7 +23,7 @@ pub fn run(
     measurement_noise_covariance_vector: &Vec<Mat2>,  // vector of V from fruhwirth paper
     measurements_vector: &Vec<Vec2>,            // vector of all the measurements that were registered
     sensor_vector: &Vec<Rectangle>,             // the geometric sensors that correspond to each hit ,
-    intitial_seed_vec: Option<&Vec5>
+    initial_seed_vec: Option<&Vec5>
     )  -> SuperData{
 
     let meas_map_mat = Mat2x5::new(1. , 0. , 0. , 0. , 0. ,
@@ -71,7 +71,7 @@ pub fn run(
         }
 
     let mut previous_state_vec =
-    if let Some(state_vec) = intitial_seed_vec {
+    if let Some(state_vec) = initial_seed_vec {
         state_vec.clone()
     }
     else{

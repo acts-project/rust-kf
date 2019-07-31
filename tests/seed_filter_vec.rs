@@ -204,10 +204,13 @@ fn seed_state_vec_sensor_1() {
     let start_location = P3::new(0., 1000000000., 0.);
     let end_sensor = gen_sensor(10.);
 
+    let hit = &Vec2::new(start_location.y, start_location.z);
+
     let filt_vec = 
     kalman_rs::filter::utils::seed_state_vec_from_sensor(
         &start_location,
         &end_sensor,
+        &hit
     );
     print!{filt_vec};
 
@@ -218,8 +221,8 @@ fn seed_state_vec_sensor_1() {
         eTHETA => theta
     }
 
-    assert_eq!{*xhit, 0.}
-    assert_eq!{*yhit, 0.}
+    assert!{*xhit - hit.x < DOT_PRODUCT_EPSILON}
+    assert!{*yhit - hit.y < DOT_PRODUCT_EPSILON}
     assert!(phi- (3. * PI / 2.) < DOT_PRODUCT_EPSILON);
     assert!{theta - (PI/ 2.) < DOT_PRODUCT_EPSILON};
 
@@ -231,10 +234,13 @@ fn seed_state_vec_sensor_2() {
     let start_location = P3::new(0., 0., 1000000000.);
     let end_sensor = gen_sensor(10.);
 
+    let hit = &Vec2::new(start_location.y, start_location.z);
+
     let filt_vec = 
     kalman_rs::filter::utils::seed_state_vec_from_sensor(
         &start_location,
         &end_sensor,
+        &hit
     );
     print!{filt_vec};
 
@@ -245,8 +251,8 @@ fn seed_state_vec_sensor_2() {
         eTHETA => theta
     }
 
-    assert_eq!{*xhit, 0.}
-    assert_eq!{*yhit, 0.}
+    assert!{*xhit - hit.x < DOT_PRODUCT_EPSILON}
+    assert!{*yhit - hit.y < DOT_PRODUCT_EPSILON}
     assert!(*phi < DOT_PRODUCT_EPSILON);
     assert!{*theta - PI < DOT_PRODUCT_EPSILON};
 }

@@ -31,17 +31,35 @@ pub fn linear<T: Transform + Plane>(
     // struct containing all the required sin / cos of phi / theta
     let mut angles = angles::Angles::new_from_angles(*phi, *theta);
 
-    // dbg!{&angles};
 
     let loc_2_glob : Mat8x5 = local_to_global_jac(&angles, end_sensor.rotation_to_global() );
     let glob_2_loc : Mat5x8= global_to_local_jac(&angles, start_sensor.rotation_to_local() ); 
 
     let transport_jac: Mat8 = linear_transport_jac(&mut angles, distance);
 
-    // print!{"IN JACOBIAN", loc_2_glob, glob_2_loc, transport_jac};
+    let transport_and_to_global = transport_jac * loc_2_glob;
+
 
     return glob_2_loc * transport_jac * loc_2_glob
+
+    // unimplemented!()
     
+}
+
+fn derivative_factors(
+    angles: &angles::Angles,
+    transport_2_glob: &Mat8x5,
+    rotation: &Mat4,
+    ) -> Mat1x8 {
+    //
+
+    let norm = rotation.fixed_slice::<U1, U3>(2,0);
+    // use .min() since we can divide by a 1x1 matrix
+    let norm = norm / (norm * angles.direction).min();
+
+    let jac_slice = transport_2_glob.fixed_slice::<U3, U8>(0,0);
+    return norm * jac_slice
+
 }
 
 

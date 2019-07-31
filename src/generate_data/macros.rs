@@ -15,7 +15,7 @@ macro_rules! take {
 macro_rules! path {
     ($base:ident; $($to_push:expr => $varname:ident),+) => {
         $(
-            let mut $varname = $base.clone();
+            let mut $varname = $base.clone().to_string();
             $varname.push_str(r"\");
             $varname.push_str(&$to_push);
         )+
@@ -51,7 +51,7 @@ macro_rules! generate_data {
                 let mut path = CSV_SAVE_LOCATION.clone().to_string();
                 path.push_str(&format!{$folder_save_string, x});
 
-                let mut data_struct = State::default(path, hist_save_name);
+                let mut data_struct = State::default(&path, &hist_save_name);
 
                 // expands to the correct field of the struct that we are editing. if $field_to_change is stdev.point_std
                 // then the following line expands to datastruct.stdev.point_std = **x
