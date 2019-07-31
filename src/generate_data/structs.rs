@@ -17,8 +17,50 @@ impl StorageData {
             y_points: y
         }
     }
+    pub fn from_vec2(x: Vec2) -> Self{
+        StorageData::new(x.x, x.y)
+    }
 }
 
+#[derive(Debug, Serialize)]
+pub struct StorageData2 {
+    x_true: Real,
+    y_true: Real,
+    x_kf: Real,
+    y_kf: Real,
+}
+impl StorageData2 {
+    pub fn new(xt: Real, yt: Real, xkf: Real, ykf: Real) -> Self {
+        StorageData2 {
+            x_true: xt,
+            y_true: yt,
+            x_kf: xkf,
+            y_kf: ykf
+        }
+    }
+}
+
+#[derive(Serialize)]
+pub struct SerStateVec{
+    x: Real,
+    y: Real,
+    phi: Real,
+    theta: Real,
+    qop: Real
+}
+
+impl SerStateVec {
+    pub fn new(sv:Vec5) -> Self{
+        
+        SerStateVec{
+            x:sv[0],
+            y:sv[1],
+            phi: sv[2],
+            theta: sv[3],
+            qop: sv[4]
+        }
+    }
+}
 /// Stores information on the truth and smeared track paramers
 pub struct KFData <T: Transform + Plane>{
     pub start: P3,
@@ -58,18 +100,18 @@ impl <T> KFData<T> where T: Transform + Plane {
 
 /// Holds all information on what paramers are going to be used for 
 /// the generation of a linear track.
-#[derive(Serialize)]
-pub struct State{
-    pub histogram_name: String,
+#[derive(Serialize, Debug)]
+pub struct State <'a>{
+    pub histogram_name: &'a str,
     pub iterations: usize,
     pub num_sensors: u32,
     pub sensor_distance: Real,
     pub angles: Option<(Real, Real)>,
     pub stdevs: Uncertainty,
-    pub save_folder: String
+    pub save_folder: &'a str
 }
-impl State{
-    pub fn default(folder_name : String, hist_name: String) -> Self{
+impl <'a> State <'a>{
+    pub fn default(folder_name : &'a str, hist_name: &'a str) -> Self{
         Self{
             histogram_name: hist_name,
             iterations: 70_000,
@@ -89,11 +131,11 @@ impl State{
 /// `diag` corresponds to "a" and "d" in the matrix below
 /// `corner` corresponds to "b" and "c" in the matrix below
 /// 
-/// ```
+/// 
 /// | a , b |
 /// | c , d |
-/// ```
-#[derive(Serialize)]
+/// 
+#[derive(Serialize, Debug)]
 pub struct Uncertainty {
     pub point_std: Real,
     pub diag_std: Real,

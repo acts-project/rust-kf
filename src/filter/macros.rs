@@ -211,3 +211,29 @@ macro_rules! print {
         )*
     };
 }
+
+
+#[macro_export]
+macro_rules! edit_matrix {
+    ($matrix_name:ident; $([$row:expr, $col:expr] $operation:tt $new_value:expr),+) => {
+        $(
+            // indexing for get() methods is done linearly. Instead of .get(3,3) for the bottom right
+            // corner of a 4x4 matrix we must do .get(15). This line calculates what that index is.
+            let value = 
+                unsafe {
+                    // $matrix_name.get_unchecked_mut(($row, $col))
+                    $matrix_name.get_mut(($row, $col)).expect("CHAMGE MAT VAL ERROR")
+                };
+            *value $operation $new_value;
+
+        )+
+    };
+
+    // allows for vectors to be edited without referencing column 0 every time
+    ($vector_name:ident; $([$row:expr] $operation:tt $new_value:expr),+) => {
+        $(
+            edit_matrix!{$vector_name; [$row, 0] $operation $new_value}
+
+        )+
+    };
+}

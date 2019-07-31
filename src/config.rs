@@ -28,6 +28,8 @@ pub type Mat5x2 =Matrix5x2<Real>;
 pub type Mat5x8 = MatrixMN<Real, U5, U8>;
 pub type Mat8x5 = MatrixMN<Real, U8, U5>;
 
+pub type Mat1x8 = MatrixMN<Real, U1, U8>;
+
 pub type Trf3 = Transform3<Real>;
 pub type Trl3 = Translation3<Real>;
 pub type Rot3 = Rotation3<Real>;

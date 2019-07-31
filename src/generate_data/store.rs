@@ -27,7 +27,7 @@ pub fn write_csv<T:Serialize>(name: &str, data: Vec<T>) -> () {
 /// 
 /// This is done so that the data can quickly be plotted with Python & matplotlib
 pub fn write_json(json_data: &State) -> () {
-    let mut save_base = json_data.save_folder.clone();
+    let mut save_base = json_data.save_folder.clone().to_string();
     save_base.push_str(r"\info.json");
 
     print!{save_base}

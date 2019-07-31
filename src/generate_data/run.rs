@@ -1,6 +1,6 @@
 use super::{statistics, store};
 
-use super::structs::{StorageData, State, Residuals};
+use super::structs::{self, StorageData, State, Residuals};
 
 use std::fs;
 
@@ -43,7 +43,7 @@ fn run(data: State) {
         });
 
 
-    let mut save_folder = data.save_folder.clone();
+    let mut save_folder = data.save_folder.clone().to_string();
     save_folder.push_str(r"\");
 
     fs::create_dir(&save_folder);
@@ -89,7 +89,7 @@ fn fetch_kf_randomness_residuals(data: &State) {
         configure folders and save destinations
 
     */
-    let mut save_folder = data.save_folder.clone();
+    let mut save_folder = data.save_folder.clone().to_string();
     save_folder.push_str(r"\");
 
     fs::create_dir(&save_folder);
@@ -110,33 +110,43 @@ fn fetch_kf_randomness_residuals(data: &State) {
 }
 
 
+type nest_vec = Vec<Vec<Vec2>>;
+fn residuals_by_sensor(vec_res: Vec<Residuals>,num_sensors: usize ) -> (nest_vec, nest_vec, nest_vec) {
+    let mut sensor_predictions = 
+        (0..num_sensors).into_iter()
+        .map(|_| Vec::with_capacity(num_sensors))
+        .collect::<Vec<_>>();
+
+    let mut sensor_filters = sensor_predictions.clone();
+    let mut sensor_smoothes = sensor_predictions.clone();
+
+    for i in 0..num_sensors {
+        let mut inn_pred = sensor_predictions.get_mut(i).expect("statistics out of bounds");
+        let mut inn_filt = sensor_filters.get_mut(i).expect("asd");
+        let mut inn_smth = sensor_smoothes.get_mut(i).expect("sdf");
+
+        vec_res.iter()
+            .for_each(|x|{
+                inn_pred.push(x.pred[i]);
+                inn_filt.push(x.filt[i]);
+                inn_smth.push(x.smth[i]);
+            });
+        
+    }
+
+    (sensor_predictions, sensor_filters, sensor_smoothes)
+
+}
+
+
+/// linear kalman filter exporting data based on individual sensors
 fn fetch_separated_kf_data(data: &State) {
     let kf_packaged_data = statistics::collect_stats(&data);
 
     let vec_residuals = 
         statistics::truth_kf_output_residuals(kf_packaged_data);
 
-    
-    let mut sensor_predictions = 
-        (0..(data.num_sensors as usize)).into_iter()
-        .map(|_| Vec::new())
-        .collect::<Vec<_>>();
-
-    let mut sensor_filters = sensor_predictions.clone();
-    let mut sensor_smoothes = sensor_predictions.clone();
-
-    for i in 0..(data.num_sensors as usize) {
-        let mut inn_pred = sensor_predictions.get_mut(i).expect("statistics out of bounds");
-        let mut inn_filt = sensor_filters.get_mut(i).expect("asd");
-        let mut inn_smth = sensor_smoothes.get_mut(i).expect("sdf");
-
-        vec_residuals.iter()
-            .for_each(|x|{
-                inn_pred.push(x.pred[i]);               // this line changes what field we are looking at
-                inn_filt.push(x.filt[i]);
-                inn_smth.push(x.smth[i]);
-            });
-    }
+    let (sensor_predictions, sensor_filters, sensor_smoothes) = residuals_by_sensor(vec_residuals, data.num_sensors as usize);
     
 
     let counts = 0..data.num_sensors;
@@ -147,7 +157,7 @@ fn fetch_separated_kf_data(data: &State) {
     zipped_data.into_iter()
         .map(|(pred, filt, smth, count)|{
             // converts Vec<Vec2> to Vec<StorageData> to use in serializing to csv
-            let to_storage = |x: Vec<Vec2>| x.into_iter().map(|res| StorageData::new(res.x, res.y)).collect::<Vec<_>>();
+            let to_storage = |x: Vec<Vec2>| x.into_iter().map(|res| StorageData::from_vec2(res) ).collect::<Vec<_>>();
             
             let p_ = to_storage(pred);
             let f_ = to_storage(filt);
@@ -160,7 +170,7 @@ fn fetch_separated_kf_data(data: &State) {
 
             let make_path_and_write = |storage_data, subfolder_name, count| {
                 // make the subdirectoy
-                let folder_path = data.save_folder.clone() + &format!{r"\{}\",subfolder_name};
+                let folder_path = data.save_folder.clone().to_string() + &format!{r"\{}\",subfolder_name};
                 // path to the actual csv we are going to write
                 std::fs::create_dir(&folder_path);
                 let path = folder_path + &format!{r"sensor_{}.csv", count};
@@ -174,6 +184,87 @@ fn fetch_separated_kf_data(data: &State) {
             
         });
         
+}
+
+
+/// smear / predicted / covariance diagonal elements for the KF
+fn sensor_separated_with_truth(data: &State) -> () {
+    let mut kf_packaged_data = statistics::collect_stats(&data);
+
+    let len = kf_packaged_data.len();
+    let mut truth_vec = Vec::with_capacity(len);
+    let mut kf_pred_vec = Vec::with_capacity(len);
+    let mut covariance = Vec::with_capacity(len);
+
+    let sep_data = 
+    kf_packaged_data.into_iter()
+        .map(|(mut kf_data, mut super_data)| {
+            let mut kf_smear = structs::SerStateVec::new(kf_data.smear_initial_vector);
+            let mut pred_ser = structs::SerStateVec::new(super_data.pred.state_vec.remove(1));
+
+            let cov_mat = super_data.pred.cov_mat.remove(1);
+
+            get_unchecked!{cov_mat[(0,0)] => a, cov_mat[(1,1)] => b}
+
+            let cov = StorageData::new(*a,*b);
+
+            truth_vec.push(kf_smear);
+            kf_pred_vec.push(pred_ser);
+            covariance.push(cov);
+
+            
+        })
+        .collect::<Vec<_>>();
+
+    let path = data.save_folder.to_string() + "\\pred.csv";
+    store::write_csv(&path, kf_pred_vec);
+    let path = data.save_folder.to_string() + "\\truth.csv";
+    store::write_csv(&path, truth_vec);
+    let path = data.save_folder.to_string() + "\\cov.csv";
+    store::write_csv(&path, covariance);
+
+}
+
+fn pull_distribution(data: &State) {
+    let mut kf_packaged_data = statistics::collect_stats(&data);
+    
+    let vals = kf_packaged_data.into_iter()
+        .map(|(mut kf_data, mut super_data)| {
+            // get difference between initial filtered state vector
+            // and the predicted state vector at the first sensor
+            let init = &kf_data.smear_initial_vector;
+            let kf_pred = &super_data.pred.state_vec.remove(1);
+            let mut diff = init-kf_pred;
+
+            // get the predicted covariance at the first sensor
+            let cov = super_data.pred.cov_mat.remove(1);
+
+            // fetch diagonal elements
+            get_unchecked!{
+                cov[(0,0)] => x,
+                cov[(1,1)] => y,
+                cov[(2,2)] => p,
+                cov[(3,3)] => t,
+                cov[(4,4)] => qop
+            }
+            
+            // (initial_track_parameters - predicted_track_param_sensor_1) / corresponding_covariance_diagonal
+            edit_matrix!{diff;
+                [0] /= x,
+                [1] /= y,
+                [2] /= p,
+                [3] /= t,
+                [4] /= qop
+            }
+
+            // Load the difference into a struct that can be written to csv
+            structs::SerStateVec::new(diff)
+        })
+        .collect::<Vec<_>>();
+
+    let path = data.save_folder.to_string() + "pull_data.csv";
+    store::write_csv(&path, vals);
+
 }
 
 
@@ -233,22 +324,45 @@ pub fn scaling_sensor_count() -> (){
 
 // residuals between truth vs smeared values 
 fn test_generated_residuals() -> () {
-    let state = State::default("generated_truth_smear_residuals".to_string(),  "_truth_smear_residuals.png".to_string());
+    let state = State::default("generated_truth_smear_residuals",  "_truth_smear_residuals.png");
     fetch_kf_randomness_residuals(&state);
 }
 
 // residuals between truth and sensor (pred/  filt/ smth) at each sensor
 fn test_initial_predictions() -> () {
     print!{"here"}
-    let state = State::default(r".\data\initial_prediction_data\".to_string(), "this_does_not_matter.png".to_string());
+    let state = State::default(r".\data\initial_prediction_data\", "this_does_not_matter.png");
     fetch_separated_kf_data(&state);
 }
 
 // Runs a singular test with default State parameters
 fn run_one_test() -> () {
-    let state = State::default(r"E:\kf_csvs\default_parameters".to_string(), "default_parameters.png".to_string());
+    let state = State::default(r"E:\kf_csvs\default_parameters", "default_parameters.png");
     run(state);
 }
+
+fn ridder_algo() -> () {
+    let mut state = State::default(r".\data\ridder_algo_data\", "ridder_data.png");
+    state.num_sensors = 2;
+    state.angles = Some((0., PI/2.));
+    sensor_separated_with_truth(&state);
+}
+
+fn pull_data() {
+    let mut state = State::default(r".\data\pull_data\", "pull_data.png");
+    state.num_sensors = 2;
+    state.angles = Some((0., PI/2.));
+
+    // state.sensor_distance = 0.0000000001;
+    // state.stdevs.point_std = 0.000000001;
+    // state.stdevs.diag_mean = 10.;
+
+    dbg!{&state};
+
+    pull_distribution(&state);
+}
+
+
 pub fn run_all_stats() {
 
     // scaling_corner_mean();
@@ -258,7 +372,11 @@ pub fn run_all_stats() {
     // scaling_sensor_count();
 
     // test_generated_residuals();
-    test_initial_predictions();
+    // test_initial_predictions();
+
+    // ridder_algo();
 
     // run_one_test();
+
+    pull_data();
 }
