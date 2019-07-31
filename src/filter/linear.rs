@@ -20,7 +20,7 @@ use super::macros;
 #[allow(dead_code)] 
 pub fn run(
     start_location: &P3,                         // start loc used to predict initial filtered state vec
-    measurement_noise_coarariance_vector: &Vec<Mat2>,  // vector of V from fruhwirth paper
+    measurement_noise_covariance_vector: &Vec<Mat2>,  // vector of V from fruhwirth paper
     measurements_vector: &Vec<Vec2>,            // vector of all the measurements that were registered
     sensor_vector: &Vec<Rectangle>,             // the geometric sensors that correspond to each hit ,
     intitial_seed_vec: Option<&Vec5>
@@ -29,7 +29,7 @@ pub fn run(
     let meas_map_mat = Mat2x5::new(1. , 0. , 0. , 0. , 0. ,
                                    0. , 1. , 0. , 0. , 0. );
     
-    if (measurement_noise_coarariance_vector.len() == measurements_vector.len()) && (measurements_vector.len() == sensor_vector.len()) {}
+    if (measurement_noise_covariance_vector.len() == measurements_vector.len()) && (measurements_vector.len() == sensor_vector.len()) {}
     else {
         panic!("vector lengths need to be the same length")
     }
@@ -98,7 +98,7 @@ pub fn run(
 
         // fetch the next values of V / m_k / current sensor
         get_unchecked!{i;
-            measurement_noise_coarariance_vector => curr_v,
+            measurement_noise_covariance_vector => curr_v,
             measurements_vector=> curr_m_k,
             sensor_vector => curr_sensor
         }
@@ -132,15 +132,6 @@ pub fn run(
         let filter_residual_mat = filter_gain::residual_mat(curr_v, &meas_map_mat, &filter_cov_mat);
         let chi_squared_inc = filter_gain::chi_squared_increment(&filter_residual_vec, &filter_residual_mat);
 
-        // print!{
-        //     "NEW ITERATION THROUGH SENSOR", i,
-        //     jacobian,
-        //     pred_cov_mat,
-        //     filter_cov_mat,
-        //     kalman_gain,
-        //     pred_state_vec,
-        //     filter_state_vec
-        // }
 
 
         // store all the filtered values in their respective iterators
@@ -170,10 +161,6 @@ pub fn run(
         dbg!{"FINISH STEP"};
     }
 
-    // println!{"\n\n\n\n\n\nFINISH FILTERING\nSTART SMOOTHINGING\n\n\n\n\n\n"};
-    // println!{"{} {} {} {}", filter_cov_mat_iter.len(), filter_state_vec_iter.len(), filter_res_mat_iter.len(), filter_res_vec_iter.len()}
-    // print!{filter_state_vec_iter.len()}
-
     // Clone the last value of filtered and insert it into smoothed. This is required 
     // (at least for filter_state_vec_iter and filter_cov_mat_iter) since they are required 
     // as both the previous filtered values and previous smoothed values
@@ -196,13 +183,10 @@ pub fn run(
         get_unchecked!{i;
             filter_state_vec_iter => curr_filt_state_vec,
             filter_cov_mat_iter => curr_filt_cov_mat,
-            measurement_noise_coarariance_vector => curr_v,
+            measurement_noise_covariance_vector => curr_v,
             measurements_vector =>curr_measurement,
             jacobian_iter => curr_jacobian
         }
-
-
-        // let curr_jacobian = curr_jacobian.try_inverse().expect("jacobian not invertible OH NO!!!!");
 
 
         // since we move backwards, previous variables are at i+1
@@ -231,18 +215,6 @@ pub fn run(
         let smoothed_res_vec = smoothing::residual_vec(curr_measurement, &meas_map_mat, &smoothed_state_vec);
 
 
-        // print!{i};
-
-        // print!{
-            // "NEW SMOOTHING ITERATION", i,
-        //     gain_matrix,
-            // curr_filt_state_vec,
-            // smoothed_state_vec//,
-        //     curr_filt_cov_mat,
-        //     smoothed_cov_mat,
-        //     curr_jacobian
-        // }
-
         //
         //  group push variables to vectors
         //
@@ -252,16 +224,9 @@ pub fn run(
             smoothed_res_mat => smoothed_res_mat_iter,
             smoothed_res_vec => smoothed_res_vec_iter
         }
-        // println!{"{} {} {} {}", smoothed_cov_mat_iter.len(), smoothed_state_vec_iter.len(), smoothed_res_mat_iter.len(), smoothed_res_vec_iter.len()}
 
     }
 
-    // println!{"smoothed vec length : {}\nfilter vec len: {}\npred vec len {}", 
-    // smoothed_state_vec_iter.len(),
-    // filter_state_vec_iter.len(),
-    // predicted_state_vec_iter.len()
-    // };
-    
     // put all data into a struct that will contain all the methods to return 
     // the data back to c++
     let smth =  Data::new(smoothed_state_vec_iter,

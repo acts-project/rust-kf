@@ -31,6 +31,8 @@ pub fn linear<T: Transform + Plane>(
     // struct containing all the required sin / cos of phi / theta
     let mut angles = angles::Angles::new_from_angles(*phi, *theta);
 
+    // dbg!{&angles};
+
     let loc_2_glob : Mat8x5 = local_to_global_jac(&angles, end_sensor.rotation_to_global() );
     let glob_2_loc : Mat5x8= global_to_local_jac(&angles, start_sensor.rotation_to_local() ); 
 
@@ -96,13 +98,12 @@ fn local_to_global_jac(
     // add values into transport jacobian
     edit_matrix!{
         local_to_global_jacobian;
-        // [3, eT] => 1.,     // This is from the ACTS code. This might go to zero (?) since time is not being tracked
-        [4, ePHI] = (-trig_angles.sin_theta) * trig_angles.sin_phi,
-        [4, eTHETA] = trig_angles.cos_theta * trig_angles.cos_phi,
-        [5, ePHI] =  trig_angles.sin_theta * trig_angles.cos_phi,
-        [5, eTHETA] = trig_angles.cos_theta * trig_angles.sin_phi,
-        [6, eTHETA] =  -trig_angles.sin_theta,
-        [7, eQOP] = 1.
+        [4, ePHI] => (-trig_angles.sin_theta) * trig_angles.sin_phi,
+        [4, eTHETA] => trig_angles.cos_theta * trig_angles.cos_phi,
+        [5, ePHI] =>  trig_angles.sin_theta * trig_angles.cos_phi,
+        [5, eTHETA] => trig_angles.cos_theta * trig_angles.sin_phi,
+        [6, eTHETA] =>  -trig_angles.sin_theta,
+        [7, eQOP] => 1.
     }
 
     // dbg!{local_to_global_jacobian};
