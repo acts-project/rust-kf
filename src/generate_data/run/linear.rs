@@ -59,18 +59,18 @@ pub fn scaling_sensor_count() -> (){
 
 // residuals between truth vs smeared values 
 fn test_generated_residuals() -> () {
-    let state = State::default("generated_truth_smear_residuals".to_string(),  "_truth_smear_residuals.png".to_string());
+    let state = State::default("generated_truth_smear_residuals",  "_truth_smear_residuals.png");
     general::fetch_kf_randomness_residuals(&state);
 }
 
 // residuals between truth and sensor (pred/  filt/ smth) at each sensor
 fn test_initial_predictions() -> () {
-    let state = State::default(r".\data\initial_prediction_data\".to_string(), "this_does_not_matter.png".to_string());
+    let state = State::default(r".\data\initial_prediction_data\", "this_does_not_matter.png");
     general::fetch_separated_kf_data(&state);
 }
 
 fn run_one_test() -> () {
-    let state = State::default(r"E:\kf_csvs\default_parameters".to_string(), "default_parameters.png".to_string());
+    let state = State::default(r"E:\kf_csvs\default_parameters", "default_parameters.png");
     general::run(state);
 }
 pub fn run_all_stats() {

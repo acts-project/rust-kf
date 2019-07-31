@@ -145,7 +145,7 @@ impl <'a> State <'a>{
         }
     }
     
-    pub fn default_const_b(folder_name: String, hist_name:String) -> Self {
+    pub fn default_const_b(folder_name: &'a str, hist_name:&'a str) -> Self {
         let mut linear = Self::default(folder_name,hist_name);
         
         // 2 Tesla magnitude b field
