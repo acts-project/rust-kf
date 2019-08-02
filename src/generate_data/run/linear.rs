@@ -1,8 +1,7 @@
 use super::super::{
-    statistics, 
-    store,
-    structs::{StorageData, State, Residuals}
-    };
+    statistics, store,
+    structs::{Residuals, State, StorageData},
+};
 
 use super::general;
 
@@ -12,54 +11,50 @@ use super::super::super::config::*;
 
 use rayon::{self, prelude::*};
 
-
-
-
-
-pub fn scaling_sensor_dist() ->() {
-
+pub fn scaling_sensor_dist() -> () {
     let distances = [0.1, 0.01, 0.001, 0.0001, 0.00001, 0.000001, 0.0000001];
 
     // folder csvs are dumped to ▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼    ▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼name of generated histogram
-    generate_data!{distances, "scale_sensor_distance_{}", "{}_sensor_distance.png", sensor_distance}
+    generate_data! {distances, "scale_sensor_distance_{}", "{}_sensor_distance.png", sensor_distance}
     //             ^^^^^^^^^               field of State that we modify with this test^^^^^^^^^^^^^
-}   //    non default value we edit into the struct
+} //    non default value we edit into the struct
 
+pub fn scaling_point_std_dev() -> () {
+    let std_devs = [
+        0.1, 0.01, 0.001, 0.0001, 0.001, 0.00001, 0.000001, 0.0000001,
+    ];
 
-pub fn scaling_point_std_dev() ->() {
-
-    let std_devs = [0.1, 0.01, 0.001, 0.0001, 0.001, 0.00001, 0.000001, 0.0000001];
-
-    generate_data!{std_devs, "scaling_point_std_dev{}", "{}_hit_standard_deviation.png", stdevs.point_std}
+    generate_data! {std_devs, "scaling_point_std_dev{}", "{}_hit_standard_deviation.png", stdevs.point_std}
 }
 
+pub fn scaling_diagonal_mean() -> () {
+    let std_devs = [
+        0., 0.5, 1., 1.5, 2., 2.5, 3., 3.5, 4., 4.5, 5., 5.5, 6., 6.5,
+    ];
 
-pub fn scaling_diagonal_mean() ->() {
-
-    let std_devs = [0., 0.5, 1., 1.5, 2., 2.5, 3., 3.5, 4., 4.5, 5., 5.5, 6., 6.5];
-
-    generate_data!{std_devs, "scaling_diagonal_mean{}", "{}_diagonal_mean.png", stdevs.diag_mean}
+    generate_data! {std_devs, "scaling_diagonal_mean{}", "{}_diagonal_mean.png", stdevs.diag_mean}
 }
 
+pub fn scaling_corner_mean() -> () {
+    let std_devs = [
+        0., 0.5, 1., 1.5, 2., 2.5, 3., 3.5, 4., 4.5, 5., 5.5, 6., 6.5,
+    ];
 
-pub fn scaling_corner_mean() ->() {
-
-    let std_devs = [0., 0.5, 1., 1.5, 2., 2.5, 3., 3.5, 4., 4.5, 5., 5.5, 6., 6.5];
-
-    generate_data!{std_devs, "scaling_corner_mean{}", "{}_corner_mean.png", stdevs.corner_mean}
+    generate_data! {std_devs, "scaling_corner_mean{}", "{}_corner_mean.png", stdevs.corner_mean}
 }
 
-
-pub fn scaling_sensor_count() -> (){
+pub fn scaling_sensor_count() -> () {
     let counts = [5, 10, 15, 20, 40, 50, 60];
 
-    generate_data!{counts, "scaling_sensor_count{}", "{}_sensor_count.png", num_sensors}
+    generate_data! {counts, "scaling_sensor_count{}", "{}_sensor_count.png", num_sensors}
 }
 
-
-// residuals between truth vs smeared values 
+// residuals between truth vs smeared values
 fn test_generated_residuals() -> () {
-    let state = State::default("generated_truth_smear_residuals",  "_truth_smear_residuals.png");
+    let state = State::default(
+        "generated_truth_smear_residuals",
+        "_truth_smear_residuals.png",
+    );
     general::fetch_kf_randomness_residuals(&state);
 }
 
@@ -74,7 +69,6 @@ fn run_one_test() -> () {
     general::run(state);
 }
 pub fn run_all_stats() {
-
     // scaling_corner_mean();
     // scaling_point_std_dev();
     // scaling_diagonal_mean();

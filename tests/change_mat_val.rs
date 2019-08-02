@@ -2,13 +2,12 @@
 // #[macro_use]
 // use kalman_rs::change_mat_val;
 
-
 // /*
 
 //     Unit tests for the macro kalman_rs::filter::macros::change_mat_val.
 //     This was needed when the nalgebra docs were unclear on how indexing functioned
 //     and required a "linear index" that traversed down every column to the desired element.module_path!
-    
+
 //     change_mat_val!{} now uses an improved indexing version (by row and column instead of linearly)
 //     but these tests do not hurt
 
@@ -57,7 +56,6 @@
 //         )
 //     }
 
-
 //     #[test]
 //     fn mat_test_3() {
 //         let (mut mat, dim) = init_mat();
@@ -73,8 +71,6 @@
 //             new_val
 //         )
 //     }
-
-
 
 //     #[test]
 //     fn mat_test_4() {

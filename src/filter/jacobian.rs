@@ -1,7 +1,7 @@
 use super::super::config;
+use super::super::geometry::traits::{Plane, Transform};
 use super::utils;
 use config::*;
-use super::super::geometry::traits::{Transform, Plane};
 
 use config::*;
 use nalgebra as na;
@@ -12,28 +12,23 @@ use super::angles;
 
 use super::prediction;
 
-
 /// Calculate the jacobian between sensors for a linear case
 pub fn linear<T: Transform + Plane>(
     prev_state_vec: &Vec5,
     distance: Real,
     start_sensor: &T,
-    end_sensor: &T
-    ) -> Mat5{
-
-
-    get_unchecked!{
+    end_sensor: &T,
+) -> Mat5 {
+    get_unchecked! {
         prev_state_vec[ePHI] => phi,
         prev_state_vec[eTHETA] => theta
     }
 
-
     // struct containing all the required sin / cos of phi / theta
     let mut angles = angles::Angles::new_from_angles(*phi, *theta);
 
-
-    let loc_2_glob : Mat8x5 = local_to_global_jac(&angles, end_sensor.rotation_to_global() );
-    let glob_2_loc : Mat5x8= global_to_local_jac(&angles, start_sensor.rotation_to_local() ); 
+    let loc_2_glob: Mat8x5 = local_to_global_jac(&angles, end_sensor.rotation_to_global());
+    let glob_2_loc: Mat5x8 = global_to_local_jac(&angles, start_sensor.rotation_to_local());
 
     let transport_jac: Mat8 = linear_transport_jac(&mut angles, distance);
 
@@ -42,55 +37,47 @@ pub fn linear<T: Transform + Plane>(
     // let deriv_factors = derivative_factors(&angles, &transport_and_to_global, end_sensor.rotation_to_global() );
     // let oath_len_derivative = utils::oath_length_derivatives(&angles);
     // let deriv_product = oath_len_derivative * deriv_factors;
-    
+
     // let transport_and_to_global = transport_and_to_global - deriv_product;
 
-    return glob_2_loc * transport_jac * loc_2_glob
+    return glob_2_loc * transport_jac * loc_2_glob;
 
     // unimplemented!()
-    
 }
-
 
 // https://gitlab.cern.ch/acts/acts-core/blob/master/Core/include/Acts/Propagator/StraightLineStepper.hpp#L394
 fn derivative_factors(
     angles: &angles::Angles,
     transport_2_glob: &Mat8x5,
     rotation_mat: &Mat4,
-    ) -> Mat1x8 {
+) -> Mat1x8 {
     //
 
     // I _think_ this is supposed to be transposed based on the naming but im not sure
     let rt = rotation_mat.transpose();
-    let norm = rt.fixed_slice::<U1, U3>(2,0);
+    let norm = rt.fixed_slice::<U1, U3>(2, 0);
 
-    // we have to use _temp since nalgbra wont let us divide by a 1x1 matrix    
+    // we have to use _temp since nalgbra wont let us divide by a 1x1 matrix
     let _temp = norm * angles.direction;
-    get_unchecked!{ _temp[0] => prod }
+    get_unchecked! { _temp[0] => prod }
     let norm = norm / *prod;
 
-    let jac_slice = transport_2_glob.fixed_slice::<U3, U8>(0,0);
-    // let norm = 
-    return norm * jac_slice
+    let jac_slice = transport_2_glob.fixed_slice::<U3, U8>(0, 0);
+    // let norm =
+    return norm * jac_slice;
 }
-
 
 /// Local => global jacobian used for both linear and constant magnetic field situaitons
 /// https://gitlab.cern.ch/acts/acts-core/blob/master/Core/include/Acts/Surfaces/detail/Surface.ipp#L82-106
-fn global_to_local_jac(
-    trig_angles: &angles::Angles,
-    rotation_mat: &Mat4
-    ) -> Mat5x8 {
-
+fn global_to_local_jac(trig_angles: &angles::Angles, rotation_mat: &Mat4) -> Mat5x8 {
     let mut global_to_local_jacobian = Mat5x8::zeros();
 
-    let mut g2l_slice = global_to_local_jacobian.fixed_slice_mut::<U2, U3>(0,0);
-    
+    let mut g2l_slice = global_to_local_jacobian.fixed_slice_mut::<U2, U3>(0, 0);
+
     let rot_mat_transposed = rotation_mat.transpose();
-    let rot_slice = rot_mat_transposed.fixed_slice::<U2, U3>(0,0);
+    let rot_slice = rot_mat_transposed.fixed_slice::<U2, U3>(0, 0);
 
     g2l_slice.copy_from(&rot_slice);
-
 
     let inv_sin_theta = 1. / trig_angles.sin_theta;
 
@@ -98,7 +85,7 @@ fn global_to_local_jac(
     let cos_phi_over_sin_theta = trig_angles.cos_phi / trig_angles.sin_theta;
 
     // neglects eT
-    edit_matrix!{
+    edit_matrix! {
         global_to_local_jacobian;
         [ePHI, 4] = -sin_phi_over_sin_theta,
         [ePHI, 5] = cos_phi_over_sin_theta,
@@ -108,25 +95,20 @@ fn global_to_local_jac(
     }
 
     global_to_local_jacobian
-
 }
 
 /// global => local jacobian used for both linear and constant magnetic field situaitons
 /// https://gitlab.cern.ch/acts/acts-core/blob/master/Core/include/Acts/Surfaces/detail/Surface.ipp#L46-80
-fn local_to_global_jac(
-    trig_angles: &angles::Angles,
-    rotation_mat: &Mat4
-    ) -> Mat8x5{
-
+fn local_to_global_jac(trig_angles: &angles::Angles, rotation_mat: &Mat4) -> Mat8x5 {
     let mut local_to_global_jacobian = Mat8x5::zeros();
 
-    let mut l2g_slice = local_to_global_jacobian.fixed_slice_mut::<U3, U2>(0,0);
-    let rot_slice = rotation_mat.fixed_slice::<U3, U2>(0,0);
+    let mut l2g_slice = local_to_global_jacobian.fixed_slice_mut::<U3, U2>(0, 0);
+    let rot_slice = rotation_mat.fixed_slice::<U3, U2>(0, 0);
 
     l2g_slice.copy_from(&rot_slice);
 
     // add values into transport jacobian
-    edit_matrix!{
+    edit_matrix! {
         local_to_global_jacobian;
         [4, ePHI] = (-trig_angles.sin_theta) * trig_angles.sin_phi,
         [4, eTHETA] = trig_angles.cos_theta * trig_angles.cos_phi,
@@ -140,46 +122,34 @@ fn local_to_global_jac(
     local_to_global_jacobian
 }
 
-fn linear_transport_jac(
-    trig_angles: &mut angles::Angles,
-    distance: Real
-    ) -> Mat8{
+fn linear_transport_jac(trig_angles: &mut angles::Angles, distance: Real) -> Mat8 {
+    let transport_jac = Mat8::identity();
+    let mut secondary = Mat8::zeros();
 
-    let transport_jac = Mat8::identity(); 
-    let mut secondary= Mat8::zeros();
-
-    edit_matrix!{secondary;
+    edit_matrix! {secondary;
         [0, 0] = distance * trig_angles.tx,
         [1,1] = distance * trig_angles.ty,
         [2,2] = distance * trig_angles.tz
         // since the other values across the diagonal are 1 and we transport_jac is a identity matrix we leave it here
     }
 
-    return transport_jac + secondary
-
+    return transport_jac + secondary;
 }
 
-
-// This is a secondary function for calculating the linear jacobian to test different implementations. 
+// This is a secondary function for calculating the linear jacobian to test different implementations.
 
 /// Mirrors https://gitlab.cern.ch/acts/acts-core/blob/master/Core/include/Acts/Propagator/StraightLineStepper.hpp#L307
 /// Does not include shift from state derivative calculated https://gitlab.cern.ch/acts/acts-core/blob/master/Core/include/Acts/Propagator/StraightLineStepper.hpp#L353
 /// Transport is handled outside of function.
-pub fn linear_state_derivative(
-    prev_state_vec: &Vec5,
-    distance: Real
-    ) -> Mat5 {
-
-    
-    get_unchecked!{
+pub fn linear_state_derivative(prev_state_vec: &Vec5, distance: Real) -> Mat5 {
+    get_unchecked! {
         prev_state_vec[ePHI] => phi,
         prev_state_vec[eTHETA] => theta
     }
 
-
     let mut ang = angles::Angles::new_from_angles(*phi, *theta);
 
-    let inv_sin_theta = 1./ang.sin_theta;
+    let inv_sin_theta = 1. / ang.sin_theta;
 
     /*
 
@@ -189,7 +159,7 @@ pub fn linear_state_derivative(
     */
     let mut jac_to_curv = Mat5x8::zeros();
 
-    edit_matrix!{
+    edit_matrix! {
         jac_to_curv;
         [0,0] = -ang.sin_phi,
         [0,1] = ang.cos_phi,
@@ -210,12 +180,12 @@ pub fn linear_state_derivative(
 
         local => global
         parallels https://gitlab.cern.ch/acts/acts-core/blob/master/Core/include/Acts/Propagator/StraightLineStepper.hpp#L346-378
-        
+
     */
 
     let mut jac_to_global = Mat8x5::zeros();
 
-    edit_matrix!{
+    edit_matrix! {
         jac_to_global;
 
         [0, eLOC_0] = -ang.sin_phi,
@@ -239,67 +209,53 @@ pub fn linear_state_derivative(
 
     let transport_jac = linear_transport_jac(&mut ang, distance);
 
-    let full_jacobian = jac_to_curv *transport_jac * jac_to_global;
+    let full_jacobian = jac_to_curv * transport_jac * jac_to_global;
 
-    return full_jacobian
+    return full_jacobian;
 }
-
 
 pub fn constant_field<T: Transform + Plane>(
     prev_filt_state_vec: &Vec5,
     b_field: &Vec3,
     start_sensor: &T,
-    end_sensor: &T
-    )-> (Mat5, Vec5){
+    end_sensor: &T,
+) -> (Mat5, Vec5) {
     //
 
-    let (mut global_state_vec, mut angles) = utils::local_to_global_state_vector(prev_filt_state_vec, start_sensor);
+    let (mut global_state_vec, mut angles) =
+        utils::local_to_global_state_vector(prev_filt_state_vec, start_sensor);
 
     let global_2_local_rotation = end_sensor.rotation_to_local();
     let local_2_global_rotation = start_sensor.rotation_to_global();
 
-
     /*
-        
+
         initialize jacobians
 
     */
 
     let mut transport = Mat8::identity();
-    let glob_2_loc = global_to_local_jac(&angles,&global_2_local_rotation);
-    let loc_2_glob = local_to_global_jac(&angles,&local_2_global_rotation);
-
+    let glob_2_loc = global_to_local_jac(&angles, &global_2_local_rotation);
+    let loc_2_glob = local_to_global_jac(&angles, &local_2_global_rotation);
 
     /*
         Run runge-kutta loop until we are on the global place of the end sensor
     */
 
     // TODO: make this auto-adjust the stepsize
-    let step_size : Real = 0.00000001;
+    let step_size: Real = 0.00000001;
 
     let mut step_counter = 0;
 
-
     loop {
-
         step_counter += 1;
-        
+
         // Runge-Kutta step data
-        let step_data = runge_kutta_step(
-            prev_filt_state_vec,
-            &angles,
-            b_field,
-            step_size
-        );
+        let step_data = runge_kutta_step(prev_filt_state_vec, &angles, b_field, step_size);
 
         // fetch transport between RK steps
-        let transport_step = constant_magnetic_transport(
-            prev_filt_state_vec,
-            &step_data,
-            b_field,
-            &angles
-        );
-
+        let transport_step =
+            constant_magnetic_transport(prev_filt_state_vec, &step_data, b_field, &angles);
 
         // print!{transport_step}
 
@@ -308,22 +264,22 @@ pub fn constant_field<T: Transform + Plane>(
 
         // pull the global point from the global state vector
         let global_location = utils::global_point_from_rk_state(&global_state_vec);
-        
+
         angles = utils::angles_from_rk_state(&global_state_vec);
         transport = transport * transport_step;
 
         // print!{end_sensor.global_center(), global_location, step_counter}
-        step_counter +=1;
+        step_counter += 1;
 
         // if we have arrived at the ending sensor in the global place we stop
         if end_sensor.on_plane(&global_location) {
             // print!{"\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"}
-            break
+            break;
         }
+    }
 
-    }    
-
-    let (local_sv_prediction, _ ) = utils::global_to_local_state_vector(&global_state_vec, end_sensor);
+    let (local_sv_prediction, _) =
+        utils::global_to_local_state_vector(&global_state_vec, end_sensor);
 
     // print!{loc_2_glob, glob_2_loc, transport, step_counter}
     // panic!{"326"}
@@ -335,18 +291,15 @@ pub fn constant_field<T: Transform + Plane>(
     (jacobian, local_sv_prediction)
 }
 
-
-
-/// Caculation of transport jacobian at a single time step 
-/// in a constant magnetic field. 
+/// Caculation of transport jacobian at a single time step
+/// in a constant magnetic field.
 pub fn constant_magnetic_transport(
     prev_filt_state_vec: &Vec5,
     step_data: &RungeKuttaStep,
     b_field: &Vec3,
     angles: &angles::Angles,
-    ) -> Mat8{
-    
-    get_unchecked!{
+) -> Mat8 {
+    get_unchecked! {
         prev_filt_state_vec[eQOP] => qop
     }
     let qop = *qop;
@@ -356,7 +309,6 @@ pub fn constant_magnetic_transport(
     let mut transport = Mat8::identity();
     let dir = angles.direction;
 
-
     let mut dk1dT = Mat3::zeros();
     let mut dk2dT = Mat3::identity();
     let mut dk3dT = Mat3::identity();
@@ -365,19 +317,15 @@ pub fn constant_magnetic_transport(
     let dk1dL = dir.cross(&b_field);
 
     let adjust = dir + (half_h * step_data.k1);
-    let dk2dL = adjust.cross(&b_field) + 
-        (qop  * half_h * dk1dL.cross(&b_field));
+    let dk2dL = adjust.cross(&b_field) + (qop * half_h * dk1dL.cross(&b_field));
 
     let adjust = dir + (half_h * step_data.k2);
-    let dk3dL = adjust.cross(&b_field) + 
-        (qop * half_h * dk2dL.cross(&b_field));
+    let dk3dL = adjust.cross(&b_field) + (qop * half_h * dk2dL.cross(&b_field));
 
     let adjust = dir + (h * step_data.k3);
-    let dk4dL = adjust.cross(&b_field) + 
-        (qop * h * dk3dL.cross(&b_field));
+    let dk4dL = adjust.cross(&b_field) + (qop * h * dk3dL.cross(&b_field));
 
-
-    edit_matrix!{dk1dT;
+    edit_matrix! {dk1dT;
         [0,1] =  b_field.z,
         [0,2] = -b_field.y,
         [1,0] = -b_field.z,
@@ -399,72 +347,67 @@ pub fn constant_magnetic_transport(
     utils::matrix_cross_product(&mut dk4dT, &b_field);
     dk4dT *= qop;
 
-    // dF/dT 
+    // dF/dT
     let mut dFdT = transport.fixed_slice_mut::<U3, U3>(0, 4);
     dFdT.fill_with_identity();
-    dFdT += (h/6.) * (dk1dT + dk2dT + dk3dT);
+    dFdT += (h / 6.) * (dk1dT + dk2dT + dk3dT);
     dFdT *= h;
 
-
     // dF/dL
-    let mut dFdL = transport.fixed_slice_mut::<U3, U1>(0,7);
-    let _temp= (h * h / 6.)   * (dk1dL + dk2dL + dk3dL);
+    let mut dFdL = transport.fixed_slice_mut::<U3, U1>(0, 7);
+    let _temp = (h * h / 6.) * (dk1dL + dk2dL + dk3dL);
     dFdL.copy_from(&_temp);
 
-
     // dG/dT
-    let mut dGdT = transport.fixed_slice_mut::<U3, U3>(4,4);
+    let mut dGdT = transport.fixed_slice_mut::<U3, U3>(4, 4);
     dGdT += (h / 6.) * (dk1dT + (2. * (dk2dT + dk3dT)) + dk4dT);
 
-
     // dG/dL
-    let mut dGdL = transport.fixed_slice_mut::<U3, U1>(4,7);
+    let mut dGdL = transport.fixed_slice_mut::<U3, U1>(4, 7);
     let _temp = h / 6. * (dk1dL + 2. * (dk2dL + dk3dL) + dk4dL);
     dGdL.copy_from(&_temp);
 
     // print!{"RK transport", transport}
-    
-    return transport
+
+    return transport;
 }
 
-
 #[derive(Debug)]
-pub struct RungeKuttaStep{
+pub struct RungeKuttaStep {
     pub k1: Vec3,
     pub k2: Vec3,
     pub k3: Vec3,
     pub k4: Vec3,
-    pub h: Real
+    pub h: Real,
 }
-impl RungeKuttaStep{
-    fn new(k1: Vec3, k2: Vec3, k3: Vec3, k4: Vec3, step_size: Real)-> Self{
-        RungeKuttaStep{
+impl RungeKuttaStep {
+    fn new(k1: Vec3, k2: Vec3, k3: Vec3, k4: Vec3, step_size: Real) -> Self {
+        RungeKuttaStep {
             k1: k1,
             k2: k2,
             k3: k3,
             k4: k4,
-            h: step_size
+            h: step_size,
         }
     }
 }
 
-// based on 
+// based on
 // https://gitlab.cern.ch/acts/acts-core/blob/master/Core/include/Acts/Propagator/DefaultExtension.hpp#L45-59
 // https://gitlab.cern.ch/acts/acts-core/blob/master/Core/include/Acts/Propagator/EigenStepper.ipp#L215-253
 pub(crate) fn runge_kutta_step(
     prev_filt_state_vec: &Vec5,
-    angles: &angles::Angles,         // one-time time calculated angles
-    b_field: &Vec3,                 // magnetic field vector
-    h: Real                         // step size
-    ) -> RungeKuttaStep {
-
-    get_unchecked!{
+    angles: &angles::Angles, // one-time time calculated angles
+    b_field: &Vec3,          // magnetic field vector
+    h: Real,                 // step size
+) -> RungeKuttaStep {
+    get_unchecked! {
         prev_filt_state_vec[eQOP] => qop
     }
     let qop = *qop;
 
     let dir = &angles.direction;
-    let half_h = h/ 2.;
+    let half_h = h / 2.;
 
     let k1 = qop * dir.cross(&b_field);
 
@@ -472,11 +415,10 @@ pub(crate) fn runge_kutta_step(
     let k2 = qop * adj_k1.cross(&b_field);
 
     let adj_k2 = dir + (half_h * k2);
-    let k3  = qop * adj_k2.cross(&b_field);
+    let k3 = qop * adj_k2.cross(&b_field);
 
     let adj_k3 = dir + (h * k3);
     let k4 = qop * adj_k3.cross(&b_field);
-
 
     RungeKuttaStep::new(k1, k2, k3, k4, h)
 }
