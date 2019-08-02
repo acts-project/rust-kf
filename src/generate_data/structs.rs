@@ -135,8 +135,8 @@ impl <'a> State <'a>{
         Self{
             histogram_name: hist_name,
             iterations: 10_000,
-            num_sensors: 10,
-            sensor_distance: 0.0001,            
+            num_sensors: 20,
+            sensor_distance: 0.01,            
             angles: Self::calculate_angles(),
             b_field: Vec3::zeros(),
             qop: 1.,

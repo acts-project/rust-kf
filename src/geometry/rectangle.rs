@@ -4,6 +4,9 @@ use super::super::config::*;
 use super::super::error::*;
 use super::utils;
 
+#[macro_use]
+use super::super::filter;
+
 /// A struct for sensors of rectangular geometry
 #[derive(Debug)]
 pub struct Rectangle {
@@ -229,9 +232,11 @@ impl Plane for Rectangle{
     /// let is_on_sensor_plane : bool = sensor.on_plane(&local_point);
     /// ```
     fn on_plane(&self, input_point: &P3) -> bool {
-        let pv : Vec3= P3::new(0.0, 0.0, 0.0) - input_point;
+        let pv : Vec3= self.center_global - input_point;
        
-        if self.normal.dot(&pv).abs() <= DOT_PRODUCT_EPSILON{
+        // if self.normal.dot(&pv).abs() <= DOT_PRODUCT_EPSILON{
+        if self.normal.dot(&pv).abs() <= 0.01{
+        // if self.normal.dot(&pv).abs() <= 0.0000000000001{
             true
         }
         else{

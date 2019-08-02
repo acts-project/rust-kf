@@ -15,6 +15,8 @@ use rand_distr::Normal;
 
 use itertools::izip;
 
+use rayon::{self, prelude::*};
+
 
 /// Runs batches of kf calculations. Parallelization happens upstream
 pub fn collect_stats(
@@ -52,7 +54,7 @@ pub fn collect_stats(
 
 
     let kf_results_vec : Vec<(KFData<Rectangle>, SuperData)> = 
-        iter.map(|(num_sensor, sensor_distance, angles, std_dev,rng)| {
+        iter.collect::<Vec<_>>().into_par_iter().map(|(num_sensor, sensor_distance, angles, std_dev,rng)| {
             // println!{"finish one"}
 
             if b_field_calculations{

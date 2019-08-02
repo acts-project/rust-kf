@@ -47,10 +47,16 @@ macro_rules! get_unchecked {
     ($($vector:ident[$index:expr] => $destination:ident),+) => {
         $(
             let $destination = 
-                unsafe {
+                // unsafe {
                     // $vector.get_unchecked($index)
-                    $vector.get($index).expect("get_unchecked! paniced")
-                };
+                // };
+                    match $vector.get($index) {
+                        Some(val) => val,
+                        None=> {
+                            println!{"get unchecked out of bounds:\nfile:{}\tline:{}", file!{}, line!{}}
+                            panic!{""}
+                        }
+                    };
         )+
     };
     // get multiple indexes from the same vector
@@ -158,10 +164,10 @@ macro_rules! edit_matrix {
             // indexing for get() methods is done linearly. Instead of .get(3,3) for the bottom right
             // corner of a 4x4 matrix we must do .get(15). This line calculates what that index is.
             let value = 
-                unsafe {
+                // unsafe {
                     // $matrix_name.get_unchecked_mut(($row, $col))
-                    $matrix_name.get_mut(($row, $col)).expect("CHAMGE MAT VAL ERROR")
-                };
+                // };
+                    $matrix_name.get_mut(($row, $col)).expect("CHAMGE MAT VAL ERROR");
             *value $operation $new_value;
 
         )+

@@ -7,11 +7,13 @@ use super::angles;
 use super::macros;
 
 
+pub const FILL: Real = 0.0001;
+
 /// Placeholder function for some form of effective seeding for Mat5's
 pub fn seed_covariance() -> Mat5 {
     // create a matrix with every element being .1
     let mut base = Mat5::zeros();
-    base.fill_diagonal(0.00001);
+    base.fill_diagonal(FILL);
 
     let id = Mat5::identity();
 
@@ -319,4 +321,17 @@ pub fn local_to_global_state_vector<T: Transform + Plane>(local_sv: &Vec5, senso
 
     (global_state_vec, angles)
 
+}
+
+
+pub fn oath_length_derivatives(angles: &angles::Angles) -> Vec8 {
+    let mut vec = Vec8::zeros();
+
+    edit_matrix!{vec;
+        [0] = angles.tx,
+        [1] = angles.ty,
+        [2] = angles.tz
+    }
+
+    return vec
 }

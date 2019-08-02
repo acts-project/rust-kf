@@ -1,9 +1,12 @@
 use nalgebra as na;
 use super::super::config::*;
-use super::prediction;
-use super::filter_gain;
-use super::smoothing;
-use super::jacobian;
+use super::{
+    prediction,
+    filter_gain,
+    smoothing,
+    jacobian,
+    utils
+};
 
 use std::iter;
 
@@ -29,11 +32,11 @@ pub fn run(
     let meas_map_mat = Mat2x5::new(1. , 0. , 0. , 0. , 0. ,
                                    0. , 1. , 0. , 0. , 0. );
     
-    if (measurement_noise_covariance_vector.len() == measurements_vector.len()) && (measurements_vector.len() == sensor_vector.len()) {}
+    if (measurement_noise_covariance_vector.len() == measurements_vector.len()) && (measurements_vector.len() == sensor_vector.len()-1) {}
     else {
         panic!("vector lengths need to be the same length")
     }
-    let input_length = measurements_vector.len() - 1;
+    let input_length = measurements_vector.len();
 
     store_vec!{
         input_length; // since we have n sensors, we should have n filtered values
@@ -59,43 +62,31 @@ pub fn run(
         smoothed_res_mat_iter : Mat2,
         smoothed_res_vec_iter: Vec2
     }
+
     store_vec!{input_length+1; // these vectors require initial seeded values so we initialize to len+1
         filter_state_vec_iter: Vec5,
         filter_cov_mat_iter: Mat5
     }
     
-    // fetch the first sensor
     get_unchecked!{
         sensor_vector[0]=> first_sensor,
         measurements_vector[0] => first_hit
-        }
+    }
 
     let mut previous_state_vec =
-    if let Some(state_vec) = initial_seed_vec {
-        state_vec.clone()
-    }
-    else{
-        // calculate some seeded values (seeding improvement suggestions welcome)
-        super::utils::seed_state_vec_from_sensor(&start_location, first_sensor,first_hit)
-    };
-    let mut previous_covariance = super::utils::seed_covariance();
-    // Store the seeded values in their respective iterators
-    push!(
-        previous_covariance => filter_cov_mat_iter, 
-        previous_state_vec => filter_state_vec_iter,
+        if let Some(state_vec) = initial_seed_vec {
+            *state_vec
+        }
+        else{
+            // fetch the first sensor
 
-        previous_state_vec => predicted_state_vec_iter,
-        previous_covariance => predicted_cov_mat_iter
-    );
-
-    // dbg!{"before entering KF loop the seeded state vector is "};
-    // dbg!{previous_state_vec};
-    // dbg!{previous_covariance};
-
-
+            // calculate some seeded values (seeding improvement suggestions welcome)
+            super::utils::seed_state_vec_from_sensor(&start_location, first_sensor,first_hit)
+        };
+    let mut previous_covariance = utils::seed_covariance();
 
     for i in 0..input_length{
-
+        
         // fetch the next values of V / m_k / current sensor
         get_unchecked!{i;
             measurement_noise_covariance_vector => curr_v,
@@ -108,14 +99,7 @@ pub fn run(
         }
 
         //predictions
-        let (pred_state_vec, distance_between) = 
-            match prediction::linear_state_vector(curr_sensor, next_sensor, &previous_state_vec) {
-                Ok(x) => x,
-                Err(e) => {
-                    dbg!{e};
-                    panic!{"out of bounds panic happened"}
-                }
-            };
+        let (pred_state_vec, distance_between) = prediction::linear_state_vector(curr_sensor, next_sensor, &previous_state_vec);
 
         let jacobian = jacobian::linear(&previous_state_vec, distance_between, curr_sensor, next_sensor);
 
@@ -158,7 +142,6 @@ pub fn run(
         previous_covariance = filter_cov_mat;
         previous_state_vec = filter_state_vec;
 
-        // dbg!{"FINISH STEP"};
     }
 
     // Clone the last value of filtered and insert it into smoothed. This is required 
@@ -173,7 +156,7 @@ pub fn run(
 
 
 
-    for i in (0..input_length).rev() {
+    for i in (0..input_length-1).rev() {
         
         //
         // initializing variables
@@ -197,7 +180,7 @@ pub fn run(
 
         // grab variables pushed in the last iteration
         // (i+1) since input_length is based on the function argument lengths
-        get_unchecked!{input_length -(i+1);                         //TODO: double check this indexing
+        get_unchecked!{input_length - (i+2);                         //TODO: double check this indexing
             smoothed_state_vec_iter => prev_smth_state_vec,
             smoothed_cov_mat_iter => prev_smth_cov_mat
         }

@@ -55,19 +55,12 @@ pub fn linear_state_vector<T: Transform + Plane>(
     start_sensor: &T, 
     end_sensor: &T, 
     prev_filt_state_vec: &Vec5,
-    ) -> Result<(Vec5, Real), SensorError> {
-
-    // println!{"IN PREDICTION: filtered state vec:"}
-    // dbg!{prev_filt_state_vec};
+    ) -> (Vec5, Real) {
     
     get_unchecked!{
         prev_filt_state_vec[eLOC_0] => start_local_x_hit,
-        prev_filt_state_vec[eLOC_1] => start_local_y_hit,
-        prev_filt_state_vec[eTHETA] => theta,
-        prev_filt_state_vec[ePHI] => phi
+        prev_filt_state_vec[eLOC_1] => start_local_y_hit
     }
-
-    let mut ang = angles::Angles::new_from_angles(*phi, *theta);
 
     let start_local_point = P3::new(*start_local_x_hit, *start_local_y_hit, 0.0);
     let start_global_point = start_sensor.to_global(start_local_point);
@@ -78,43 +71,52 @@ pub fn linear_state_vector<T: Transform + Plane>(
 
     let end_plane_constant = end_sensor.plane_constant();
 
-    // dbg!{end_plane_constant};
-
-    // find predicted 
-    let (global_pred_point, global_distance) = 
-        linear_global_hit_estimation(
-            &normal,
-            &start_global_point,
-            &mut ang,
-            &end_plane_constant
-        );
-
-    let local_pred_point  = end_sensor.to_local(global_pred_point);
-
-
-    // print!{"PREDICTIONS", global_pred_point, local_pred_point}
-
-
-    // check if the predicted point is on the sensor
-    if end_sensor.inside(&local_pred_point) {
-        // might be able to avoid cloning here
-        let mut new_state_vec = prev_filt_state_vec.clone();
-
-        edit_matrix!{new_state_vec;
-            [eLOC_0] = local_pred_point.x,
-            [eLOC_1] = local_pred_point.y
-        }
-        // println!{"full predicted state vector"}
-        // dbg!{&new_state_vec};
-
-        Ok((new_state_vec, global_distance))
-    }
-    else {
-        Err(SensorError::OutsideSensorBounds(local_pred_point))
-    }
+    linear_from_one_sensor(
+        prev_filt_state_vec,
+        start_global_point,
+        end_sensor
+    )
 }
 
+pub fn linear_from_one_sensor <T:Transform + Plane>(
+    prev_filt_state_vec: &Vec5,
+    global_start: P3, 
+    end_sensor: &T,
 
+    ) -> (Vec5, Real)  {
+    //
+
+
+    get_unchecked!{
+        prev_filt_state_vec[eTHETA] => theta,
+        prev_filt_state_vec[ePHI] => phi,
+        prev_filt_state_vec[eQOP]=> qop
+    }
+
+    let mut angles = angles::Angles::new_from_angles(*phi, *theta);
+
+
+    let (global_pred_point, distance) = linear_global_hit_estimation(
+        end_sensor.plane_normal_vec(),
+        &global_start,
+        &mut angles,
+        &end_sensor.plane_constant()
+    );
+
+    let local_pred_point = end_sensor.to_local(global_pred_point);
+
+    let new_state = 
+        Vec5::new(
+            local_pred_point.x,
+            local_pred_point.y,
+            *phi,
+            *theta,
+            *qop
+        );
+
+    (new_state, distance)
+
+ }
 
 /// Encapsultes all the global calculations for `linear_state_vector` without 
 /// needing start and end sensors. This is done so it is easier to construct unit tests
@@ -135,7 +137,7 @@ pub fn linear_global_hit_estimation(
     let y_slope = angles.ty;
     let z_slope = angles.tz;
 
-    // dbg!{normal_vector};dbg!{angles}; dbg!{x_slope}; dbg!{y_slope}; dbg!{z_slope};
+    // print!{normal_vecotr, angles, x_slope, y_slope, z_slope}
 
     //generic numerator for repetitive calculations
     let gen_num_1 = normal_vector.x * start_global_point.x;
@@ -143,7 +145,7 @@ pub fn linear_global_hit_estimation(
     let gen_num_3 = normal_vector.z * start_global_point.z;
     let gen_num = gen_num_1 + gen_num_2 + gen_num_3 + end_plane_constant;
 
-    // dbg!{gen_num_1}; dbg!{gen_num_2}; dbg!{gen_num_3};
+    // print!{gen_num_1, gen_num_2, gen_num_3}
 
     // generic denominator for repetitive calculations
     let gen_den_1 = normal_vector.x * x_slope;
@@ -151,19 +153,18 @@ pub fn linear_global_hit_estimation(
     let gen_den_3 = normal_vector.z * z_slope;
     let gen_den = gen_den_1 + gen_den_2 + gen_den_3;
 
-    // dbg!{gen_den_1}; dbg!{gen_den_2}; dbg!{gen_den_3};
+    // print!{gen_den_1,gen_den_2, gen_den_3}
 
     let gen_division = gen_num / gen_den;
 
-    // dbg!{gen_num};dbg!{gen_den};dbg!{gen_division};
-
+    // print!{gen_num, gen_den, gen_division}
 
     // calculate predicted points of intersection on ending plane
     let pred_x = start_global_point.x - (x_slope * gen_division);
     let pred_y = start_global_point.y - (y_slope * gen_division);
     let pred_z = start_global_point.z - (z_slope * gen_division);
 
-    // dbg!{pred_x}; dbg!{pred_y}; dbg!{pred_z};
+    // print!{pred_x, pred_y, pred_z};
 
     let global_pred_point = P3::new(pred_x, pred_y, pred_z);
 

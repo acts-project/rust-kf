@@ -37,8 +37,13 @@ pub fn linear<T: Transform + Plane>(
 
     let transport_jac: Mat8 = linear_transport_jac(&mut angles, distance);
 
-    let transport_and_to_global = transport_jac * loc_2_glob;
+    // let transport_and_to_global : Mat8x5 = transport_jac * loc_2_glob;
 
+    // let deriv_factors = derivative_factors(&angles, &transport_and_to_global, end_sensor.rotation_to_global() );
+    // let oath_len_derivative = utils::oath_length_derivatives(&angles);
+    // let deriv_product = oath_len_derivative * deriv_factors;
+    
+    // let transport_and_to_global = transport_and_to_global - deriv_product;
 
     return glob_2_loc * transport_jac * loc_2_glob
 
@@ -46,20 +51,27 @@ pub fn linear<T: Transform + Plane>(
     
 }
 
+
+// https://gitlab.cern.ch/acts/acts-core/blob/master/Core/include/Acts/Propagator/StraightLineStepper.hpp#L394
 fn derivative_factors(
     angles: &angles::Angles,
     transport_2_glob: &Mat8x5,
-    rotation: &Mat4,
+    rotation_mat: &Mat4,
     ) -> Mat1x8 {
     //
 
-    let norm = rotation.fixed_slice::<U1, U3>(2,0);
-    // use .min() since we can divide by a 1x1 matrix
-    let norm = norm / (norm * angles.direction).min();
+    // I _think_ this is supposed to be transposed based on the naming but im not sure
+    let rt = rotation_mat.transpose();
+    let norm = rt.fixed_slice::<U1, U3>(2,0);
+
+    // we have to use _temp since nalgbra wont let us divide by a 1x1 matrix    
+    let _temp = norm * angles.direction;
+    get_unchecked!{ _temp[0] => prod }
+    let norm = norm / *prod;
 
     let jac_slice = transport_2_glob.fixed_slice::<U3, U8>(0,0);
+    // let norm = 
     return norm * jac_slice
-
 }
 
 
@@ -263,9 +275,14 @@ pub fn constant_field<T: Transform + Plane>(
     */
 
     // TODO: make this auto-adjust the stepsize
-    let step_size : Real = 0.00000000000000001;
+    let step_size : Real = 0.00000001;
+
+    let mut step_counter = 0;
+
 
     loop {
+
+        step_counter += 1;
         
         // Runge-Kutta step data
         let step_data = runge_kutta_step(
@@ -283,27 +300,37 @@ pub fn constant_field<T: Transform + Plane>(
             &angles
         );
 
+
+        // print!{transport_step}
+
         // updates the global state vector in place
         prediction::rk_current_global_location(&step_data, &mut global_state_vec);
 
         // pull the global point from the global state vector
         let global_location = utils::global_point_from_rk_state(&global_state_vec);
         
+        angles = utils::angles_from_rk_state(&global_state_vec);
+        transport = transport * transport_step;
+
+        // print!{end_sensor.global_center(), global_location, step_counter}
+        step_counter +=1;
+
         // if we have arrived at the ending sensor in the global place we stop
-        if end_sensor.inside_global(global_location) {
+        if end_sensor.on_plane(&global_location) {
+            // print!{"\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"}
             break
-        } 
-        // otherwise update the angles and transport jacobian
-        else {
-            angles = utils::angles_from_rk_state(&global_state_vec);
-            transport = transport * transport_step;
         }
 
     }    
 
     let (local_sv_prediction, _ ) = utils::global_to_local_state_vector(&global_state_vec, end_sensor);
 
+    // print!{loc_2_glob, glob_2_loc, transport, step_counter}
+    // panic!{"326"}
+
     let jacobian = glob_2_loc * transport * loc_2_glob;
+
+    // print!{jacobian}
 
     (jacobian, local_sv_prediction)
 }
@@ -326,7 +353,7 @@ pub fn constant_magnetic_transport(
 
     let h = step_data.h;
     let half_h = h / 2.;
-    let mut transport = Mat8::zeros();
+    let mut transport = Mat8::identity();
     let dir = angles.direction;
 
 

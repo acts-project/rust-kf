@@ -38,14 +38,12 @@ pub fn generate_linear_track(
 
     // generate sensors along x axis
     let mut sensor_vec = Vec::new();
+    
     for i in 0..state.num_sensors {
         let ip1 = (i + 1) as Real;
         let x_loc_of_sensor = ip1 * state.sensor_distance;
         sensor_vec.push(gen_sensor(x_loc_of_sensor));
     }
-
-    // print!{sensor_vec.len()}
-
 
 
     // find the locations of the true sensor hits
@@ -59,7 +57,7 @@ pub fn generate_linear_track(
                 &virtual_sensor,
                 &curr_sensor,
                 &start_state_vec
-            ).expect("out of bounds when generating track");
+            );
 
         get_unchecked!{
             pred_sv[eLOC_0] => x_hit,
@@ -80,16 +78,6 @@ pub fn generate_linear_track(
             })
             .collect::<Vec<_>>();
 
-    // // print out truth vs smeared hits
-    // smeared_hits.iter()
-    //     .zip( truth_hits.iter() )
-    //     .for_each(|(smear, truth)| {
-    //         let x_diff = (smear.x - truth.x).abs();
-    //         let y_diff = (smear.y - truth.y).abs();
-
-    //         // println!{"truth x:{}\tsmear x: {}\tdiff:{}  \t truth y: {}\tsmear y: {}\t diff: {}",truth.x, smear.x, x_diff, truth.y, smear.y, y_diff}
-    //     });
-    
 
     // TODO hold these constant  - Mr Paul
 
@@ -109,6 +97,7 @@ pub fn generate_linear_track(
 
 
     let smear_state_vec = smear_state_vector(&mut rng, state.stdevs.point_std, &start_state_vec);
+    sensor_vec.insert(0, virtual_sensor);
 
     KFData::new(sensor_vec, covariance_vec, smeared_hits, truth_hits, (phi, theta), smear_state_vec, start_state_vec, None)
 }
@@ -146,9 +135,6 @@ pub fn generate_const_b_track(
         sensor_vec.push(gen_sensor(x_loc_of_sensor));
     }
 
-    // print!{sensor_vec.len()}
-
-
 
     // find the locations of the true sensor hits
     let mut truth_hits = Vec::new();
@@ -172,7 +158,7 @@ pub fn generate_const_b_track(
 
     // pop off the initial state vector we used for the calculation in the above for loop
     // since its not a sensor on the actual track
-    sensor_vec.remove(0);
+    let virt = sensor_vec.remove(0);
 
 
     
@@ -206,9 +192,11 @@ pub fn generate_const_b_track(
 
     let smear_state_vec = smear_state_vector(&mut rng, state.stdevs.point_std, &start_state_vec);
 
+    sensor_vec.insert(0, virt);
+    // print!(truth_hits.len(), sensor_vec.len(), smeared_hits.len());
+
     KFData::new(sensor_vec, covariance_vec, smeared_hits, truth_hits, (phi, theta), smear_state_vec, start_state_vec, Some(state.b_field))
 
-    // unimplemented!()
 }
 
 

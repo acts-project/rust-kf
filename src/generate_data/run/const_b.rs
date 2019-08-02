@@ -191,7 +191,8 @@ fn test_generated_residuals() -> () {
 
 // residuals between truth and sensor (pred/  filt/ smth) at each sensor
 fn test_initial_predictions() -> () {
-    let state = State::default_const_b(r".\data\initial_prediction_data\", "this_does_not_matter.png");
+    let state = State::default_const_b(r".\data\initial_prediction_data\", "_.png");
+
     general::fetch_separated_kf_data(&state);
 }
 
@@ -235,13 +236,24 @@ fn zero_field_sensor_sep_data() {
     general::fetch_separated_kf_data(&state);
 }
 
+
+fn pull_data() {
+    let mut state = State::default(r".\data\pull_data\", "pull_data.png");
+
+    state.num_sensors = 20;
+    state.iterations = 100_000;
+    state.b_field = Vec3::new(0., 0., 0.00000000000000000000000000000000001);
+
+    general::pull_distribution(&state);
+}
+
 pub fn run_all_stats() {
     // test_generated_residuals();
     // test_initial_predictions();
     // residuals_after_steps_zero_field();
     // global_prop_zero_field();
 
-    zero_field_sensor_sep_data();
-}
+    // zero_field_sensor_sep_data();
 
-
+    pull_data();
+ }

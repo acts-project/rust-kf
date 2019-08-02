@@ -1,4 +1,7 @@
-use super::super::super::config::*;
+use super::super::super::{
+    config::*,
+    filter::utils::{self, Data}
+    };
 use super::super::{
     statistics, 
     store,
@@ -179,45 +182,64 @@ pub fn sensor_separated_with_truth(data: &State) -> () {
 /// at the first sensor, and normlaized by the corresponding element in the diagonal of the covariance
 /// matrix
 pub fn pull_distribution(data: &State) {
-    let mut kf_packaged_data = statistics::collect_stats(&data);
+    let kf_packaged_data = statistics::collect_stats(&data);
+
+    let len = kf_packaged_data.len();
+    let mut predictions = Vec::with_capacity(len);
+    let mut filters = Vec::with_capacity(len);
+    let mut smoothes = Vec::with_capacity(len);
     
-    let vals = kf_packaged_data.into_iter()
-        .map(|(mut kf_data, mut super_data)| {
-            // get difference between initial filtered state vector
-            // and the predicted state vector at the first sensor
+    kf_packaged_data.into_iter()
+        .for_each(|(kf_data, mut super_data)| {
+
+            // get the initial track parameters
             let init = &kf_data.smear_initial_vector;
-            let kf_pred = &super_data.pred.state_vec.remove(1);
-            let mut diff = init-kf_pred;
+            let _hit = &kf_data.truth_hits[0];
+            let hit = Vec5::new(_hit.x, _hit.y, 0., 0., 0.);
 
-            // get the predicted covariance at the first sensor
-            let cov = super_data.pred.cov_mat.remove(1);
 
-            // fetch diagonal elements
-            get_unchecked!{
-                cov[(0,0)] => x,
-                cov[(1,1)] => y,
-                cov[(2,2)] => p,
-                cov[(3,3)] => t,
-                cov[(4,4)] => qop
-            }
-            
-            // (initial_track_parameters - predicted_track_param_sensor_1) / corresponding_covariance_diagonal
-            edit_matrix!{diff;
-                [0] /= x,
-                [1] /= y,
-                [2] /= p,
-                [3] /= t,
-                [4] /= qop
-            }
+            // use closure here to remove repetitive code.
+            // fetches the covariance and state vector for the type of data we want (filt, smth, pred)
+            // and calculates the pull distribution of it based on the diagonals of the covariance
+            let normalize = |data: &mut Data, res_vec: &mut Vec<structs::SerStateVec>, i| {
+                // let i = 0;
+                let state = data.state_vec.remove(i);
+                let cov = data.cov_mat.remove(i);
 
-            // Load the difference into a struct that can be written to csv
-            structs::SerStateVec::new(diff)
-        })
-        .collect::<Vec<_>>();
+                // difference between initial track parameters and the current data we are handling
+                // let mut diff = init - state;
+                let mut diff = hit - state;
 
-    let path = data.save_folder.to_string() + "pull_data.csv";
-    store::write_csv(&path, vals);
+                // For every value in the diagonal
+                for i in 0..5 {
+                    // fetch the current diagonal element 
+                    get_unchecked!{cov[(i,i)] => curr_diagonal}
 
+                    // divide the difference by the diagonal of the covariance
+                    edit_matrix!{diff; 
+                        [i] /= curr_diagonal
+                    }
+                }
+
+                res_vec.push(structs::SerStateVec::new(diff));
+            };
+
+            normalize(&mut super_data.pred, &mut predictions,   0);
+            normalize(&mut super_data.filt, &mut filters,       0);
+            normalize(&mut super_data.smth, &mut smoothes,      0);
+
+        });
+
+    // concat a sub path onto the save folder and write the vector of serializable structs to the path
+    let write_from_string = |save_string, ser_data| {
+        let path = data.save_folder.to_string() + save_string;
+        store::write_csv(&path, ser_data);
+    };
+
+    write_from_string("predicted.csv",  predictions);
+    write_from_string("filtered.csv",   filters);
+    write_from_string("smoothed.csv",   smoothes);
+    
 }
 
 
@@ -303,20 +325,6 @@ fn ridder_algo() -> () {
     sensor_separated_with_truth(&state);
 }
 
-fn pull_data() {
-    let mut state = State::default(r".\data\pull_data\", "pull_data.png");
-    state.num_sensors = 2;
-    state.angles = (0., PI/2.);
-
-    // state.sensor_distance = 0.0000000001;
-    // state.stdevs.point_std = 0.000000001;
-    // state.stdevs.diag_mean = 10.;
-
-    dbg!{&state};
-
-    pull_distribution(&state);
-}
-
 
 pub fn run_all_stats() {
     // test_generated_residuals();
@@ -325,6 +333,4 @@ pub fn run_all_stats() {
     // ridder_algo();
 
     // run_one_test();
-
-    pull_data();
 }
