@@ -20,21 +20,20 @@ macro_rules! path {
             $varname.push_str(&$to_push);
         )+
     };
-} 
-
+}
 
 #[macro_export]
 /// Quickly map and create folder names, histogram names, etc for any changing values.generate_data
-/// 
+///
 /// $value_iterable: the values that will be mappened into the State struct. These are the values
 ///                  we are testing. everything else in the struct will remain constant
-/// $folder_save_string: the extension for how the folder will be named. This will be concatenated onto the 
+/// $folder_save_string: the extension for how the folder will be named. This will be concatenated onto the
 ///                  save location from config.rs
 /// $hist_save_string: what we will name the histogram once it is named (python handles this )
 /// $field_to_change: the field (or field path) on the State structwhose value will be replaced by each index of $value iterable.
 ///                   this variable is repeating so we can access the Uncertainties struct. For example, passing in stdev.point_std
 ///                   would error (without this) since the `.` invalidates the ident `stdev`. the repetition will expand to the correct
-///                   path in the macro. 
+///                   path in the macro.
 macro_rules! generate_data {
 
     ($value_iterable:ident, $folder_save_string:expr, $hist_save_string:expr, $($field_to_change:ident).+) => {
@@ -55,11 +54,10 @@ macro_rules! generate_data {
 
                 // expands to the correct field of the struct that we are editing. if $field_to_change is stdev.point_std
                 // then the following line expands to datastruct.stdev.point_std = **x
-                data_struct$(.$field_to_change)+ = **x;             
+                data_struct$(.$field_to_change)+ = **x;
 
                 $crate::generate_data::run::general::run(data_struct)
             });
 
     };
 }
-

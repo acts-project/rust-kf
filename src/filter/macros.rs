@@ -12,7 +12,6 @@ macro_rules! store_vec {
     };
 }
 
-
 #[macro_export]
 /// Push a value into an iterator. Saves repeating vec.push(asdad)
 /// Easier to read this way.
@@ -46,7 +45,7 @@ macro_rules! get_unchecked {
     // this branch gets called every time
     ($($vector:ident[$index:expr] => $destination:ident),+) => {
         $(
-            let $destination = 
+            let $destination =
                 // unsafe {
                     // $vector.get_unchecked($index)
                 // };
@@ -78,27 +77,26 @@ macro_rules! length {
     };
 }
 
-
 #[macro_export]
 /// Used for getting the next value of the iterator. Additionally, this macro allows
 /// us to move the ownership of the data to "stagger" it. This does the following:
 /// `current` at n => `previous` at n+1,
 /// `next` at n => `current` at n+1,
-/// new `next` value is fetched from the iterator. 
+/// new `next` value is fetched from the iterator.
 macro_rules! next {
-    // move the value from `next` to `current`, from `current` to `previous`, and 
+    // move the value from `next` to `current`, from `current` to `previous`, and
     // fetch a new value from the iterator for `next`. This is done for the staggered
     // steps of the smoothing calculations
     //
     // storage: iterator we store values in
     // previous / current / next: variables from scope we are modifying
-    //                            to new values  
+    //                            to new values
     ($($storage:ident => $previous:ident, $current:ident, $next:ident),+) => {
         $(
             let $previous = $current;
             let $current = $next;
             next!{init: $storage => $next};
-            
+
         )+
     };
     //this unwraps each value of the iterator. useful for initializing values for `next`
@@ -113,7 +111,6 @@ macro_rules! next {
     };
 }
 
-
 #[macro_export]
 macro_rules! into_iter {
     ($iterator:ident) => {
@@ -123,7 +120,7 @@ macro_rules! into_iter {
 
 #[macro_export]
 /// Reverse every iterator passed in. This is useful for the smoothing calculations
-/// since we pass from the end to the front, but add items to iterators from 
+/// since we pass from the end to the front, but add items to iterators from
 /// front to back
 macro_rules! reverse {
     ($($iterator:ident),+) => {
@@ -135,7 +132,7 @@ macro_rules! reverse {
         $(
             let $iterator =  $iterator.into_iter();
             reverse!($iterator);
-            
+
         )+
     };
     (base: $($iterator:ident),+) => {
@@ -144,7 +141,6 @@ macro_rules! reverse {
         )+
     };
 }
-
 
 #[macro_export]
 /// Creates a variable amount of mutable empty iterators
@@ -156,14 +152,13 @@ macro_rules! empty {
     };
 }
 
-
 #[macro_export]
 macro_rules! edit_matrix {
     ($matrix_name:ident; $([$row:expr, $col:expr] $operation:tt $new_value:expr),+) => {
         $(
             // indexing for get() methods is done linearly. Instead of .get(3,3) for the bottom right
             // corner of a 4x4 matrix we must do .get(15). This line calculates what that index is.
-            let value = 
+            let value =
                 // unsafe {
                     // $matrix_name.get_unchecked_mut(($row, $col))
                 // };
@@ -184,12 +179,12 @@ macro_rules! edit_matrix {
 
 #[macro_export]
 macro_rules! submatrix {
-    // fetches mutable submatrix based on index and shape, 
+    // fetches mutable submatrix based on index and shape,
     // Example: submatrix!{matrix_name; (0,0), (3,3)=> submat_name}
     ($($matrix_name:ident; $(($s1:expr, $s2:expr), ($sh1:expr, $sh2:expr) => $out_var:ident),+),+) => {
         $(
             $(
-            let mut $out_var = 
+            let mut $out_var =
                 unsafe{
                     $matrix_name.slice_mut(($s1, $s2), ($sh1, $sh2))
                 }
@@ -201,7 +196,7 @@ macro_rules! submatrix {
     ($($matrix_name:ident; $($rows:expr, $cols:expr => $out_var:ident),+),+) =>{
         $(
             $(
-            let mut $out_var = 
+            let mut $out_var =
                 unsafe{
                     $matrix_name.get_unchecked_mut(($rows, $cols))
                 }
@@ -224,17 +219,15 @@ macro_rules! print {
     };
 }
 
-
 #[macro_export]
 macro_rules! equals_static_vec {
     ($static_vec:ident => $dyn_vec:ident, $dim:expr) => {
         for i in 0..$dim {
-            let (stat_val, dyn_val) =
-                unsafe{
-                    let a = $static_vec.get_unchecked(i);
-                    let b = $dyn_vec.get_unchecked_mut(i);
-                    (a,b)
-                };
+            let (stat_val, dyn_val) = unsafe {
+                let a = $static_vec.get_unchecked(i);
+                let b = $dyn_vec.get_unchecked_mut(i);
+                (a, b)
+            };
             *dyn_val = *stat_val;
         }
     };

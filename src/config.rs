@@ -24,8 +24,8 @@ pub type Mat4 = Matrix4<Real>;
 pub type Mat5 = Matrix5<Real>;
 pub type Mat8 = MatrixMN<Real, U8, U8>;
 
-pub type Mat2x5 =Matrix2x5<Real>;
-pub type Mat5x2 =Matrix5x2<Real>;
+pub type Mat2x5 = Matrix2x5<Real>;
+pub type Mat5x2 = Matrix5x2<Real>;
 
 pub type Mat5x8 = MatrixMN<Real, U5, U8>;
 pub type Mat8x5 = MatrixMN<Real, U8, U5>;
@@ -38,7 +38,7 @@ pub type Rot3 = Rotation3<Real>;
 pub type Aff3 = Affine3<Real>;
 
 // uszie constants
-def_constant!{usize;
+def_constant! {usize;
     eLOC_0 = 0,
     eLOC_1 = 1,
     ePHI = 2,
@@ -48,12 +48,11 @@ def_constant!{usize;
 }
 
 // f64 constants
-def_constant!{Real;
+def_constant! {Real;
     DOT_PRODUCT_EPSILON = 0.0005
 }
 
-
-def_constant!{&str;
+def_constant! {&str;
     CSV_SAVE_LOCATION = r"E:\kf_csvs\"
 
 }

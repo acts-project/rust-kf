@@ -2,14 +2,14 @@ use kalman_rs as krs;
 use krs::config::*;
 use krs::generate_data::{
     setup::generate_linear_track,
-    structs::{self, State}
+    structs::{self, State},
 };
 
-use krs::{print, get_unchecked};
+use krs::{get_unchecked, print};
 
 use rand::rngs::SmallRng;
 use rand::SeedableRng;
-use rand_distr::{Normal, Distribution};
+use rand_distr::{Distribution, Normal};
 
 /*
 
@@ -35,43 +35,45 @@ macro_rules! group_assert {
 
 /*
 
-    TODO: Actually write tests that verify the locations of the points based on the standard deviations of 
-            the predicted / smoothed / filtered results at each sensor. Currently these tests just set up 
+    TODO: Actually write tests that verify the locations of the points based on the standard deviations of
+            the predicted / smoothed / filtered results at each sensor. Currently these tests just set up
             a future situation where this would be done
 
             For the most part, tests are done based on manually examining graphs of KF-generated outputs
 
 */
 
-
 #[test]
 fn linear_1() {
     let mut state = structs::State::default("_", "_");
     let mut rng = SmallRng::from_entropy();
-    
-    state.angles = (0. , PI/2.);
 
-    let data = generate_linear_track(
-        &state,
-        rng
+    state.angles = (0., PI / 2.);
+
+    let data = generate_linear_track(&state, rng);
+
+    let kf_result = krs::filter::linear::run(
+        &data.start,
+        &data.cov,
+        &data.smear_hits,
+        &data.sensors,
+        None,
     );
-
-    let kf_result = krs::filter::linear::run(&data.start, &data.cov, &data.smear_hits, &data.sensors, None);
-
-    
 }
-#[test]                 
+#[test]
 fn linear_2() {
     let mut state = structs::State::default("_", "_");
     let mut rng = SmallRng::from_entropy();
-    
-    state.angles = (0., PI/2.);
 
-    let data = generate_linear_track(
-        &state,
-        rng
+    state.angles = (0., PI / 2.);
+
+    let data = generate_linear_track(&state, rng);
+
+    let kf_result = krs::filter::linear::run(
+        &data.start,
+        &data.cov,
+        &data.smear_hits,
+        &data.sensors,
+        None,
     );
-
-    let kf_result = krs::filter::linear::run(&data.start, &data.cov, &data.smear_hits, &data.sensors, None);
-
 }
