@@ -15,7 +15,7 @@ use rayon::{self, prelude::*};
 pub fn run(data: State) {
     let kf_packaged_data = statistics::collect_stats(&data);
 
-    let mut residuals: Vec<Residuals> = statistics::fetch_kf_residuals(&kf_packaged_data);
+    let mut residuals_vector : Vec<(Vec<Vec2>,Vec<Vec2>, Vec<Vec2>)>= statistics::fetch_kf_residuals_all(&kf_packaged_data);
 
     println! {"finished KF operations for {}", &data.histogram_name}
 
@@ -25,10 +25,10 @@ pub fn run(data: State) {
     let mut filt = Vec::with_capacity(len);
     let mut pred = Vec::with_capacity(len);
 
-    residuals.iter().for_each(|res| {
-        residual_to_vec(&mut smth, &res.smth);
-        residual_to_vec(&mut filt, &res.filt);
-        residual_to_vec(&mut pred, &res.pred);
+    residuals_vector.iter().for_each(|(pred_res, filt_res, smth_res)| {
+        residual_to_vec(&mut smth, pred_res);
+        residual_to_vec(&mut filt, filt_res);
+        residual_to_vec(&mut pred, smth_res);
     });
 
     let mut save_folder = data.save_folder.clone().to_string();
@@ -53,11 +53,11 @@ pub fn run(data: State) {
     println! {"finished {}", &data.histogram_name}
 }
 
-type nest_vec = Vec<Vec<Vec2>>;
+type NestVec = Vec<Vec<Vec2>>;
 pub fn residuals_by_sensor(
     vec_res: Vec<Residuals>,
     num_sensors: usize,
-) -> (nest_vec, nest_vec, nest_vec) {
+) -> (NestVec, NestVec, NestVec) {
     let mut sensor_predictions = (0..num_sensors)
         .into_iter()
         .map(|_| Vec::with_capacity(num_sensors))
@@ -174,20 +174,22 @@ type NestStorage = Vec<Vec<StorageData>>;
 pub fn pull_distribution_general(data: &State) -> (NestStorage, NestStorage, NestStorage) {
     let kf_packaged_data = statistics::collect_stats(&data);
 
-    let sensors = data.num_sensors as  usize;
-    let mut sensor_predictions = (0..sensors).into_iter().map(|_| Vec::with_capacity(sensors)).collect::<Vec<_>>();
+    let sensors = data.num_sensors as usize;
+    let mut sensor_predictions = (0..sensors)
+        .into_iter()
+        .map(|_| Vec::with_capacity(sensors))
+        .collect::<Vec<_>>();
     let mut sensor_filters = sensor_predictions.clone();
     let mut sensor_smoothes = sensor_predictions.clone();
-    
+
     kf_packaged_data
         .into_iter()
         .for_each(|(kf_data, mut super_data)| {
-
             // use closure here to remove repetitive code.
             // fetches the covariance and state vector for the type of data we want (filt, smth, pred)
             // and calculates the pull distribution of it based on the diagonals of the covariance
             let normalize = |data: &mut Data, res_vec: &mut NestStorage, i| {
-                let _hit : &Vec2= &kf_data.truth_hits[i];
+                let _hit: &Vec2 = &kf_data.truth_hits[i];
                 let hit = Vec2::new(_hit.x, _hit.y);
 
                 // let i = 0;
@@ -212,7 +214,8 @@ pub fn pull_distribution_general(data: &State) -> (NestStorage, NestStorage, Nes
                     }
                 }
 
-                let sensor_vec_index : &mut Vec<StorageData>= res_vec.get_mut(i).expect("sensor vec OOB");
+                let sensor_vec_index: &mut Vec<StorageData> =
+                    res_vec.get_mut(i).expect("sensor vec OOB");
                 sensor_vec_index.push(StorageData::from_vec2(diff));
             };
 
@@ -221,13 +224,12 @@ pub fn pull_distribution_general(data: &State) -> (NestStorage, NestStorage, Nes
                 normalize(&mut super_data.filt, &mut sensor_filters, i);
                 normalize(&mut super_data.smth, &mut sensor_smoothes, i);
             }
-
         });
 
     return (sensor_predictions, sensor_filters, sensor_smoothes);
 }
 
-pub fn pull_distribution(data: &State,first_only: bool) {
+pub fn pull_distribution(data: &State, first_only: bool) {
     std::fs::create_dir(data.save_folder);
 
     let (mut pred, mut filt, mut smth) = pull_distribution_general(&data);

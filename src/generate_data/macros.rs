@@ -61,3 +61,8 @@ macro_rules! generate_data {
 
     };
 }
+
+#[macro_export]
+macro_rules! residuals {
+    ($super_data:ident; $($sub_field:ident),+) => {};
+}

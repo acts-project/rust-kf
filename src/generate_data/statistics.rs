@@ -99,41 +99,41 @@ fn stats_const_b(state: &State, mut rng: SmallRng) -> (KFData<Rectangle>, SuperD
 /// of a point versus the kf predicted / filtered / smoothed value
 /// of that point. The data from `collect_stats` can be directly
 /// piped into this function
-pub fn fetch_kf_residuals(
+pub fn fetch_kf_residuals_all(
     create_statistics_data: &Vec<(KFData<Rectangle>, SuperData)>,
-) -> Vec<Residuals> {
-    //
+) -> Vec<(Vec<Vec2>, Vec<Vec2>, Vec<Vec2>)> {
 
     create_statistics_data
         .iter()
-        .map(|(truth, kf_ver)| create_residuals(truth, kf_ver))
+        .map(|(truth, kf_ver)| create_residuals(truth, kf_ver, false))
         .collect::<Vec<_>>()
 }
 
 /// Handles calculating all residuals of the truth hits vs KF outputs
 /// and returns a struct of all smoothed / filtered / predicted residuals
-fn create_residuals(truth_data: &KFData<Rectangle>, kf_data: &SuperData) -> Residuals {
+fn create_residuals(
+    truth_data: &KFData<Rectangle>,
+    kf_data: &SuperData,
+    pull_distr: bool,
+) -> (Vec<Vec2>, Vec<Vec2>, Vec<Vec2>) {
+
     let truth_points = &truth_data.truth_hits;
 
     let len = kf_data.smth.state_vec.len();
 
-    // smoothed
-    let smth_state_vec = &kf_data.smth.state_vec;
-    let smth_resid = calc_residual(smth_state_vec, truth_points, len);
-
     // predicted
     let pred_state_vec = &kf_data.pred.state_vec;
-    let pred_res = calc_residual(pred_state_vec, truth_points, len);
+    let pred_res = calc_residual(pred_state_vec, truth_points, pull_distr);
 
     // filtered
     let filt_state_vec = &kf_data.filt.state_vec;
-    let filt_res = calc_residual(filt_state_vec, truth_points, len);
+    let filt_res = calc_residual(filt_state_vec, truth_points, pull_distr);
 
-    Residuals {
-        smth: smth_resid,
-        filt: filt_res,
-        pred: pred_res,
-    }
+    // smoothed
+    let smth_state_vec = &kf_data.smth.state_vec;
+    let smth_resid = calc_residual(smth_state_vec, truth_points, pull_distr);
+
+    (pred_res, filt_res, smth_resid)
 }
 
 /// Calculates the residuals between truth points and their
@@ -156,9 +156,9 @@ pub fn truth_kf_output_residuals(output: Vec<(KFData<Rectangle>, SuperData)>) ->
         .into_iter()
         .map(|(truth_data, kf_out)| {
             let truth_vals = truth_data.truth_hits.into_iter();
-            let prediction = vec5_to_vec2(kf_out.pred.state_vec).into_iter();
-            let filtered = vec5_to_vec2(kf_out.filt.state_vec).into_iter();
-            let smoothed = vec5_to_vec2(kf_out.smth.state_vec).into_iter();
+            let prediction = vec5_to_vec2_all(&kf_out.pred.state_vec).into_iter();
+            let filtered = vec5_to_vec2_all(&kf_out.filt.state_vec).into_iter();
+            let smoothed = vec5_to_vec2_all(&kf_out.smth.state_vec).into_iter();
 
             // truth_vals.zip(prediction);
             let zipped_iter = izip! {truth_vals, prediction, filtered, smoothed};
@@ -178,14 +178,14 @@ pub fn truth_kf_output_residuals(output: Vec<(KFData<Rectangle>, SuperData)>) ->
         .collect::<Vec<_>>()
 }
 
-fn vec5_to_vec2(vector_sv: Vec<Vec5>) -> Vec<Vec2> {
+fn vec5_to_vec2_all(vector_sv: &Vec<Vec5>) -> Vec<Vec2> {
     vector_sv
         .into_iter()
-        .map(|x| state_vec_to_hit_vec(x))
+        .map(|x| vec5_to_vec2_one(&x))
         .collect::<Vec<_>>()
 }
 
-fn state_vec_to_hit_vec(vec: Vec5) -> Vec2 {
+fn vec5_to_vec2_one(vec: &Vec5) -> Vec2 {
     // let new_vec = Vec2::zeros();
     get_unchecked! {vector;vec;
         eLOC_0 => x,
@@ -195,7 +195,8 @@ fn state_vec_to_hit_vec(vec: Vec5) -> Vec2 {
 }
 
 /// Residual between KF outputs and truth hits
-fn calc_residual(state_vectors: &Vec<Vec5>, truth_points: &Vec<Vec2>, len: usize) -> Vec<Vec2> {
+fn calc_residual(state_vectors: &Vec<Vec5>, truth_points: &Vec<Vec2>, pull_distr: bool) -> Vec<Vec2> {
+    let len = truth_points.len();
     let mut diff_vec = Vec::with_capacity(len);
 
     for i in 0..len {
@@ -204,12 +205,9 @@ fn calc_residual(state_vectors: &Vec<Vec5>, truth_points: &Vec<Vec2>, len: usize
             truth_points[i] => curr_truth_point
         }
 
-        get_unchecked! {vector;curr_state_vec;
-            eLOC_0 => x,
-            eLOC_1 => y
-        }
+        let kf_hit = vec5_to_vec2_one(curr_state_vec);
 
-        let diff = Vec2::new(*x, *y) - curr_truth_point;
+        let diff = kf_hit - curr_truth_point;
         diff_vec.push(diff);
     }
 

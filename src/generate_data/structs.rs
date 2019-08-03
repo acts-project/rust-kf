@@ -180,6 +180,14 @@ impl<'a> State<'a> {
 
         (phi, theta)
     }
+
+    fn make_save_folder(&self) {
+        std::fs::create_dir(self.save_folder);
+    }
+    // Assumes that the root folder (State.save_folder) has been created
+    fn make_subfolder(&self, subfolder: &str) {
+        std::fs::create_dir(self.save_folder.to_owned() + subfolder);
+    }
 }
 
 /// Means and standard deviations of paramers that will be used in

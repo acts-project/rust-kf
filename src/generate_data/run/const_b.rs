@@ -167,14 +167,6 @@ fn test_initial_predictions() -> () {
     general::fetch_separated_kf_data(&state);
 }
 
-fn runge_kutta_zero_field() -> () {
-    let state = State::default_const_b(
-        r".\data\runge_kutta_zero_field",
-        "runge_kutta_zero_field.png",
-    );
-    // generate::
-}
-
 fn residuals_after_steps_b_field() {
     let b_magnitude: Real = 2.;
     let indiv_field = (b_magnitude.powf(2.) / 3.).sqrt();

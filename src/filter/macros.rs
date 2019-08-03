@@ -162,7 +162,7 @@ macro_rules! edit_matrix {
                 // unsafe {
                     // $matrix_name.get_unchecked_mut(($row, $col))
                 // };
-                   
+
                     match $matrix_name.get_mut(($row, $col)) {
                         Some(val) => val,
                         None=> {
