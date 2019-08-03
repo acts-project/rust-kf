@@ -10,9 +10,6 @@ use super::super::geometry::Rectangle;
 use super::super::error::*;
 use super::utils::{Data, SuperData};
 
-#[macro_use]
-use super::macros;
-
 /// Monolithic function to handle linear KF calculations
 pub fn run(
     start_location: &P3, // start loc used to predict initial filtered state vec

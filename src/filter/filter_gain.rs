@@ -15,13 +15,14 @@ pub fn state_vector(
 }
 
 pub fn kalman_gain(
-    pred_covariance: &Mat5,      //C
-    sensor_mapping_mat: &Mat2x5, //H
-    V: &Mat2,                    //V
+    pred_covariance: &Mat5,        //C
+    sensor_mapping_mat: &Mat2x5,   //H
+    measurement_covariance: &Mat2, //V
 ) -> Mat5x2 {
     // K
 
-    let parens = V + (sensor_mapping_mat * pred_covariance * sensor_mapping_mat.transpose());
+    let parens = measurement_covariance
+        + (sensor_mapping_mat * pred_covariance * sensor_mapping_mat.transpose());
     let kalman_gain = pred_covariance
         * sensor_mapping_mat.transpose()
         * parens
@@ -59,14 +60,14 @@ pub fn residual_vec(
 
 pub fn residual_mat(
     //R
-    V: &Mat2,                    // V
-    sensor_mapping_mat: &Mat2x5, // H
-    filt_covariance_mat: &Mat5,  //filt C
+    measurement_covariance: &Mat2, // measurement_covariance
+    sensor_mapping_mat: &Mat2x5,   // H
+    filt_covariance_mat: &Mat5,    //filt C
 ) -> Mat2 {
     //filt R
 
     let product = sensor_mapping_mat * filt_covariance_mat * sensor_mapping_mat.transpose();
-    return V - product;
+    return measurement_covariance - product;
 }
 
 pub fn chi_squared_increment(filt_residual_vec: &Vec2, filt_residual_mat: &Mat2) -> Real {

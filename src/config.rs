@@ -1,7 +1,4 @@
 use nalgebra::*;
-#[macro_use]
-use super::macros;
-
 pub use std::f64::consts::PI; // re-export pi
 
 pub use nalgebra::{U1, U2, U3, U4, U5, U6, U7, U8};
@@ -31,6 +28,7 @@ pub type Mat5x8 = MatrixMN<Real, U5, U8>;
 pub type Mat8x5 = MatrixMN<Real, U8, U5>;
 
 pub type Mat1x8 = MatrixMN<Real, U1, U8>;
+pub type Mat1x5 = MatrixMN<Real, U1, U5>;
 
 pub type Trf3 = Transform3<Real>;
 pub type Trl3 = Translation3<Real>;

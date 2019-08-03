@@ -2,9 +2,8 @@ use super::super::super::{
     config::*,
     filter::{self, angles, jacobian, prediction, utils},
 };
-#[macro_use]
-use filter::macros;
 
+//
 use super::super::{
     store,
     structs::{self, State},
@@ -205,14 +204,22 @@ fn zero_field_sensor_sep_data() {
     general::fetch_separated_kf_data(&state);
 }
 
-fn pull_data() {
+fn pull_data_all() {
     let mut state = State::default(r".\data\pull_data\", "pull_data.png");
 
-    state.num_sensors = 20;
     state.iterations = 100_000;
     state.b_field = Vec3::new(0., 0., 0.00000000000000000000000000000000001);
 
-    general::pull_distribution(&state);
+    general::pull_distribution(&state, false);
+}
+
+fn pull_data_one() {
+    let mut state = State::default(r".\data\pull_data\", "pull_data.png");
+
+    state.iterations = 1000;
+    state.b_field = Vec3::new(0., 0., 0.00000000000000000000000000000000001);
+
+    general::pull_distribution(&state, true);
 }
 
 pub fn run_all_stats() {
@@ -223,5 +230,6 @@ pub fn run_all_stats() {
 
     // zero_field_sensor_sep_data();
 
-    pull_data();
+    pull_data_all();
+    // pull_data_one();
 }

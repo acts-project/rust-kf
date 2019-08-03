@@ -34,6 +34,7 @@ pub fn run(data: State) {
     let mut save_folder = data.save_folder.clone().to_string();
     save_folder.push_str(r"\");
 
+    #[allow(unused_must_use)]
     fs::create_dir(&save_folder);
 
     // create extensions on the folder path for each csv
@@ -169,62 +170,92 @@ pub fn sensor_separated_with_truth(data: &State) -> () {
 /// create a pull distribution of normalized data based of the intial track parameters, the prediction
 /// at the first sensor, and normlaized by the corresponding element in the diagonal of the covariance
 /// matrix
-pub fn pull_distribution(data: &State) {
+type NestStorage = Vec<Vec<StorageData>>;
+pub fn pull_distribution_general(data: &State) -> (NestStorage, NestStorage, NestStorage) {
     let kf_packaged_data = statistics::collect_stats(&data);
 
-    let len = kf_packaged_data.len();
-    let mut predictions = Vec::with_capacity(len);
-    let mut filters = Vec::with_capacity(len);
-    let mut smoothes = Vec::with_capacity(len);
-
+    let sensors = data.num_sensors as  usize;
+    let mut sensor_predictions = (0..sensors).into_iter().map(|_| Vec::with_capacity(sensors)).collect::<Vec<_>>();
+    let mut sensor_filters = sensor_predictions.clone();
+    let mut sensor_smoothes = sensor_predictions.clone();
+    
     kf_packaged_data
         .into_iter()
         .for_each(|(kf_data, mut super_data)| {
-            // get the initial track parameters
-            let init = &kf_data.smear_initial_vector;
-            let _hit = &kf_data.truth_hits[0];
-            let hit = Vec5::new(_hit.x, _hit.y, 0., 0., 0.);
 
             // use closure here to remove repetitive code.
             // fetches the covariance and state vector for the type of data we want (filt, smth, pred)
             // and calculates the pull distribution of it based on the diagonals of the covariance
-            let normalize = |data: &mut Data, res_vec: &mut Vec<structs::SerStateVec>, i| {
+            let normalize = |data: &mut Data, res_vec: &mut NestStorage, i| {
+                let _hit : &Vec2= &kf_data.truth_hits[i];
+                let hit = Vec2::new(_hit.x, _hit.y);
+
                 // let i = 0;
-                let state = data.state_vec.remove(i);
-                let cov = data.cov_mat.remove(i);
+                let state = data.state_vec.remove(0);
+                let cov = data.cov_mat.remove(0);
+                // let state: &Vec5 = data.state_vec.get(i).unwrap();
+                // let cov : &Mat5 = data.cov_mat.get(i).unwrap();
 
                 // difference between initial track parameters and the current data we are handling
                 // let mut diff = init - state;
-                let mut diff = hit - state;
+                let state_ = Vec2::new(state.x, state.y);
+                let mut diff = hit - state_;
 
                 // For every value in the diagonal
-                for i in 0..5 {
+                for j in 0..2 {
                     // fetch the current diagonal element
-                    get_unchecked! {cov[(i,i)] => curr_diagonal}
+                    get_unchecked! {cov[(j,j)] => curr_diagonal}
 
                     // divide the difference by the diagonal of the covariance
                     edit_matrix! {diff;
-                        [i] /= curr_diagonal
+                        [j] /= curr_diagonal
                     }
                 }
 
-                res_vec.push(structs::SerStateVec::new(diff));
+                let sensor_vec_index : &mut Vec<StorageData>= res_vec.get_mut(i).expect("sensor vec OOB");
+                sensor_vec_index.push(StorageData::from_vec2(diff));
             };
 
-            normalize(&mut super_data.pred, &mut predictions, 0);
-            normalize(&mut super_data.filt, &mut filters, 0);
-            normalize(&mut super_data.smth, &mut smoothes, 0);
+            for i in 0..super_data.pred.state_vec.len() {
+                normalize(&mut super_data.pred, &mut sensor_predictions, i);
+                normalize(&mut super_data.filt, &mut sensor_filters, i);
+                normalize(&mut super_data.smth, &mut sensor_smoothes, i);
+            }
+
         });
 
-    // concat a sub path onto the save folder and write the vector of serializable structs to the path
-    let write_from_string = |save_string, ser_data| {
-        let path = data.save_folder.to_string() + save_string;
-        store::write_csv(&path, ser_data);
+    return (sensor_predictions, sensor_filters, sensor_smoothes);
+}
+
+pub fn pull_distribution(data: &State,first_only: bool) {
+    std::fs::create_dir(data.save_folder);
+
+    let (mut pred, mut filt, mut smth) = pull_distribution_general(&data);
+
+    let make_path_and_write = |storage_data, subfolder_name, count| {
+        // make the subdirectoy
+        let folder_path = data.save_folder.clone().to_string() + &format! {r"\{}\",subfolder_name};
+        // path to the actual csv we are going to write
+        std::fs::create_dir(&folder_path);
+        let path = folder_path + &format! {r"sensor_{}.csv", count};
+        //write the csv
+        store::write_csv(&path, storage_data);
     };
 
-    write_from_string("predicted.csv", predictions);
-    write_from_string("filtered.csv", filters);
-    write_from_string("smoothed.csv", smoothes);
+    for i in 0..pred.len() {
+        let p = pred.remove(0);
+        let f = filt.remove(0);
+        let s = smth.remove(0);
+
+        make_path_and_write(p, "predicted", i);
+        make_path_and_write(f, "filtered", i);
+        make_path_and_write(s, "smoothed", i);
+
+        // if we only want the first sensor
+        if i == 0 && first_only == true {
+            break;
+        }
+    }
 }
 
 fn residual_to_vec(storage: &mut Vec<StorageData>, res: &Vec<Vec2>) -> () {
@@ -252,6 +283,7 @@ pub fn fetch_kf_randomness_residuals(data: &State) {
     let mut save_folder = data.save_folder.to_string();
     save_folder.push_str(r"\");
 
+    #[allow(unused_must_use)]
     fs::create_dir(&save_folder);
 
     // create extensions on the folder path for each csv

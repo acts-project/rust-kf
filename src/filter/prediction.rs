@@ -4,8 +4,6 @@ use super::super::geometry::traits::{Plane, Transform};
 use super::super::geometry::*;
 use super::angles;
 use super::jacobian::RungeKuttaStep;
-#[macro_use]
-use super::macros;
 
 // extrapolating state vector
 // NOTE: this can only be used for linear systems
@@ -31,13 +29,14 @@ pub fn covariance_matrix(
 // just below eq. 7
 // residual covariance of predicted results
 pub fn residual_mat(
-    V: &Mat2,                    // V
-    sensor_mapping_mat: &Mat2x5, // H
-    pred_covariance_mat: &Mat5,  // pred C
+    measurement_covariance: &Mat2, // measurement_covariance
+    sensor_mapping_mat: &Mat2x5,   // H
+    pred_covariance_mat: &Mat5,    // pred C
 ) -> Mat2 {
     // pred R
 
-    return V + (sensor_mapping_mat * pred_covariance_mat * sensor_mapping_mat.transpose());
+    return measurement_covariance
+        + (sensor_mapping_mat * pred_covariance_mat * sensor_mapping_mat.transpose());
 }
 
 pub fn residual_vec(

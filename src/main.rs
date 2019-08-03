@@ -7,10 +7,10 @@ use nalgebra as na;
 use kalman_rs::generate_data::run;
 use kalman_rs::print;
 
-use rayon::{self, prelude::*};
+use rayon;
 
+use rand::rngs::SmallRng;
 use rand::SeedableRng;
-use rand::{rngs::SmallRng, Rng};
 
 fn main() {
     // run::const_b::runge_kutta_global_locations();
@@ -20,15 +20,17 @@ fn main() {
     // gen_track()
 }
 
-use traits::{Plane, Transform};
+use traits::Plane;
 fn gen_track() {
     let mut state = kalman_rs::generate_data::structs::State::default_const_b("", "");
     state.iterations = 10;
     state.num_sensors = 10;
-    state.sensor_distance = 1.;
+    state.sensor_distance = 0.01;
 
     let rng = SmallRng::from_entropy();
     let track = kalman_rs::generate_data::setup::generate_const_b_track(&state, rng);
+
+    print! {track.smear_initial_vector, track.smear_initial_vector}
     let data = kalman_rs::filter::constant_magnetic_field::run(
         &track.start,
         &track.cov,

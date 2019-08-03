@@ -140,12 +140,22 @@ pub fn generate_const_b_track(state: &State, mut rng: SmallRng) -> KFData<Rectan
     // since its not a sensor on the actual track
     let virt = sensor_vec.remove(0);
 
+    let covariance = filter::utils::seed_covariance();
+    get_unchecked! {
+        covariance[(0,0)] => cov_x,
+        covariance[(1,1)] => cov_y
+    }
+
     // smear the hit locations
     let smeared_hits = truth_hits
         .iter()
         .map(|point| {
-            let smear_x = state.stdevs.smear_hit(&mut rng, point.x);
-            let smear_y = state.stdevs.smear_hit(&mut rng, point.y);
+            // PAUL SAYS SQRT HERE
+            let ydistr = Normal::new(point.y, cov_y.sqrt()).expect("ydistr problem uh oh");
+            let xdistr = Normal::new(point.x, cov_x.sqrt()).expect("xdistr problem uh oh");
+
+            let smear_x = xdistr.sample(&mut rng);
+            let smear_y = ydistr.sample(&mut rng);
 
             Vec2::new(smear_x, smear_y)
         })
@@ -185,11 +195,16 @@ pub fn generate_const_b_track(state: &State, mut rng: SmallRng) -> KFData<Rectan
 }
 
 fn smear_state_vector(rng: &mut SmallRng, std_dev: Real, state_vec: &Vec5) -> Vec5 {
+    let cov = filter::utils::seed_covariance();
     let mut new_vec = Vec5::zeros();
 
     for i in 0..5 {
-        get_unchecked! {vector;state_vec; i=> var}
-        let distr = Normal::new(*var, std_dev).unwrap();
+        get_unchecked! {
+            state_vec[i] => var,    // current index of the state vector
+            cov[(i,i)] =>cov_val    // corresponding diagonal value in the covariance
+        }
+
+        let distr = Normal::new(*var, *cov_val).unwrap();
         let new_val = distr.sample(rng);
         edit_matrix! {new_vec; [i, 0] = new_val}
     }

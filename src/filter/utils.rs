@@ -3,21 +3,21 @@ use super::super::geometry::traits::{Plane, Transform};
 use super::angles;
 use nalgebra as na;
 
-#[macro_use]
-use super::macros;
-
-pub const FILL: Real = 0.0001;
-
 /// Placeholder function for some form of effective seeding for Mat5's
 pub fn seed_covariance() -> Mat5 {
     // create a matrix with every element being .1
     let mut base = Mat5::zeros();
-    base.fill_diagonal(FILL);
 
-    let id = Mat5::identity();
+    let mut vals = std::iter::repeat(0.07).into_iter();
 
-    // base
-    id
+    for i in 0..5 {
+        let val = vals.next().unwrap();
+
+        edit_matrix! {base;
+            [i,i] = val
+        }
+    }
+    base
 }
 
 /// Calculate the first filtered state vector estimate based on the
@@ -110,7 +110,7 @@ pub fn vec_of_vec(num: usize) -> Vec<Vec5> {
 }
 
 // TODO Name is similar to other structs. figure out a new one
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Data {
     pub state_vec: Vec<Vec5>,
     pub cov_mat: Vec<Mat5>,
@@ -225,7 +225,7 @@ pub fn rk_state_vec_to_local_state_vec<T: Transform + Plane>(
 }
 
 // TODO: come up with a better name for this
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct SuperData {
     pub smth: Data,
     pub filt: Data,

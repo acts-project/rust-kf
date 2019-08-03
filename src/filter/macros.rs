@@ -162,7 +162,14 @@ macro_rules! edit_matrix {
                 // unsafe {
                     // $matrix_name.get_unchecked_mut(($row, $col))
                 // };
-                    $matrix_name.get_mut(($row, $col)).expect("CHAMGE MAT VAL ERROR");
+                   
+                    match $matrix_name.get_mut(($row, $col)) {
+                        Some(val) => val,
+                        None=> {
+                            println!{"edit_matrix out of bounds:\nfile:{}\tline:{}", file!{}, line!{}}
+                            panic!{""}
+                        }
+                    };
             *value $operation $new_value;
 
         )+

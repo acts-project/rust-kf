@@ -1,8 +1,5 @@
 use super::super::config::*;
 
-#[macro_use]
-use super::macros;
-
 pub fn gain_matrix(
     curr_filt_cov_mat: &Mat5, //filt C
     jacobian: &Mat5,          // F_k or J

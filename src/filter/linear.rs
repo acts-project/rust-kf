@@ -10,9 +10,6 @@ use super::super::geometry::Rectangle;
 use super::super::error::*;
 use super::utils::{Data, SuperData};
 
-#[macro_use]
-use super::macros;
-
 /// Monolithic function to handle linear KF calculations
 #[allow(dead_code)]
 pub fn run(

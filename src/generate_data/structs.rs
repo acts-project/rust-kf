@@ -8,7 +8,7 @@ use rand_distr::{Distribution, Normal};
 
 /// Holds x and y points from the kf, usually either the
 /// residual from truth vs smear or truth vs kf output
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Clone)]
 pub struct StorageData {
     x_points: Real,
     y_points: Real,
@@ -22,6 +22,16 @@ impl StorageData {
     }
     pub fn from_vec2(x: Vec2) -> Self {
         StorageData::new(x.x, x.y)
+    }
+    pub fn vec_vec2(x: Vec<Vec2>) -> Vec<Self> {
+        x.into_iter()
+            .map(|x| StorageData::from_vec2(x))
+            .collect::<Vec<_>>()
+    }
+    pub fn vec_vec_vec2(x: Vec<Vec<Vec2>>) -> Vec<Vec<Self>> {
+        x.into_iter()
+            .map(|v| StorageData::vec_vec2(v))
+            .collect::<Vec<_>>()
     }
 }
 
@@ -64,6 +74,7 @@ impl SerStateVec {
     }
 }
 /// Stores information on the truth and smeared track paramers
+#[derive(Debug, Clone)]
 pub struct KFData<T: Transform + Plane> {
     pub start: P3,
     pub original_angles: (Real, Real), // (phi, theta)
@@ -112,7 +123,7 @@ where
 
 /// Holds all information on what paramers are going to be used for
 /// the generation of a linear track.
-#[derive(Serialize, Debug)]
+#[derive(Serialize, Debug, Clone)]
 pub struct State<'a> {
     pub histogram_name: &'a str,
     pub iterations: usize,
@@ -128,8 +139,8 @@ impl<'a> State<'a> {
     pub fn default(folder_name: &'a str, hist_name: &'a str) -> Self {
         Self {
             histogram_name: hist_name,
-            iterations: 10_000,
-            num_sensors: 20,
+            iterations: 100_000,
+            num_sensors: 10,
             sensor_distance: 0.01,
             angles: Self::calculate_angles(),
             b_field: Vec3::zeros(),
@@ -180,7 +191,7 @@ impl<'a> State<'a> {
 /// | a , b |
 /// | c , d |
 ///
-#[derive(Serialize, Debug)]
+#[derive(Serialize, Debug, Clone)]
 pub struct Uncertainty {
     pub point_std: Real,
     pub diag_std: Real,
@@ -218,6 +229,7 @@ impl Uncertainty {
 }
 
 /// Holds residuals for truth points vs KF output points
+#[derive(Clone)]
 pub struct Residuals {
     pub smth: Vec<Vec2>,
     pub filt: Vec<Vec2>,

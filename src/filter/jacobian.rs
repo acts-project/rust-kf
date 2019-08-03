@@ -6,8 +6,6 @@ use config::*;
 use config::*;
 use nalgebra as na;
 
-#[macro_use]
-use super::macros;
 use super::angles;
 
 use super::prediction;
@@ -40,6 +38,8 @@ pub fn linear<T: Transform + Plane>(
 
     // let transport_and_to_global = transport_and_to_global - deriv_product;
 
+    // return loc_2_glob * transport_and_to_global;
+
     return glob_2_loc * transport_jac * loc_2_glob;
 
     // unimplemented!()
@@ -50,7 +50,7 @@ fn derivative_factors(
     angles: &angles::Angles,
     transport_2_glob: &Mat8x5,
     rotation_mat: &Mat4,
-) -> Mat1x8 {
+) -> Mat1x5 {
     //
 
     // I _think_ this is supposed to be transposed based on the naming but im not sure
@@ -62,8 +62,8 @@ fn derivative_factors(
     get_unchecked! { _temp[0] => prod }
     let norm = norm / *prod;
 
-    let jac_slice = transport_2_glob.fixed_slice::<U3, U8>(0, 0);
-    // let norm =
+    let jac_slice = transport_2_glob.fixed_slice::<U3, U5>(0, 0);
+
     return norm * jac_slice;
 }
 
@@ -243,7 +243,7 @@ pub fn constant_field<T: Transform + Plane>(
     */
 
     // TODO: make this auto-adjust the stepsize
-    let step_size: Real = 0.00000001;
+    let step_size: Real = 0.0001;
 
     let mut step_counter = 0;
 
@@ -268,14 +268,22 @@ pub fn constant_field<T: Transform + Plane>(
         angles = utils::angles_from_rk_state(&global_state_vec);
         transport = transport * transport_step;
 
-        // print!{end_sensor.global_center(), global_location, step_counter}
         step_counter += 1;
+
+        // TODO: REMOVE ME !!!
+        if global_location.x < 0. {
+            panic! {"we are going backwards for some reason"}
+        }
 
         // if we have arrived at the ending sensor in the global place we stop
         if end_sensor.on_plane(&global_location) {
             // print!{"\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"}
             break;
         }
+
+        // if step_counter % 1_000_000 == 0 {
+        //     print!{end_sensor.global_center(), global_location, step_counter}
+        // }
     }
 
     let (local_sv_prediction, _) =
