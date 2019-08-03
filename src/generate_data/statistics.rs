@@ -7,7 +7,10 @@ use setup::generate_linear_track;
 
 use super::structs::{KFData, Residuals, State};
 
-use filter::{constant_magnetic_field, linear, utils::SuperData};
+use filter::{
+    constant_magnetic_field, linear,
+    utils::{Data, SuperData},
+};
 
 use rand::rngs::SmallRng;
 use rand::{thread_rng, SeedableRng};
@@ -101,11 +104,11 @@ fn stats_const_b(state: &State, mut rng: SmallRng) -> (KFData<Rectangle>, SuperD
 /// piped into this function
 pub fn fetch_kf_residuals_all(
     create_statistics_data: &Vec<(KFData<Rectangle>, SuperData)>,
+    pull_distribution: bool,
 ) -> Vec<(Vec<Vec2>, Vec<Vec2>, Vec<Vec2>)> {
-
     create_statistics_data
         .iter()
-        .map(|(truth, kf_ver)| create_residuals(truth, kf_ver, false))
+        .map(|(truth, kf_ver)| create_residuals(truth, kf_ver, pull_distribution))
         .collect::<Vec<_>>()
 }
 
@@ -116,22 +119,18 @@ fn create_residuals(
     kf_data: &SuperData,
     pull_distr: bool,
 ) -> (Vec<Vec2>, Vec<Vec2>, Vec<Vec2>) {
-
     let truth_points = &truth_data.truth_hits;
 
     let len = kf_data.smth.state_vec.len();
 
     // predicted
-    let pred_state_vec = &kf_data.pred.state_vec;
-    let pred_res = calc_residual(pred_state_vec, truth_points, pull_distr);
+    let pred_res = calc_residual(&kf_data.pred, truth_points, pull_distr);
 
     // filtered
-    let filt_state_vec = &kf_data.filt.state_vec;
-    let filt_res = calc_residual(filt_state_vec, truth_points, pull_distr);
+    let filt_res = calc_residual(&kf_data.filt, truth_points, pull_distr);
 
     // smoothed
-    let smth_state_vec = &kf_data.smth.state_vec;
-    let smth_resid = calc_residual(smth_state_vec, truth_points, pull_distr);
+    let smth_resid = calc_residual(&kf_data.smth, truth_points, pull_distr);
 
     (pred_res, filt_res, smth_resid)
 }
@@ -195,9 +194,10 @@ fn vec5_to_vec2_one(vec: &Vec5) -> Vec2 {
 }
 
 /// Residual between KF outputs and truth hits
-fn calc_residual(state_vectors: &Vec<Vec5>, truth_points: &Vec<Vec2>, pull_distr: bool) -> Vec<Vec2> {
+fn calc_residual(kf_data: &Data, truth_points: &Vec<Vec2>, pull_distr: bool) -> Vec<Vec2> {
     let len = truth_points.len();
     let mut diff_vec = Vec::with_capacity(len);
+    let state_vectors = &kf_data.state_vec;
 
     for i in 0..len {
         get_unchecked! {
@@ -207,7 +207,22 @@ fn calc_residual(state_vectors: &Vec<Vec5>, truth_points: &Vec<Vec2>, pull_distr
 
         let kf_hit = vec5_to_vec2_one(curr_state_vec);
 
-        let diff = kf_hit - curr_truth_point;
+        let mut diff = kf_hit - curr_truth_point;
+
+        // if we are dealing with a pull plot we adjust the residual
+        if pull_distr {
+            let cov = &kf_data.cov_mat[i];
+            for j in 0..2 {
+                get_unchecked! {
+                    cov[(j, j )]=> curr_cov
+                }
+
+                edit_matrix! {diff;
+                    [j] /= curr_cov
+                }
+            }
+        }
+
         diff_vec.push(diff);
     }
 

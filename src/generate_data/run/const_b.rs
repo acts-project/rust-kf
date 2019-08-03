@@ -27,10 +27,6 @@ fn gev_to_joules(gev_val: Real) -> Real {
 /// This is the foundation of testing the constant magnetic field jacobian
 /// calculations.
 pub fn runge_kutta_global_locations(data: &State) {
-    // let phi = 0.;
-    // let theta = PI/2.;
-    let qop = gev_to_joules(10.);
-
     let (phi, theta) = data.angles;
     let mut angles = angles::Angles::new_from_angles(phi, theta);
 
@@ -199,7 +195,7 @@ fn zero_field_sensor_sep_data() {
 fn pull_data_all() {
     let mut state = State::default(r".\data\pull_data\", "pull_data.png");
 
-    state.iterations = 100_000;
+    state.iterations = 20_000;
     state.b_field = Vec3::new(0., 0., 0.00000000000000000000000000000000001);
 
     general::pull_distribution(&state, false);
@@ -220,8 +216,8 @@ pub fn run_all_stats() {
     // residuals_after_steps_zero_field();
     // global_prop_zero_field();
 
-    // zero_field_sensor_sep_data();
+    zero_field_sensor_sep_data();
 
-    pull_data_all();
+    // pull_data_all();
     // pull_data_one();
 }

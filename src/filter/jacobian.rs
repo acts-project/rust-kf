@@ -30,19 +30,21 @@ pub fn linear<T: Transform + Plane>(
 
     let transport_jac: Mat8 = linear_transport_jac(&mut angles, distance);
 
-    // let transport_and_to_global : Mat8x5 = transport_jac * loc_2_glob;
+    // calculate the effects of the derivative factors
+    let transport_and_to_global: Mat8x5 = transport_jac * loc_2_glob;
 
-    // let deriv_factors = derivative_factors(&angles, &transport_and_to_global, end_sensor.rotation_to_global() );
-    // let oath_len_derivative = utils::oath_length_derivatives(&angles);
-    // let deriv_product = oath_len_derivative * deriv_factors;
+    let deriv_factors = derivative_factors(
+        &angles,
+        &transport_and_to_global,
+        end_sensor.rotation_to_global(),
+    );
+    let oath_len_derivative = utils::oath_length_derivatives(&angles);
+    let transport_and_to_global: Mat8x5 =
+        transport_and_to_global - (oath_len_derivative * deriv_factors);
 
-    // let transport_and_to_global = transport_and_to_global - deriv_product;
-
-    // return loc_2_glob * transport_and_to_global;
+    // return glob_2_loc * transport_and_to_global;
 
     return glob_2_loc * transport_jac * loc_2_glob;
-
-    // unimplemented!()
 }
 
 // https://gitlab.cern.ch/acts/acts-core/blob/master/Core/include/Acts/Propagator/StraightLineStepper.hpp#L394

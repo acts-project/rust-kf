@@ -35,6 +35,12 @@ impl StorageData {
     }
 }
 
+impl From<Vec2> for StorageData {
+    fn from(x: Vec2) -> Self {
+        StorageData::from_vec2(x)
+    }
+}
+
 #[derive(Debug, Serialize)]
 pub struct StorageData2 {
     x_true: Real,
@@ -127,7 +133,7 @@ where
 pub struct State<'a> {
     pub histogram_name: &'a str,
     pub iterations: usize,
-    pub num_sensors: u32,
+    pub num_sensors: usize,
     pub sensor_distance: Real,
     pub angles: (Real, Real),
     pub b_field: Vec3,
@@ -137,7 +143,7 @@ pub struct State<'a> {
 }
 impl<'a> State<'a> {
     pub fn default(folder_name: &'a str, hist_name: &'a str) -> Self {
-        Self {
+        let _x = Self {
             histogram_name: hist_name,
             iterations: 100_000,
             num_sensors: 10,
@@ -147,7 +153,10 @@ impl<'a> State<'a> {
             qop: 1.,
             stdevs: Uncertainty::default(),
             save_folder: folder_name,
-        }
+        };
+        // initialize the folder we write to
+        _x.make_save_folder();
+        _x
     }
 
     pub fn default_const_b(folder_name: &'a str, hist_name: &'a str) -> Self {
@@ -185,8 +194,16 @@ impl<'a> State<'a> {
         std::fs::create_dir(self.save_folder);
     }
     // Assumes that the root folder (State.save_folder) has been created
-    fn make_subfolder(&self, subfolder: &str) {
-        std::fs::create_dir(self.save_folder.to_owned() + subfolder);
+    pub fn make_subfolder(&self, subfolder: &str) -> String {
+        let path = self.save_folder.to_owned() + "\\" + subfolder;
+        std::fs::create_dir(&path);
+        path
+    }
+    pub fn make_file_path(&self, file_name: &str) -> String {
+        self.save_folder.to_owned() + "\\" + file_name
+    }
+    pub fn make_subfolder_file_path(&self, sub_folder: &str, file_name: &str) -> String {
+        self.save_folder.to_owned() + "\\" + sub_folder + "\\" + file_name
     }
 }
 

@@ -64,10 +64,19 @@ fn test_initial_predictions() -> () {
     general::fetch_separated_kf_data(&state);
 }
 
+// Runs a singular test with default State parameters
 fn run_one_test() -> () {
     let state = State::default(r"E:\kf_csvs\default_parameters", "default_parameters.png");
     general::run(state);
 }
+
+fn ridder_algo() -> () {
+    let mut state = State::default(r".\data\ridder_algo_data\", "ridder_data.png");
+    state.num_sensors = 2;
+    state.angles = (0., PI / 2.);
+    general::sensor_separated_with_truth(&state);
+}
+
 pub fn run_all_stats() {
     // scaling_corner_mean();
     // scaling_point_std_dev();

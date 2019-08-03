@@ -1,3 +1,5 @@
+//! test comment
+
 #[macro_use]
 pub mod macros;
 
