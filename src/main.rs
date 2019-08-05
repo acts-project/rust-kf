@@ -1,6 +1,5 @@
 use kalman_rs::config::*;
 use kalman_rs::geometry::*;
-use kalman_rs::test_data;
 
 use nalgebra as na;
 

@@ -89,25 +89,6 @@ pub fn seed_state_vec_from_points(
     seed_vec
 }
 
-/// Creates a vector of `num` length with Mat5 components
-pub fn vec_of_mat(num: usize) -> Vec<Mat5> {
-    let mut return_vec: Vec<Mat5> = Vec::with_capacity(num);
-    (0..num)
-        .into_iter()
-        .for_each(|_| return_vec.push(seed_covariance()));
-
-    return return_vec;
-}
-
-/// Creates a vector of `num` length with Vec5 components
-pub fn vec_of_vec(num: usize) -> Vec<Vec5> {
-    let mut return_vec: Vec<Vec5> = Vec::with_capacity(num);
-    (0..num)
-        .into_iter()
-        .for_each(|_| return_vec.push(Vec5::new_random()));
-
-    return return_vec;
-}
 
 // TODO Name is similar to other structs. figure out a new one
 #[derive(Debug, Clone)]
@@ -201,29 +182,6 @@ pub fn angles_from_rk_state(rk_staete_vec: &Vec8) -> angles::Angles {
     angles::Angles::new_from_unit_direction(*tx, *ty, *tz)
 }
 
-/// Transform a 8-row rk state vector in global coordinates to a
-/// 5-row vector in local coordinates relative to a destination sensor
-pub fn rk_state_vec_to_local_state_vec<T: Transform + Plane>(
-    rk_state_vec: Vec8,
-    destination_sensor: &T,
-) -> (Vec5, angles::Angles) {
-    get_unchecked! {vector; rk_state_vec;
-        7 => qop
-    }
-
-    let global_point = global_point_from_rk_state(&rk_state_vec);
-    let angles = angles_from_rk_state(&rk_state_vec);
-
-    let phi = angles.cos_phi.acos();
-    let theta = angles.cos_theta.acos();
-
-    let local_point = destination_sensor.to_local(global_point);
-
-    let state = Vec5::new(local_point.x, local_point.y, phi, theta, *qop);
-
-    (state, angles)
-}
-
 // TODO: come up with a better name for this
 #[derive(Debug, Clone)]
 pub struct SuperData {
@@ -241,6 +199,8 @@ impl SuperData {
     }
 }
 
+/// Transform a 8-row rk state vector in global coordinates to a
+/// 5-row vector in local coordinates relative to a destination sensor
 pub fn global_to_local_state_vector<T: Transform + Plane>(
     global_sv: &Vec8,
     sensor: &T,

@@ -1,6 +1,6 @@
 use super::super::super::{
     config::*,
-    filter::{self, angles, jacobian, prediction, utils},
+    filter::{self, angles, jacobian, prediction, utils, runge_kutta},
 };
 
 //
@@ -49,9 +49,9 @@ pub fn runge_kutta_global_locations(data: &State) {
     let mut step_results = Vec::with_capacity(iterations);
 
     for _ in 0..iterations {
-        let step = jacobian::runge_kutta_step(&state_vector, &angles, &b_field, step_size);
+        let step = runge_kutta::runge_kutta_step(&state_vector, &angles, &b_field, step_size);
 
-        prediction::rk_current_global_location(&step, &mut global_state_vec);
+        runge_kutta::rk_current_global_location(&step, &mut global_state_vec);
 
         let global_point = utils::global_point_from_rk_state(&global_state_vec);
 
@@ -126,9 +126,9 @@ pub fn _residuals_after_steps(b_field: Vec3) {
         let mut global_point = P3::origin();
 
         for _ in 0..iterations {
-            let step = jacobian::runge_kutta_step(&state_vec, &angles, &b_field, step_size);
+            let step = runge_kutta::runge_kutta_step(&state_vec, &angles, &b_field, step_size);
 
-            prediction::rk_current_global_location(&step, &mut global_state_vec);
+            runge_kutta::rk_current_global_location(&step, &mut global_state_vec);
 
             global_point = utils::global_point_from_rk_state(&global_state_vec);
 
@@ -193,6 +193,13 @@ fn zero_field_sensor_sep_data() {
 }
 
 fn pull_data_all() {
+    let mut state = State::default_const_b(r".\data\pull_data", "_");
+
+    state.iterations = 20_000;
+    general::pull_distribution(&state, false);
+}
+
+fn pull_data_all_zero(){
     let mut state = State::default(r".\data\pull_data\", "pull_data.png");
 
     state.iterations = 20_000;
@@ -201,23 +208,14 @@ fn pull_data_all() {
     general::pull_distribution(&state, false);
 }
 
-fn pull_data_one() {
-    let mut state = State::default(r".\data\pull_data\", "pull_data.png");
-
-    state.iterations = 1000;
-    state.b_field = Vec3::new(0., 0., 0.00000000000000000000000000000000001);
-
-    general::pull_distribution(&state, true);
-}
-
 pub fn run_all_stats() {
     // test_generated_residuals();
     // test_initial_predictions();
     // residuals_after_steps_zero_field();
     // global_prop_zero_field();
 
-    zero_field_sensor_sep_data();
+    // zero_field_sensor_sep_data();
 
-    // pull_data_all();
+    pull_data_all();
     // pull_data_one();
 }

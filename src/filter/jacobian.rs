@@ -1,14 +1,15 @@
-use super::super::config;
-use super::super::geometry::traits::{Plane, Transform};
-use super::utils;
-use config::*;
+use super::super::{
+    config::*,
+    geometry::traits::{Plane, Transform},
+};
 
-use config::*;
 use nalgebra as na;
 
-use super::angles;
-
-use super::prediction;
+use super::{
+    angles,
+    runge_kutta,
+    utils,
+};
 
 /// Calculate the jacobian between sensors for a linear case
 pub fn linear<T: Transform + Plane>(
@@ -245,32 +246,28 @@ pub fn constant_field<T: Transform + Plane>(
     */
 
     // TODO: make this auto-adjust the stepsize
-    let step_size: Real = 0.0001;
-
-    let mut step_counter = 0;
+    // let step_size: Real = 0.0001;
+    let step_size: Real = 0.00001;
 
     loop {
-        step_counter += 1;
 
         // Runge-Kutta step data
-        let step_data = runge_kutta_step(prev_filt_state_vec, &angles, b_field, step_size);
+        let step_data = runge_kutta::runge_kutta_step(prev_filt_state_vec, &angles, b_field, step_size);
 
         // fetch transport between RK steps
         let transport_step =
-            constant_magnetic_transport(prev_filt_state_vec, &step_data, b_field, &angles);
+            runge_kutta::constant_magnetic_transport(prev_filt_state_vec, &step_data, b_field, &angles);
 
         // print!{transport_step}
 
         // updates the global state vector in place
-        prediction::rk_current_global_location(&step_data, &mut global_state_vec);
+        runge_kutta::rk_current_global_location(&step_data, &mut global_state_vec);
 
         // pull the global point from the global state vector
         let global_location = utils::global_point_from_rk_state(&global_state_vec);
 
         angles = utils::angles_from_rk_state(&global_state_vec);
         transport = transport * transport_step;
-
-        step_counter += 1;
 
         // TODO: REMOVE ME !!!
         if global_location.x < 0. {
@@ -279,156 +276,17 @@ pub fn constant_field<T: Transform + Plane>(
 
         // if we have arrived at the ending sensor in the global place we stop
         if end_sensor.on_plane(&global_location) {
-            // print!{"\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"}
             break;
         }
 
-        // if step_counter % 1_000_000 == 0 {
-        //     print!{end_sensor.global_center(), global_location, step_counter}
-        // }
     }
 
     let (local_sv_prediction, _) =
         utils::global_to_local_state_vector(&global_state_vec, end_sensor);
 
-    // print!{loc_2_glob, glob_2_loc, transport, step_counter}
-    // panic!{"326"}
-
     let jacobian = glob_2_loc * transport * loc_2_glob;
-
-    // print!{jacobian}
 
     (jacobian, local_sv_prediction)
 }
 
-/// Caculation of transport jacobian at a single time step
-/// in a constant magnetic field.
-pub fn constant_magnetic_transport(
-    prev_filt_state_vec: &Vec5,
-    step_data: &RungeKuttaStep,
-    b_field: &Vec3,
-    angles: &angles::Angles,
-) -> Mat8 {
-    get_unchecked! {
-        prev_filt_state_vec[eQOP] => qop
-    }
-    let qop = *qop;
 
-    let h = step_data.h;
-    let half_h = h / 2.;
-    let mut transport = Mat8::identity();
-    let dir = angles.direction;
-
-    let mut dk1dT = Mat3::zeros();
-    let mut dk2dT = Mat3::identity();
-    let mut dk3dT = Mat3::identity();
-    let mut dk4dT = Mat3::identity();
-
-    let dk1dL = dir.cross(&b_field);
-
-    let adjust = dir + (half_h * step_data.k1);
-    let dk2dL = adjust.cross(&b_field) + (qop * half_h * dk1dL.cross(&b_field));
-
-    let adjust = dir + (half_h * step_data.k2);
-    let dk3dL = adjust.cross(&b_field) + (qop * half_h * dk2dL.cross(&b_field));
-
-    let adjust = dir + (h * step_data.k3);
-    let dk4dL = adjust.cross(&b_field) + (qop * h * dk3dL.cross(&b_field));
-
-    edit_matrix! {dk1dT;
-        [0,1] =  b_field.z,
-        [0,2] = -b_field.y,
-        [1,0] = -b_field.z,
-        [1,2] =  b_field.x,
-        [2,0] =  b_field.y,
-        [2,1] = -b_field.x
-    }
-    dk1dT *= qop;
-
-    dk2dT += half_h * dk1dT;
-    utils::matrix_cross_product(&mut dk2dT, &b_field);
-    dk2dT *= qop;
-
-    dk3dT += half_h * dk2dT;
-    utils::matrix_cross_product(&mut dk3dT, &b_field);
-    dk3dT *= qop;
-
-    dk4dT += half_h * dk3dT;
-    utils::matrix_cross_product(&mut dk4dT, &b_field);
-    dk4dT *= qop;
-
-    // dF/dT
-    let mut dFdT = transport.fixed_slice_mut::<U3, U3>(0, 4);
-    dFdT.fill_with_identity();
-    dFdT += (h / 6.) * (dk1dT + dk2dT + dk3dT);
-    dFdT *= h;
-
-    // dF/dL
-    let mut dFdL = transport.fixed_slice_mut::<U3, U1>(0, 7);
-    let _temp = (h * h / 6.) * (dk1dL + dk2dL + dk3dL);
-    dFdL.copy_from(&_temp);
-
-    // dG/dT
-    let mut dGdT = transport.fixed_slice_mut::<U3, U3>(4, 4);
-    dGdT += (h / 6.) * (dk1dT + (2. * (dk2dT + dk3dT)) + dk4dT);
-
-    // dG/dL
-    let mut dGdL = transport.fixed_slice_mut::<U3, U1>(4, 7);
-    let _temp = h / 6. * (dk1dL + 2. * (dk2dL + dk3dL) + dk4dL);
-    dGdL.copy_from(&_temp);
-
-    // print!{"RK transport", transport}
-
-    return transport;
-}
-
-#[derive(Debug)]
-pub struct RungeKuttaStep {
-    pub k1: Vec3,
-    pub k2: Vec3,
-    pub k3: Vec3,
-    pub k4: Vec3,
-    pub h: Real,
-}
-impl RungeKuttaStep {
-    fn new(k1: Vec3, k2: Vec3, k3: Vec3, k4: Vec3, step_size: Real) -> Self {
-        RungeKuttaStep {
-            k1: k1,
-            k2: k2,
-            k3: k3,
-            k4: k4,
-            h: step_size,
-        }
-    }
-}
-
-// based on
-// https://gitlab.cern.ch/acts/acts-core/blob/master/Core/include/Acts/Propagator/DefaultExtension.hpp#L45-59
-// https://gitlab.cern.ch/acts/acts-core/blob/master/Core/include/Acts/Propagator/EigenStepper.ipp#L215-253
-pub(crate) fn runge_kutta_step(
-    prev_filt_state_vec: &Vec5,
-    angles: &angles::Angles, // one-time time calculated angles
-    b_field: &Vec3,          // magnetic field vector
-    h: Real,                 // step size
-) -> RungeKuttaStep {
-    get_unchecked! {
-        prev_filt_state_vec[eQOP] => qop
-    }
-    let qop = *qop;
-
-    let dir = &angles.direction;
-    let half_h = h / 2.;
-
-    let k1 = qop * dir.cross(&b_field);
-
-    let adj_k1 = dir + (half_h * k1);
-    let k2 = qop * adj_k1.cross(&b_field);
-
-    let adj_k2 = dir + (half_h * k2);
-    let k3 = qop * adj_k2.cross(&b_field);
-
-    let adj_k3 = dir + (h * k3);
-    let k4 = qop * adj_k3.cross(&b_field);
-
-    RungeKuttaStep::new(k1, k2, k3, k4, h)
-}
