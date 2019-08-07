@@ -95,7 +95,7 @@ pub fn linear_from_one_sensor<T: Transform + Plane>(
     let (global_pred_point, distance) = linear_global_hit_estimation(
         end_sensor.plane_normal_vec(),
         &global_start,
-        &mut angles,
+        &angles,
         &end_sensor.plane_constant(),
     );
 
@@ -112,7 +112,7 @@ pub fn linear_from_one_sensor<T: Transform + Plane>(
 pub fn linear_global_hit_estimation(
     plane_normal_vector: &Vec3,
     start_global_point: &P3,
-    angles: &mut angles::Angles,
+    angles: &angles::Angles,
     end_plane_constant: &Real,
 ) -> (P3, Real) {
     // to be honest i am not sure _at all_ why this vector has to be reversed,

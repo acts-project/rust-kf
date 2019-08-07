@@ -9,6 +9,7 @@ use super::{
     angles,
     runge_kutta,
     utils,
+    prediction,
 };
 
 /// Calculate the jacobian between sensors for a linear case
@@ -247,7 +248,10 @@ pub fn constant_field<T: Transform + Plane>(
 
     // TODO: make this auto-adjust the stepsize
     // let step_size: Real = 0.0001;
-    let step_size: Real = 0.00001;
+    let mut step_size: Real = 0.00001;
+
+    let end_plane_norm_vec = end_sensor.plane_normal_vec();
+    let end_plane_const    = end_sensor.plane_constant();
 
     loop {
 
@@ -278,6 +282,17 @@ pub fn constant_field<T: Transform + Plane>(
         if end_sensor.on_plane(&global_location) {
             break;
         }
+
+        // calculate the shortest linear distance to the next sensor
+        let (_, next_sensor_distance) = 
+            prediction::linear_global_hit_estimation(
+            end_plane_norm_vec,
+            &global_location,
+            &angles,
+            &end_plane_const
+        );
+        // calculate the next step size using a maxiumum upper bound
+        step_size = step_data.adaptive_step_size(next_sensor_distance);
 
     }
 

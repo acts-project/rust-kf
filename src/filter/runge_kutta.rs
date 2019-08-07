@@ -1,3 +1,6 @@
+const ERR_TOLERANCE: Real = 0.001;
+
+
 use super::super::{
     config::*,
 };
@@ -25,6 +28,24 @@ impl RungeKuttaStep {
             k4: k4,
             h: step_size,
         }
+    }
+
+    pub fn adaptive_step_size(&self, max_distance: Real) -> Real {
+        let error = self.h.powf(2.) * (self.k1 - self.k2 - self.k3 + self.k4).norm();
+
+
+        let next_step_unbounded = self.h * (ERR_TOLERANCE / error).powf(1./4.);
+
+        let _temp = 4.*self.h;
+        let max = 
+            if  _temp > max_distance {_temp}
+            else{max_distance};
+        let min = 0.25 * self.h;
+
+        // check the bounds to make sure we are not making the next step too large or small
+        if next_step_unbounded > max {max}
+        else if next_step_unbounded < min {min}
+        else {next_step_unbounded}
     }
 }
 

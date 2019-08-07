@@ -145,7 +145,7 @@ impl<'a> State<'a> {
     pub fn default(folder_name: &'a str, hist_name: &'a str) -> Self {
         let _x = Self {
             histogram_name: hist_name,
-            iterations: 100_000,
+            iterations: 70_000,
             num_sensors: 10,
             sensor_distance: 0.01,
             angles: Self::calculate_angles(),
