@@ -10,12 +10,12 @@
 macro_rules! impl_from {
     // catch to expand to a function-like enum
     (empty: $from_type:ident, $to_type:ty, $subtype:expr) => {
-        impl_from!(full: $from_type, $to_type, $subtype, exp_empty)
+        impl_from!(full: $from_type, $to_type, $subtype, exp_empty);
     }; // will expand to call impl_from!(exp_empty: ...)  ^^^^^^^
 
     // catch for C-like enums
     ($from_type:ident, $to_type:ty, $subtype:expr) => {
-        impl_from!(full: $from_type, $to_type, $subtype, exp_full)
+        impl_from!(full: $from_type, $to_type, $subtype, exp_full);
     }; // will expand to call impl_from!(exp_full: ...)   ^^^^^^^
 
     // this branch will be called always. interior macro will expand
@@ -28,7 +28,7 @@ macro_rules! impl_from {
 
     //interior expansion function if it is a C-like enum
     (exp_empty: $from_type:ident, $subtype:expr) => {
-        fn from(error: $from_type) -> Self {
+        fn from(_error: $from_type) -> Self {
             $subtype
         }
     };
@@ -58,14 +58,9 @@ pub enum SensorError {
     OutsideSensorBounds(P2),
 }
 
-// this function is only here to ensure that all `std::From` trait implementations
-// are correctly expanded at compile time. It never needs to be called
-#[allow(dead_code)]
-fn init_from() {
-    // MatrixError
-    impl_from!(MatrixError, Error, Error::Matrix);
-    impl_from!(empty: i32, MatrixError, MatrixError::NonInvertible);
+// MatrixError
+impl_from!(MatrixError, Error, Error::Matrix);
+impl_from!(empty: i32, MatrixError, MatrixError::NonInvertible);
 
-    //SensorError
-    impl_from!(SensorError, Error, Error::Sensor);
-}
+//SensorError
+impl_from!(SensorError, Error, Error::Sensor);

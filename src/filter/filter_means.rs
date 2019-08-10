@@ -44,7 +44,7 @@ pub fn chi_squared_increment(
 ) -> Real {
     let first_term = residual_vec.transpose() * inverse_measurement_cov * residual_vec;
 
-    let second_term_3 = (state_vector - extrap_state_vector);
+    let second_term_3 = state_vector - extrap_state_vector;
     let second_term_2 = pred_covariance_mat.try_inverse().unwrap();
     let second_term_1 = second_term_3.transpose();
 

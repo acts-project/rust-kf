@@ -72,7 +72,7 @@ pub fn generate_linear_track(state: &State, mut rng: SmallRng) -> KFData<Rectang
         })
         .collect::<Vec<_>>();
 
-    let smear_state_vec = smear_state_vector(&mut rng, state.stdevs.point_std, &start_state_vec);
+    let smear_state_vec = smear_state_vector(&mut rng, &start_state_vec);
     sensor_vec.insert(0, virtual_sensor);
 
     KFData::new(
@@ -171,7 +171,7 @@ pub fn generate_const_b_track(state: &State, mut rng: SmallRng) -> KFData<Rectan
         })
         .collect::<Vec<_>>();
 
-    let smear_state_vec = smear_state_vector(&mut rng, state.stdevs.point_std, &start_state_vec);
+    let smear_state_vec = smear_state_vector(&mut rng, &start_state_vec);
 
     // add it back in since the kf operations initially rely on it
     sensor_vec.insert(0, virt);
@@ -190,7 +190,7 @@ pub fn generate_const_b_track(state: &State, mut rng: SmallRng) -> KFData<Rectan
 
 /// Smears the state vector according to how much smearing takes place in the
 /// seeded covariance matrix in `filter::utils::seed_covariance
-fn smear_state_vector(rng: &mut SmallRng, std_dev: Real, state_vec: &Vec5) -> Vec5 {
+fn smear_state_vector(rng: &mut SmallRng, state_vec: &Vec5) -> Vec5 {
     let cov = filter::utils::seed_covariance();
     let mut new_vec = Vec5::zeros();
 

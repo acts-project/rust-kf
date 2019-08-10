@@ -1,6 +1,4 @@
 use super::super::config::*;
-use nalgebra as na;
-use nalgebra::{Point3, Vector3};
 
 // NOTE: since the (slow) math beind this function is 100% certain for symmetric quadralaterals
 // I am leaving it in for testing purposes against the currnet (more efficient) bounds checks

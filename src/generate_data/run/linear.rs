@@ -1,11 +1,6 @@
-use super::super::{
-    statistics, store,
-    structs::{Residuals, State, StorageData},
-};
+use super::super::structs::State;
 
 use super::general;
-
-use std::fs;
 
 use super::super::super::config::*;
 

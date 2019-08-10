@@ -43,12 +43,12 @@ pub fn covariance_matrix(
 
 #[inline(always)]
 pub fn residual_mat(
-    V: &Mat2,                    // V
-    sensor_mapping_mat: &Mat2x5, // H
-    curr_smth_cov_mat: &Mat5,    // curr smth C
+    meaasurement_covariance: &Mat2, // V
+    sensor_mapping_mat: &Mat2x5,    // H
+    curr_smth_cov_mat: &Mat5,       // curr smth C
 ) -> Mat2 {
     let prod = sensor_mapping_mat * curr_smth_cov_mat * sensor_mapping_mat.transpose();
-    let diff = V - prod;
+    let diff = meaasurement_covariance - prod;
 
     return diff;
 }

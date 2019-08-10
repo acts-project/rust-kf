@@ -1,11 +1,7 @@
 use super::super::config::*;
 use super::{filter_gain, jacobian, prediction, smoothing, utils};
-use nalgebra as na;
-
-use std::iter;
 
 use super::super::geometry::traits::{Plane, Transform};
-use super::super::geometry::Rectangle;
 
 use super::utils::{Data, SuperData};
 

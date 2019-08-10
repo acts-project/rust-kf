@@ -1,9 +1,8 @@
 use super::super::super::{
     config::*,
-    filter::{self, angles, jacobian, prediction, runge_kutta, utils},
+    filter::{angles, runge_kutta, utils},
 };
 
-//
 use super::super::{
     store,
     structs::{self, State},
@@ -12,7 +11,7 @@ use super::super::{
 use super::general;
 
 use rand::rngs::SmallRng;
-use rand::{thread_rng, SeedableRng};
+use rand::SeedableRng;
 use rand_distr::{Distribution, Normal};
 
 fn gev_to_joules(gev_val: Real) -> Real {
@@ -94,7 +93,7 @@ pub fn _residuals_after_steps(b_field: Vec3) {
 
     */
     let mut smeared_points = truth
-        .map(|x| {
+        .map(|_| {
             // create smeared  values
             let x = distr.sample(&mut rng);
             let y = distr.sample(&mut rng);
@@ -193,7 +192,7 @@ fn zero_field_sensor_sep_data() {
 }
 
 fn pull_data_all() {
-    let mut state = State::default_const_b(r".\data\pull_data", "_");
+    let state = State::default_const_b(r".\data\pull_data", "_");
 
     general::pull_distribution(&state, false);
 }

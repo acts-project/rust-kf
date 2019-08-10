@@ -15,8 +15,6 @@ use super::{
 use rand::rngs::SmallRng;
 use rand::{thread_rng, SeedableRng};
 
-use itertools::izip;
-
 use rayon::{self, prelude::*};
 
 /// Runs batches of kf calculations. Parallelization happens upstream
@@ -29,18 +27,6 @@ pub fn collect_stats(state: &State) -> Vec<(KFData<Rectangle>, SuperData)> {
         .map(|_| SmallRng::from_rng(&mut base_rng).unwrap())
         .take(state.iterations);
 
-    // create iterators of repetitve values
-    take! {state.iterations;
-        num_sensors, state.num_sensors,
-        distances, state.sensor_distance,
-        angles, state.angles,
-        point_std, state.stdevs.point_std
-    }
-
-    // zip the iterators together
-    let iter = izip! {num_sensors, distances, angles, point_std, small_rngs_iterator};
-    // let iter = iter.collect::<Vec<_>>();
-
     // if we use non-linear tracks
     let b_field_calculations: bool = if state.b_field != Vec3::zeros() {
         true
@@ -48,14 +34,11 @@ pub fn collect_stats(state: &State) -> Vec<(KFData<Rectangle>, SuperData)> {
         false
     };
 
-    if b_field_calculations {
-        print!("doing runge kutta")
-    }
-
-    let kf_results_vec: Vec<(KFData<Rectangle>, SuperData)> = iter
+    let kf_results_vec: Vec<(KFData<Rectangle>, SuperData)> = 
+        small_rngs_iterator
         .collect::<Vec<_>>()
         .into_par_iter()
-        .map(|(num_sensor, sensor_distance, angles, std_dev, rng)| {
+        .map(|rng| {
             // if there is a magnetic field...
             if b_field_calculations {
                 stats_const_b(&state, rng)
@@ -70,7 +53,7 @@ pub fn collect_stats(state: &State) -> Vec<(KFData<Rectangle>, SuperData)> {
 }
 
 /// Helper function for running linear kf
-fn stats_linear(state: &State, mut rng: SmallRng) -> (KFData<Rectangle>, SuperData) {
+fn stats_linear(state: &State, rng: SmallRng) -> (KFData<Rectangle>, SuperData) {
     let data = setup::generate_linear_track(&state, rng);
     let kf_outs = linear::run(
         &data.start,
@@ -83,7 +66,7 @@ fn stats_linear(state: &State, mut rng: SmallRng) -> (KFData<Rectangle>, SuperDa
 }
 
 /// Helper function for running constant magnetic field kf
-fn stats_const_b(state: &State, mut rng: SmallRng) -> (KFData<Rectangle>, SuperData) {
+fn stats_const_b(state: &State, rng: SmallRng) -> (KFData<Rectangle>, SuperData) {
     let data = setup::generate_const_b_track(&state, rng);
     let kf_outs = constant_magnetic_field::run(
         &data.start,

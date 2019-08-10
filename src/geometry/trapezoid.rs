@@ -1,5 +1,3 @@
-use nalgebra as na;
-
 use super::traits::{Plane, Transform};
 use super::utils;
 
@@ -75,14 +73,9 @@ pub struct Trapezoid {
 }
 
 impl Trapezoid {
-    /// This is the constructor for the rectangular geometry. It expects a 4x4 `nalgebra::Matrix4<f64>` that is invertible
-    /// and a 4 element array of `nalgebra::Point3<f64>`. If the matrix is not invertible it will return `Err(&str)`.
-    /// The provided matrix should be an affine transformation for converting from R2->R3
     ///
     /// # Examples
     /// ```
-    /// use nalgebra as na;
-    /// use na::Point3;
     /// use kalman_rs::config::*;
     /// use kalman_rs::geometry::Trapezoid;
     ///

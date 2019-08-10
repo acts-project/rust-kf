@@ -1,4 +1,3 @@
-use super::geometry::{Rectangle, Trapezoid};
 #[macro_export]
 /// This macro is to quickly define pub constants
 /// To suppress warnings and keep variable names parallel to

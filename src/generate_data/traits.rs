@@ -7,7 +7,6 @@
 //!
 //! Doing this data conversion with functions would be less clear
 
-use super::super::config::*;
 use super::structs::StorageData;
 
 /// Initialize a vector of vectors. This is the core data structure for separating data based on what
@@ -18,11 +17,9 @@ pub trait SensorHelper<T> {
 
 impl<T> SensorHelper<T> for Vec<Vec<T>> {
     fn empty_sensors(sensor_count: usize, capacity: usize) -> Vec<Vec<T>> {
-        let mut all: Vec<Vec<T>> = Vec::with_capacity(sensor_count);
-
         (0..sensor_count)
             .into_iter()
-            .map(|x| Vec::with_capacity(capacity))
+            .map(|_| Vec::with_capacity(capacity))
             .collect::<Vec<Vec<T>>>()
     }
 }

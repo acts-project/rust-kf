@@ -2,7 +2,6 @@ use super::super::config::*;
 use super::super::error::*;
 use super::traits::{Plane, Transform};
 use super::utils;
-use nalgebra as na;
 
 /// A struct for sensors of rectangular geometry
 #[derive(Debug, Clone)]
@@ -64,9 +63,9 @@ impl Rectangle {
                 let normal_vector = utils::plane_normal_vector(half_base, half_height);
 
                 let center_global = to_global_transform * orig;
-                let plane_const = (center_global.x * normal_vector.x
+                let plane_const = center_global.x * normal_vector.x
                     + center_global.y * normal_vector.y
-                    + center_global.z * normal_vector.z);
+                    + center_global.z * normal_vector.z;
 
                 let rect = Rectangle {
                     half_base: half_base,
@@ -120,9 +119,9 @@ impl Rectangle {
 
         // dbg!{v1}; dbg!{v2}; dbg!{normal};
 
-        let plane_constant = ((normal.x * global_center.x)
+        let plane_constant = (normal.x * global_center.x)
             + (normal.y * global_center.y)
-            + (normal.z * global_center.z));
+            + (normal.z * global_center.z);
 
         // dbg!{plane_constant};
         Rectangle {

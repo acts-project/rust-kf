@@ -1,22 +1,17 @@
-use super::super::super::{
-    config::*,
-    filter::utils::{self, Data},
-};
+use super::super::super::config::*;
+
 use super::super::{
     statistics, store,
     structs::{self, Residuals, State, StorageData},
-    traits::{NestedGroupedData, NestedVectorData, SensorHelper},
+    traits::NestedGroupedData,
 };
 
 use std::fs;
 
-use itertools::izip;
-use rayon::{self, prelude::*};
-
 pub fn run(data: State) {
     let kf_packaged_data = statistics::collect_stats(&data);
 
-    let mut residuals_vector: Vec<(Vec<Vec2>, Vec<Vec2>, Vec<Vec2>)> =
+    let residuals_vector: Vec<(Vec<Vec2>, Vec<Vec2>, Vec<Vec2>)> =
         statistics::fetch_kf_residuals_all(&kf_packaged_data, false);
 
     println! {"finished KF operations for {}", &data.histogram_name}
@@ -71,11 +66,11 @@ pub fn residuals_by_sensor(
     let mut sensor_smoothes = sensor_predictions.clone();
 
     for i in 0..num_sensors {
-        let mut inn_pred = sensor_predictions
+        let inn_pred = sensor_predictions
             .get_mut(i)
             .expect("statistics out of bounds");
-        let mut inn_filt = sensor_filters.get_mut(i).expect("asd");
-        let mut inn_smth = sensor_smoothes.get_mut(i).expect("sdf");
+        let inn_filt = sensor_filters.get_mut(i).expect("asd");
+        let inn_smth = sensor_smoothes.get_mut(i).expect("sdf");
 
         vec_res.iter().for_each(|x| {
             inn_pred.push(x.pred[i]);
@@ -123,18 +118,18 @@ pub fn fetch_separated_kf_data(data: &State) {
 // / smear / predicted / covariance diagonal elements for the KF
 /// This is to be used w/ ridder's algo
 pub fn sensor_separated_with_truth(data: &State) -> () {
-    let mut kf_packaged_data = statistics::collect_stats(&data);
+    let kf_packaged_data = statistics::collect_stats(&data);
 
     let len = kf_packaged_data.len();
     let mut truth_vec = Vec::with_capacity(len);
     let mut kf_pred_vec = Vec::with_capacity(len);
     let mut covariance = Vec::with_capacity(len);
 
-    let sep_data = kf_packaged_data
+    kf_packaged_data
         .into_iter()
-        .map(|(mut kf_data, mut super_data)| {
-            let mut kf_smear = structs::SerStateVec::new(kf_data.smear_initial_vector);
-            let mut pred_ser = structs::SerStateVec::new(super_data.pred.state_vec.remove(1));
+        .for_each(|(kf_data, mut super_data)| {
+            let kf_smear = structs::SerStateVec::new(kf_data.smear_initial_vector);
+            let pred_ser = structs::SerStateVec::new(super_data.pred.state_vec.remove(1));
 
             let cov_mat = super_data.pred.cov_mat.remove(1);
 
@@ -145,14 +140,15 @@ pub fn sensor_separated_with_truth(data: &State) -> () {
             truth_vec.push(kf_smear);
             kf_pred_vec.push(pred_ser);
             covariance.push(cov);
-        })
-        .collect::<Vec<_>>();
+        });
 
-    let path = data.save_folder.to_string() + "\\pred.csv";
+    let path = data.make_file_path("pred.csv");
     store::write_csv(&path, kf_pred_vec);
-    let path = data.save_folder.to_string() + "\\truth.csv";
+
+    let path = data.make_file_path("truth.csv");
     store::write_csv(&path, truth_vec);
-    let path = data.save_folder.to_string() + "\\cov.csv";
+    
+    let path = data.make_file_path("cov.csv");
     store::write_csv(&path, covariance);
 }
 
@@ -167,14 +163,14 @@ pub fn pull_distribution_general(data: &State) -> (NestStorage, NestStorage, Nes
     let vec_pred_filt_smths: Vec<(Vec<Vec2>, Vec<Vec2>, Vec<Vec2>)> =
         statistics::fetch_kf_residuals_all(&kf_packaged_data, true);
 
-    // traits::NestedGroupedData, converts Vec< predicted_residuals,
-    // filter_residuals, smooth_residuals> into three
-    // Vec<Vec<structs::StorageData>>
+    // traits::NestedGroupedData, converts `Vec< predicted_residuals,
+    // filter_residuals, smooth_residuals`> into three
+    // `Vec<Vec<structs::StorageData>>`
     vec_pred_filt_smths.by_sensor()
 
-    // return (pred_vec, filt_vec, smth_vec);
 }
 
+/// Make a pull distribution 
 pub fn pull_distribution(data: &State, first_only: bool) {
     let (mut pred, mut filt, mut smth) = pull_distribution_general(&data);
 

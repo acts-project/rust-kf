@@ -1,7 +1,6 @@
 use super::super::config::*;
 use super::super::geometry::traits::{Plane, Transform};
 use super::angles;
-use nalgebra as na;
 
 /// Placeholder function for some form of effective seeding for Mat5's
 pub fn seed_covariance() -> Mat5 {
@@ -239,7 +238,7 @@ pub fn local_to_global_state_vector<T: Transform + Plane>(
     let local_point = P3::new(*x, *y, 0.);
     let global_point = sensor.to_global(local_point);
 
-    let mut angles = angles::Angles::new_from_angles(*phi, *theta);
+    let angles = angles::Angles::new_from_angles(*phi, *theta);
 
     /*
         build a 8x1 global state vector
