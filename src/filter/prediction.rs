@@ -2,60 +2,50 @@ use super::angles;
 
 use super::super::{
     config::*,
-    error::*,
     geometry::traits::{Plane, Transform},
-    geometry::*
 };
 
-// extrapolating state vector
-// NOTE: this can only be used for linear systems
+#[inline(always)]
 pub fn state_vector(
     jacobian: &Mat5,            // J or F_k-1
     prev_filt_state_vec: &Vec5, // prev filt x
 ) -> Vec5 {
-    // pred x
-
     return jacobian * prev_filt_state_vec;
 }
 
-// prediction of covariance matrix C
+#[inline(always)]
 pub fn covariance_matrix(
     jacobian: &Mat5,                 // J or F_k-1
     prev_filt_covariance_mat: &Mat5, // prev filt C
 ) -> Mat5 {
-    // pred C
-
     return jacobian * prev_filt_covariance_mat * jacobian.transpose();
 }
 
-// just below eq. 7
-// residual covariance of predicted results
+#[inline(always)]
 pub fn residual_mat(
     measurement_covariance: &Mat2, // measurement_covariance
     sensor_mapping_mat: &Mat2x5,   // H
     pred_covariance_mat: &Mat5,    // pred C
 ) -> Mat2 {
-    // pred R
-
     return measurement_covariance
         + (sensor_mapping_mat * pred_covariance_mat * sensor_mapping_mat.transpose());
 }
 
+#[inline(always)]
 pub fn residual_vec(
     measurement_vec: &Vec2,      // m_k
     sensor_mapping_mat: &Mat2x5, // H
     pred_state_vec: &Vec5,       // pred x
 ) -> Vec2 {
-    // pred r
-
     let prod = sensor_mapping_mat * pred_state_vec;
     let diff = measurement_vec - prod;
 
     return diff;
 }
 
-/// Calculates the predicted location of the hit on the following sensor
-// based on this equation set https://i.imgur.com/mWC0qkj.png
+/// Calculates the predicted location of the hit on the following sensor.
+/// `linear_state_vector` is used as a higher level way to call
+/// `linear_from_one_sensor` and (by extension) `linear_global_hit_estimation`
 pub fn linear_state_vector<T: Transform + Plane>(
     start_sensor: &T,
     end_sensor: &T,
@@ -66,32 +56,30 @@ pub fn linear_state_vector<T: Transform + Plane>(
         prev_filt_state_vec[eLOC_1] => start_local_y_hit
     }
 
+    // convert to local hit to global starting location
     let start_local_point = P3::new(*start_local_x_hit, *start_local_y_hit, 0.0);
     let start_global_point = start_sensor.to_global(start_local_point);
 
-    // used so we can be generic over planar sensors
-    let normal = end_sensor.plane_normal_vec();
-
-    let end_plane_constant = end_sensor.plane_constant();
-
+    // pass the lower-level information to
     linear_from_one_sensor(prev_filt_state_vec, start_global_point, end_sensor)
 }
 
+/// Boilerplate-reducing function for calculating the hit on a sensor
 pub fn linear_from_one_sensor<T: Transform + Plane>(
     prev_filt_state_vec: &Vec5,
     global_start: P3,
     end_sensor: &T,
 ) -> (Vec5, Real) {
-    //
-
+    // pull data from the filtered state vector
     get_unchecked! {
         prev_filt_state_vec[eTHETA] => theta,
         prev_filt_state_vec[ePHI] => phi,
         prev_filt_state_vec[eQOP]=> qop
     }
 
-    let mut angles = angles::Angles::new_from_angles(*phi, *theta);
+    let angles = angles::Angles::new_from_angles(*phi, *theta);
 
+    // get the global location of the hit on the ending sensor + the distance to travel
     let (global_pred_point, distance) = linear_global_hit_estimation(
         end_sensor.plane_normal_vec(),
         &global_start,
@@ -99,8 +87,10 @@ pub fn linear_from_one_sensor<T: Transform + Plane>(
         &end_sensor.plane_constant(),
     );
 
+    // convert gloabl hit to local hit
     let local_pred_point = end_sensor.to_local(global_pred_point);
 
+    // make local state vector from informatin
     let new_state = Vec5::new(local_pred_point.x, local_pred_point.y, *phi, *theta, *qop);
 
     (new_state, distance)
@@ -109,6 +99,7 @@ pub fn linear_from_one_sensor<T: Transform + Plane>(
 /// Encapsultes all the global calculations for `linear_state_vector` without
 /// needing start and end sensors. This is done so it is easier to construct unit tests
 /// for this particularly troubling part of code.
+#[inline(always)]
 pub fn linear_global_hit_estimation(
     plane_normal_vector: &Vec3,
     start_global_point: &P3,

@@ -1,6 +1,6 @@
 use super::super::super::{
     config::*,
-    filter::{self, angles, jacobian, prediction, utils, runge_kutta},
+    filter::{self, angles, jacobian, prediction, runge_kutta, utils},
 };
 
 //
@@ -198,7 +198,7 @@ fn pull_data_all() {
     general::pull_distribution(&state, false);
 }
 
-fn pull_data_all_zero(){
+fn pull_data_all_zero() {
     let mut state = State::default(r".\data\pull_data\", "pull_data.png");
 
     state.b_field = Vec3::new(0., 0., 0.00000000000000000000000000000000001);
@@ -206,7 +206,7 @@ fn pull_data_all_zero(){
     general::pull_distribution(&state, false);
 }
 
-fn pull_data_all_non_zero(){
+fn pull_data_all_non_zero() {
     let state = State::default_const_b(r".\data\pull_data_bfield\", "_");
 
     general::pull_distribution(&state, false);
@@ -217,12 +217,10 @@ pub fn run_all_stats() {
     // residuals_after_steps_zero_field();
     // global_prop_zero_field();
 
-
     // pull_data_one();
 
     // test_initial_predictions();
     // zero_field_sensor_sep_data();
     pull_data_all();
     pull_data_all_non_zero();
-    
 }

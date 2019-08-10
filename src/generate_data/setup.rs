@@ -1,22 +1,18 @@
-use super::super::config::*;
-use super::super::geometry;
-use geometry::traits::{Plane, Transform};
-use geometry::Rectangle;
 use nalgebra::base::Unit;
 
-use super::super::filter;
-use filter::{jacobian, prediction};
-
-use rand::rngs::SmallRng;
-use rand::Rng;
-use rand_distr::{Distribution, Normal};
+use super::super::{
+    config::*,
+    filter::{self, jacobian, prediction},
+    geometry::Rectangle,
+};
 
 use super::structs::{KFData, State};
 
+use rand::rngs::SmallRng;
+use rand_distr::{Distribution, Normal};
+
 pub fn generate_linear_track(state: &State, mut rng: SmallRng) -> KFData<Rectangle> {
     let (phi, theta) = state.angles;
-
-    // print!{phi, theta};
 
     // create a virtual sensor at the starting position. this is used to easily calculate
     // the hits on the sensors
@@ -93,8 +89,6 @@ pub fn generate_linear_track(state: &State, mut rng: SmallRng) -> KFData<Rectang
 
 pub fn generate_const_b_track(state: &State, mut rng: SmallRng) -> KFData<Rectangle> {
     let (phi, theta) = state.angles;
-
-    // print!{phi, theta};
 
     // create a virtual sensor at the starting position. this is used to easily calculate
     // the hits on the sensors
@@ -179,8 +173,8 @@ pub fn generate_const_b_track(state: &State, mut rng: SmallRng) -> KFData<Rectan
 
     let smear_state_vec = smear_state_vector(&mut rng, state.stdevs.point_std, &start_state_vec);
 
+    // add it back in since the kf operations initially rely on it
     sensor_vec.insert(0, virt);
-    // print!(truth_hits.len(), sensor_vec.len(), smeared_hits.len());
 
     KFData::new(
         sensor_vec,
@@ -194,6 +188,8 @@ pub fn generate_const_b_track(state: &State, mut rng: SmallRng) -> KFData<Rectan
     )
 }
 
+/// Smears the state vector according to how much smearing takes place in the
+/// seeded covariance matrix in `filter::utils::seed_covariance
 fn smear_state_vector(rng: &mut SmallRng, std_dev: Real, state_vec: &Vec5) -> Vec5 {
     let cov = filter::utils::seed_covariance();
     let mut new_vec = Vec5::zeros();
@@ -212,32 +208,34 @@ fn smear_state_vector(rng: &mut SmallRng, std_dev: Real, state_vec: &Vec5) -> Ve
     new_vec
 }
 
+/// Creates a rectangular sensor along the x-axis
 fn gen_sensor(x_point: Real) -> Rectangle {
     // sensor dimensions
     let base = 1000.;
     let height = 1000.;
 
+    // make a unit vector along the y axis for rotations
     let y_axis = Vec3::new(0., 1., 0.);
     let j = Unit::try_new(y_axis, 0.).unwrap();
 
+    // local -> global && global -> local rotation matricies
     let l2g_rot = Mat4::from_axis_angle(&j, PI / 2.);
     let g2l_rot = l2g_rot
         .try_inverse()
         .expect("rotation matrix non invert test");
 
+    // translation along the x axis
     let trans = Trl3::new(x_point, 0., 0.).to_homogeneous();
 
+    // compose the transformations
     let mat = trans * l2g_rot;
 
     let to_global = Aff3::from_matrix_unchecked(mat);
     let to_local = to_global.try_inverse().unwrap();
 
-    // print!{"SENSOR CENTER WILL BE AT ", to_global * P3::origin() }
-
+    // points on the sensor plane used for generating the plane normal vector... etc
     let p1 = P3::new(x_point, 1., 1.);
     let p2 = P3::new(x_point, 0., 1.);
 
-    // new_test_sensor() is created to hard code values (transformation matricies, points)
-    // instead of using new() which uses inverses
     Rectangle::new_test_sensor(base, height, to_global, to_local, l2g_rot, g2l_rot, p1, p2)
 }

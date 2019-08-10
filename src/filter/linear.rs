@@ -1,13 +1,8 @@
 use super::super::config::*;
 use super::{filter_gain, jacobian, prediction, smoothing, utils};
-use nalgebra as na;
 
-use std::iter;
-
-use super::super::geometry::traits::{Plane, Transform};
 use super::super::geometry::Rectangle;
 
-use super::super::error::*;
 use super::utils::{Data, SuperData};
 
 /// Monolithic function to handle linear KF calculations
@@ -17,7 +12,7 @@ pub fn run(
     measurement_noise_covariance_vector: &Vec<Mat2>, // vector of V from fruhwirth paper
     measurements_vector: &Vec<Vec2>, // vector of all the measurements that were registered
     sensor_vector: &Vec<Rectangle>, // the geometric sensors that correspond to each hit ,
-    initial_seed_vec: Option<&Vec5>,
+    initial_seed_vec: Option<&Vec5>, // initial track paramters
 ) -> SuperData {
     let meas_map_mat = Mat2x5::new(1., 0., 0., 0., 0., 0., 1., 0., 0., 0.);
 
@@ -64,12 +59,11 @@ pub fn run(
         measurements_vector[0] => first_hit
     }
 
+    // if there were initial track paramters passed in we use them as the previous filtered state vector
     let mut previous_state_vec = if let Some(state_vec) = initial_seed_vec {
         *state_vec
     } else {
-        // fetch the first sensor
-
-        // calculate some seeded values (seeding improvement suggestions welcome)
+        // otherwise calculate some seeded values (seeding improvement suggestions welcome)
         super::utils::seed_state_vec_from_sensor(&start_location, first_sensor, first_hit)
     };
     let mut previous_covariance = utils::seed_covariance();
@@ -82,6 +76,8 @@ pub fn run(
             sensor_vector => curr_sensor
         }
 
+        // since the current sensor is i,
+        // the next sensor the particle hits is at i+1
         get_unchecked! {
             sensor_vector[i+1] => next_sensor
         }
@@ -148,10 +144,6 @@ pub fn run(
     }
 
     for i in (0..input_length - 1).rev() {
-        //
-        // initializing variables
-        //
-
         // fetch the current variables
         get_unchecked! {i;
             filter_state_vec_iter => curr_filt_state_vec,
@@ -168,8 +160,9 @@ pub fn run(
         }
 
         // grab variables pushed in the last iteration
-        // (i+1) since input_length is based on the function argument lengths
-        get_unchecked! {input_length - (i+2);                         //TODO: double check this indexing
+        // (i+2) since input_length is based on the function argument lengths,
+        // and the sensor vector is one index longer than the other inputs
+        get_unchecked! {input_length - (i+2);
             smoothed_state_vec_iter => prev_smth_state_vec,
             smoothed_cov_mat_iter => prev_smth_cov_mat
         }
@@ -177,9 +170,6 @@ pub fn run(
         //
         // smoothing calculations
         //
-
-        // NOTE: the next calculations assume that x^n references the next state vector and x^k references the previous
-        // state vector. I am uncertain as to what the actual answer is as andi still has not gotten back to me about it.
         let gain_matrix =
             smoothing::gain_matrix(curr_filt_cov_mat, &curr_jacobian, prev_filt_cov_mat);
         let smoothed_state_vec = smoothing::state_vector(
@@ -232,5 +222,7 @@ pub fn run(
         predicted_res_vec_iter,
     );
 
+    // We really only need to return the smoothed data, but for testing
+    // we return all of it currently
     SuperData::new(smth, filt, pred)
 }

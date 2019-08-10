@@ -41,24 +41,7 @@ impl From<Vec2> for StorageData {
     }
 }
 
-#[derive(Debug, Serialize)]
-pub struct StorageData2 {
-    x_true: Real,
-    y_true: Real,
-    x_kf: Real,
-    y_kf: Real,
-}
-impl StorageData2 {
-    pub fn new(xt: Real, yt: Real, xkf: Real, ykf: Real) -> Self {
-        StorageData2 {
-            x_true: xt,
-            y_true: yt,
-            x_kf: xkf,
-            y_kf: ykf,
-        }
-    }
-}
-
+/// Serialization for a 5-row state vector
 #[derive(Serialize)]
 pub struct SerStateVec {
     x: Real,
@@ -82,15 +65,15 @@ impl SerStateVec {
 /// Stores information on the truth and smeared track paramers
 #[derive(Debug, Clone)]
 pub struct KFData<T: Transform + Plane> {
-    pub start: P3,
+    pub start: P3,                     // starting position of the particle
     pub original_angles: (Real, Real), // (phi, theta)
-    pub sensors: Vec<T>,
-    pub cov: Vec<Mat2>,
-    pub smear_hits: Vec<Vec2>,
-    pub truth_hits: Vec<Vec2>,
-    pub smear_initial_vector: Vec5,
-    pub truth_initial_vector: Vec5,
-    pub b_field: Vec3,
+    pub sensors: Vec<T>,               // vector of sensors where hits happen
+    pub cov: Vec<Mat2>,                // vector of measurement noises
+    pub smear_hits: Vec<Vec2>,         // hits after gaussian smearing
+    pub truth_hits: Vec<Vec2>,         // original "truth" points before smearing
+    pub smear_initial_vector: Vec5,    // initial track paramters after smearing
+    pub truth_initial_vector: Vec5,    // initial truth track parameters
+    pub b_field: Vec3,                 // magnetic field vector
 }
 
 impl<T> KFData<T>
@@ -129,21 +112,28 @@ where
 
 /// Holds all information on what paramers are going to be used for
 /// the generation of a linear track.
+/// All parameters are defaulted (and later mutated, if needed)
+/// except the save folder (`folder_name`) and the name of the
+/// plot being created (`hist_name`)
 #[derive(Serialize, Debug, Clone)]
 pub struct State<'a> {
-    pub histogram_name: &'a str,
-    pub iterations: usize,
-    pub num_sensors: usize,
-    pub sensor_distance: Real,
-    pub angles: (Real, Real),
-    pub b_field: Vec3,
-    pub qop: Real,
-    pub stdevs: Uncertainty,
-    pub save_folder: &'a str,
+    pub histogram_name: &'a str, // name of histogram plot to be created
+    pub iterations: usize,       // number of independent tracks to generate and evaluate
+    pub num_sensors: usize,      // number of sensors on each track
+    pub sensor_distance: Real,   // distance between the sensors
+    pub angles: (Real, Real),    // (phi, theta) angles
+    pub b_field: Vec3,           // magnetic field vector
+    pub qop: Real,               //
+    pub stdevs: Uncertainty,     // struct of standard deviations used for smearing
+    pub save_folder: &'a str,    // where the data is being saved to
 }
 impl<'a> State<'a> {
+    /// Default linear parameters
     pub fn default(folder_name: &'a str, hist_name: &'a str) -> Self {
-        let _x = Self {
+        // initialize the folder we write to
+        std::fs::create_dir(&folder_name);
+
+        Self {
             histogram_name: hist_name,
             iterations: 70_000,
             num_sensors: 10,
@@ -153,12 +143,10 @@ impl<'a> State<'a> {
             qop: 1.,
             stdevs: Uncertainty::default(),
             save_folder: folder_name,
-        };
-        // initialize the folder we write to
-        _x.make_save_folder();
-        _x
+        }
     }
 
+    /// Defualt constant magnetic field parameters (2 Tesla field-vector, 10 Gev qop)
     pub fn default_const_b(folder_name: &'a str, hist_name: &'a str) -> Self {
         let mut linear = Self::default(folder_name, hist_name);
 
@@ -170,6 +158,8 @@ impl<'a> State<'a> {
         linear
     }
 
+    /// Generate some random angles in the range of -20 < phi < 20
+    /// and 70 < theta < 110
     fn calculate_angles() -> (Real, Real) {
         let mut rng = thread_rng();
 
@@ -190,18 +180,17 @@ impl<'a> State<'a> {
         (phi, theta)
     }
 
-    fn make_save_folder(&self) {
-        std::fs::create_dir(self.save_folder);
-    }
-    // Assumes that the root folder (State.save_folder) has been created
+    /// create a directory inside `save_folder`
     pub fn make_subfolder(&self, subfolder: &str) -> String {
         let path = self.save_folder.to_owned() + "\\" + subfolder;
         std::fs::create_dir(&path);
         path
     }
+    /// create a path to a file inside `save_folder`
     pub fn make_file_path(&self, file_name: &str) -> String {
         self.save_folder.to_owned() + "\\" + file_name
     }
+    /// create a path to a file inside a nested directory in `save folder`
     pub fn make_subfolder_file_path(&self, sub_folder: &str, file_name: &str) -> String {
         self.save_folder.to_owned() + "\\" + sub_folder + "\\" + file_name
     }

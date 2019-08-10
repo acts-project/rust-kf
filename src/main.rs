@@ -1,3 +1,5 @@
+#![allow(unused_imports)]
+#![allow(dead_code)]
 use kalman_rs::config::*;
 use kalman_rs::geometry::*;
 
@@ -18,7 +20,7 @@ fn main() {
 
     // gen_track()
 }
-
+//
 use traits::Plane;
 fn gen_track() {
     let mut state = kalman_rs::generate_data::structs::State::default_const_b("", "");

@@ -1,20 +1,19 @@
-use super::super::config::*;
-use super::super::filter;
-use super::super::geometry::Rectangle;
+use super::super::{
+    config::*,
+    filter::{
+        constant_magnetic_field, linear,
+        utils::{Data, SuperData},
+    },
+    geometry::Rectangle,
+};
 
-use super::setup;
-use setup::generate_linear_track;
-
-use super::structs::{KFData, Residuals, State};
-
-use filter::{
-    constant_magnetic_field, linear,
-    utils::{Data, SuperData},
+use super::{
+    setup,
+    structs::{KFData, State},
 };
 
 use rand::rngs::SmallRng;
 use rand::{thread_rng, SeedableRng};
-use rand_distr::Normal;
 
 use itertools::izip;
 
@@ -23,10 +22,7 @@ use rayon::{self, prelude::*};
 /// Runs batches of kf calculations. Parallelization happens upstream
 pub fn collect_stats(state: &State) -> Vec<(KFData<Rectangle>, SuperData)> {
     // ) -> () {
-    let uncertainties = &state.stdevs;
-
-    let diagonal_rng = Normal::new(uncertainties.diag_mean, uncertainties.diag_std).unwrap();
-    let corner_rng = Normal::new(uncertainties.corner_mean, uncertainties.corner_std).unwrap();
+    // let uncertainties = &state.stdevs;
 
     let mut base_rng = thread_rng();
     let small_rngs_iterator = std::iter::repeat(())
@@ -60,10 +56,10 @@ pub fn collect_stats(state: &State) -> Vec<(KFData<Rectangle>, SuperData)> {
         .collect::<Vec<_>>()
         .into_par_iter()
         .map(|(num_sensor, sensor_distance, angles, std_dev, rng)| {
-            // println!{"finish one"}
-
+            // if there is a magnetic field...
             if b_field_calculations {
                 stats_const_b(&state, rng)
+            // otherwise we assume linear KF operations
             } else {
                 stats_linear(&state, rng)
             }
@@ -73,6 +69,7 @@ pub fn collect_stats(state: &State) -> Vec<(KFData<Rectangle>, SuperData)> {
     kf_results_vec
 }
 
+/// Helper function for running linear kf
 fn stats_linear(state: &State, mut rng: SmallRng) -> (KFData<Rectangle>, SuperData) {
     let data = setup::generate_linear_track(&state, rng);
     let kf_outs = linear::run(
@@ -85,6 +82,7 @@ fn stats_linear(state: &State, mut rng: SmallRng) -> (KFData<Rectangle>, SuperDa
     (data, kf_outs)
 }
 
+/// Helper function for running constant magnetic field kf
 fn stats_const_b(state: &State, mut rng: SmallRng) -> (KFData<Rectangle>, SuperData) {
     let data = setup::generate_const_b_track(&state, rng);
     let kf_outs = constant_magnetic_field::run(
@@ -98,45 +96,30 @@ fn stats_const_b(state: &State, mut rng: SmallRng) -> (KFData<Rectangle>, SuperD
     (data, kf_outs)
 }
 
-/// Parallelizes calculating the difference between the truth value
-/// of a point versus the kf predicted / filtered / smoothed value
-/// of that point. The data from `collect_stats` can be directly
-/// piped into this function
+/// Calculates the differences between the truth values of a point versus the kf
+/// predicted / filtered /smoothed value of that point.
 pub fn fetch_kf_residuals_all(
     create_statistics_data: &Vec<(KFData<Rectangle>, SuperData)>,
     pull_distribution: bool,
 ) -> Vec<(Vec<Vec2>, Vec<Vec2>, Vec<Vec2>)> {
     create_statistics_data
         .iter()
-        .map(|(truth, kf_ver)| create_residuals(truth, kf_ver, pull_distribution))
+        .map(|(truth, kf_ver)| {
+            let predicted_residuals =
+                calc_residual(&kf_ver.pred, &truth.truth_hits, pull_distribution);
+            let filtered_residuals =
+                calc_residual(&kf_ver.filt, &truth.truth_hits, pull_distribution);
+            let smoothed_residuals =
+                calc_residual(&kf_ver.smth, &truth.truth_hits, pull_distribution);
+
+            (predicted_residuals, filtered_residuals, smoothed_residuals)
+        })
         .collect::<Vec<_>>()
 }
 
-/// Handles calculating all residuals of the truth hits vs KF outputs
-/// and returns a struct of all smoothed / filtered / predicted residuals
-fn create_residuals(
-    truth_data: &KFData<Rectangle>,
-    kf_data: &SuperData,
-    pull_distr: bool,
-) -> (Vec<Vec2>, Vec<Vec2>, Vec<Vec2>) {
-    let truth_points = &truth_data.truth_hits;
-
-    let len = kf_data.smth.state_vec.len();
-
-    // predicted
-    let pred_res = calc_residual(&kf_data.pred, truth_points, pull_distr);
-
-    // filtered
-    let filt_res = calc_residual(&kf_data.filt, truth_points, pull_distr);
-
-    // smoothed
-    let smth_resid = calc_residual(&kf_data.smth, truth_points, pull_distr);
-
-    (pred_res, filt_res, smth_resid)
-}
-
 /// Calculates the residuals between truth points and their
-/// smeared counterparts
+/// smeared counterparts. Used to ensure the random values generated
+/// are truly random
 pub fn smear_residuals(kf_data: &KFData<Rectangle>) -> Vec<Vec2> {
     let smears = &kf_data.smear_hits;
     let truths = &kf_data.truth_hits;
@@ -148,35 +131,7 @@ pub fn smear_residuals(kf_data: &KFData<Rectangle>) -> Vec<Vec2> {
         .collect::<Vec<Vec2>>()
 }
 
-pub fn truth_kf_output_residuals(output: Vec<(KFData<Rectangle>, SuperData)>) -> Vec<Residuals> {
-    //
-
-    output
-        .into_iter()
-        .map(|(truth_data, kf_out)| {
-            let truth_vals = truth_data.truth_hits.into_iter();
-            let prediction = vec5_to_vec2_all(&kf_out.pred.state_vec).into_iter();
-            let filtered = vec5_to_vec2_all(&kf_out.filt.state_vec).into_iter();
-            let smoothed = vec5_to_vec2_all(&kf_out.smth.state_vec).into_iter();
-
-            // truth_vals.zip(prediction);
-            let zipped_iter = izip! {truth_vals, prediction, filtered, smoothed};
-
-            let grouped_residuals = zipped_iter
-                .map(|(truth, pred, filt, smth)| {
-                    let p_ = truth - pred;
-                    let f_ = truth - filt;
-                    let s_ = truth - smth;
-
-                    (s_, f_, p_)
-                })
-                .collect::<Vec<_>>();
-
-            Residuals::new_grouped(grouped_residuals)
-        })
-        .collect::<Vec<_>>()
-}
-
+/// Converts a vector of 5-row vectors to a vector of 2-row vectors (just this hits)
 fn vec5_to_vec2_all(vector_sv: &Vec<Vec5>) -> Vec<Vec2> {
     vector_sv
         .into_iter()
@@ -184,6 +139,7 @@ fn vec5_to_vec2_all(vector_sv: &Vec<Vec5>) -> Vec<Vec2> {
         .collect::<Vec<_>>()
 }
 
+/// Converts a since 5-row vector to a 2-row vector
 fn vec5_to_vec2_one(vec: &Vec5) -> Vec2 {
     // let new_vec = Vec2::zeros();
     get_unchecked! {vector;vec;
@@ -193,7 +149,7 @@ fn vec5_to_vec2_one(vec: &Vec5) -> Vec2 {
     Vec2::new(*x, *y)
 }
 
-/// Residual between KF outputs and truth hits
+/// Helper function to calculate the residuals between two vectors of hits
 fn calc_residual(kf_data: &Data, truth_points: &Vec<Vec2>, pull_distr: bool) -> Vec<Vec2> {
     let len = truth_points.len();
     let mut diff_vec = Vec::with_capacity(len);

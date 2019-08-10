@@ -1,14 +1,8 @@
 const ERR_TOLERANCE: Real = 0.001;
 
+use super::super::config::*;
 
-use super::super::{
-    config::*,
-};
-
-use super::{
-    angles,
-    utils,
-};
+use super::{angles, utils};
 
 #[derive(Debug)]
 pub struct RungeKuttaStep {
@@ -33,19 +27,24 @@ impl RungeKuttaStep {
     pub fn adaptive_step_size(&self, max_distance: Real) -> Real {
         let error = self.h.powf(2.) * (self.k1 - self.k2 - self.k3 + self.k4).norm();
 
+        let next_step_unbounded = self.h * (ERR_TOLERANCE / error).powf(1. / 4.);
 
-        let next_step_unbounded = self.h * (ERR_TOLERANCE / error).powf(1./4.);
-
-        let _temp = 4.*self.h;
-        let max = 
-            if  _temp > max_distance {_temp}
-            else{max_distance};
+        let _temp = 4. * self.h;
+        let max = if _temp > max_distance {
+            _temp
+        } else {
+            max_distance
+        };
         let min = 0.25 * self.h;
 
         // check the bounds to make sure we are not making the next step too large or small
-        if next_step_unbounded > max {max}
-        else if next_step_unbounded < min {min}
-        else {next_step_unbounded}
+        if next_step_unbounded > max {
+            max
+        } else if next_step_unbounded < min {
+            min
+        } else {
+            next_step_unbounded
+        }
     }
 }
 
@@ -72,7 +71,6 @@ pub fn rk_current_global_location(
     let mut uprime_slice = previous_rk_state_vector.fixed_slice_mut::<U3, U1>(4, 0);
     uprime_slice += (step_data.h / 6.)
         * (step_data.k1 + (2. * step_data.k2) + (2. * step_data.k3) + step_data.k4);
-
 }
 
 /// Perform a single step of RKN integration based on a given step size, magnetic field vector, state vector, and angles.
@@ -107,7 +105,6 @@ pub(crate) fn runge_kutta_step(
 
     RungeKuttaStep::new(k1, k2, k3, k4, h)
 }
-
 
 /// Caculation of transport jacobian at a single time step
 /// in a constant magnetic field.

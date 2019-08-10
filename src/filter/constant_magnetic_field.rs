@@ -7,22 +7,17 @@ use std::iter;
 use super::super::geometry::traits::{Plane, Transform};
 use super::super::geometry::Rectangle;
 
-use super::super::error::*;
 use super::utils::{Data, SuperData};
 
-/// Monolithic function to handle linear KF calculations
-pub fn run(
+/// Monolithic function to handle constant magnetic field KF calculations
+pub fn run<T: Plane + Transform>(
     start_location: &P3, // start loc used to predict initial filtered state vec
     measurement_noise_covariance_vector: &Vec<Mat2>, // vector of V from fruhwirth paper
     measurements_vector: &Vec<Vec2>, // vector of all the measurements that were registered
-    sensor_vector: &Vec<Rectangle>, // the geometric sensors that correspond to each hit ,
-    initial_seed_vec: Option<&Vec5>,
-    b_field: &Vec3,
+    sensor_vector: &Vec<T>, // the geometric sensors that correspond to each hit ,
+    initial_seed_vec: Option<&Vec5>, // intitial track parameters
+    b_field: &Vec3,      // magnetic field vector
 ) -> SuperData {
-    //
-
-    // print!{"starting const B kf"}
-
     let meas_map_mat = Mat2x5::new(1., 0., 0., 0., 0., 0., 1., 0., 0., 0.);
 
     if (measurement_noise_covariance_vector.len() == measurements_vector.len())

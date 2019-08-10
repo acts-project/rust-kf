@@ -5,12 +5,7 @@ use super::super::{
 
 use nalgebra as na;
 
-use super::{
-    angles,
-    runge_kutta,
-    utils,
-    prediction,
-};
+use super::{angles, prediction, runge_kutta, utils};
 
 /// Calculate the jacobian between sensors for a linear case
 pub fn linear<T: Transform + Plane>(
@@ -251,16 +246,20 @@ pub fn constant_field<T: Transform + Plane>(
     let mut step_size: Real = 0.00001;
 
     let end_plane_norm_vec = end_sensor.plane_normal_vec();
-    let end_plane_const    = end_sensor.plane_constant();
+    let end_plane_const = end_sensor.plane_constant();
 
     loop {
-
         // Runge-Kutta step data
-        let step_data = runge_kutta::runge_kutta_step(prev_filt_state_vec, &angles, b_field, step_size);
+        let step_data =
+            runge_kutta::runge_kutta_step(prev_filt_state_vec, &angles, b_field, step_size);
 
         // fetch transport between RK steps
-        let transport_step =
-            runge_kutta::constant_magnetic_transport(prev_filt_state_vec, &step_data, b_field, &angles);
+        let transport_step = runge_kutta::constant_magnetic_transport(
+            prev_filt_state_vec,
+            &step_data,
+            b_field,
+            &angles,
+        );
 
         // print!{transport_step}
 
@@ -284,16 +283,14 @@ pub fn constant_field<T: Transform + Plane>(
         }
 
         // calculate the shortest linear distance to the next sensor
-        let (_, next_sensor_distance) = 
-            prediction::linear_global_hit_estimation(
+        let (_, next_sensor_distance) = prediction::linear_global_hit_estimation(
             end_plane_norm_vec,
             &global_location,
             &angles,
-            &end_plane_const
+            &end_plane_const,
         );
         // calculate the next step size using a maxiumum upper bound
         step_size = step_data.adaptive_step_size(next_sensor_distance);
-
     }
 
     let (local_sv_prediction, _) =
@@ -303,5 +300,3 @@ pub fn constant_field<T: Transform + Plane>(
 
     (jacobian, local_sv_prediction)
 }
-
-

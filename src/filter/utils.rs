@@ -89,7 +89,6 @@ pub fn seed_state_vec_from_points(
     seed_vec
 }
 
-
 // TODO Name is similar to other structs. figure out a new one
 #[derive(Debug, Clone)]
 pub struct Data {
