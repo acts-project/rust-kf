@@ -6,6 +6,12 @@ edition = "2018"
 license = "MIT"
 description = "Kalman filter implementation in rust (WIP)"
 
+
+[lib]
+name = "kalman_rs"
+crate-type = ["staticlib"]
+
+
 [dependencies]
 nalgebra = {version =  "0.18.0", features= ["serde-serialize"] }
 lazy_static = "1.3.0"
