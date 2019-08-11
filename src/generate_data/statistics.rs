@@ -34,8 +34,7 @@ pub fn collect_stats(state: &State) -> Vec<(KFData<Rectangle>, SuperData)> {
         false
     };
 
-    let kf_results_vec: Vec<(KFData<Rectangle>, SuperData)> = 
-        small_rngs_iterator
+    let kf_results_vec: Vec<(KFData<Rectangle>, SuperData)> = small_rngs_iterator
         .collect::<Vec<_>>()
         .into_par_iter()
         .map(|rng| {
@@ -114,16 +113,8 @@ pub fn smear_residuals(kf_data: &KFData<Rectangle>) -> Vec<Vec2> {
         .collect::<Vec<Vec2>>()
 }
 
-/// Converts a vector of 5-row vectors to a vector of 2-row vectors (just this hits)
-fn vec5_to_vec2_all(vector_sv: &Vec<Vec5>) -> Vec<Vec2> {
-    vector_sv
-        .into_iter()
-        .map(|x| vec5_to_vec2_one(&x))
-        .collect::<Vec<_>>()
-}
-
 /// Converts a since 5-row vector to a 2-row vector
-fn vec5_to_vec2_one(vec: &Vec5) -> Vec2 {
+fn state_vec_to_hit(vec: &Vec5) -> Vec2 {
     // let new_vec = Vec2::zeros();
     get_unchecked! {vector;vec;
         eLOC_0 => x,
@@ -144,7 +135,7 @@ fn calc_residual(kf_data: &Data, truth_points: &Vec<Vec2>, pull_distr: bool) -> 
             truth_points[i] => curr_truth_point
         }
 
-        let kf_hit = vec5_to_vec2_one(curr_state_vec);
+        let kf_hit = state_vec_to_hit(curr_state_vec);
 
         let mut diff = kf_hit - curr_truth_point;
 

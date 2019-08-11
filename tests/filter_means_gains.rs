@@ -8,7 +8,7 @@
 use kalman_rs as krs;
 use krs::config::*;
 use krs::filter::{filter_gain, filter_means};
-use krs::print;
+use krs::print_;
 
 fn run_state_vector() {
     let pred_cov_mat = Mat5::new_random();
@@ -48,7 +48,7 @@ fn run_state_vector() {
     let mut min_vector = Vec5::zeros();
     min_vector.fill(0.00005);
 
-    print! {
+    print_! {
         _means_state_vector,
         _gain_state_vector
     }
@@ -82,7 +82,7 @@ fn run_covariance_matrix() {
     let mut min_mat = Mat5::zeros();
     min_mat.fill(0.00005);
 
-    print! {
+    print_! {
         _means_covariance_matrix,
         _gain_cov_mat
     }

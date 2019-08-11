@@ -33,15 +33,7 @@ pub fn run(data: State) {
     let mut save_folder = data.save_folder.clone().to_string();
     save_folder.push_str(r"\");
 
-    #[allow(unused_must_use)]
     fs::create_dir(&save_folder);
-
-    // create extensions on the folder path for each csv
-    path! {save_folder;
-        "smth.csv" => smth_path,
-        "filt.csv" => filt_path,
-        "pred.csv" => pred_path
-    }
 
     store::write_csv(&data.make_file_path("pred.csv"), pred);
     store::write_csv(&data.make_file_path("filt.csv"), filt);
@@ -147,7 +139,7 @@ pub fn sensor_separated_with_truth(data: &State) -> () {
 
     let path = data.make_file_path("truth.csv");
     store::write_csv(&path, truth_vec);
-    
+
     let path = data.make_file_path("cov.csv");
     store::write_csv(&path, covariance);
 }
@@ -167,10 +159,9 @@ pub fn pull_distribution_general(data: &State) -> (NestStorage, NestStorage, Nes
     // filter_residuals, smooth_residuals`> into three
     // `Vec<Vec<structs::StorageData>>`
     vec_pred_filt_smths.by_sensor()
-
 }
 
-/// Make a pull distribution 
+/// Make a pull distribution
 pub fn pull_distribution(data: &State, first_only: bool) {
     let (mut pred, mut filt, mut smth) = pull_distribution_general(&data);
 

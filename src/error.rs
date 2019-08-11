@@ -6,7 +6,6 @@
 // from_type: Type that will be converted away from
 // to_type: Destination enum that we are converting to
 // subtype: the path to the branch of to_type that from_type will be converted to
-#[macro_export]
 macro_rules! impl_from {
     // catch to expand to a function-like enum
     (empty: $from_type:ident, $to_type:ty, $subtype:expr) => {

@@ -1,8 +1,8 @@
 #[macro_export]
-/// This macro is to quickly define pub constants
-/// To suppress warnings and keep variable names parallel to
-/// https://gitlab.cern.ch/acts/acts-core/blob/master/Core/include/Acts/Utilities/detail/DefaultParameterDefinitions.hpp
-/// we use a macro so we dont need repetitive #[allow(_)] while not allowing them globally.
+/// Quickly define pub constants and ignore uppercase naming warnings
+// To suppress warnings and keep variable names parallel to
+// https://gitlab.cern.ch/acts/acts-core/blob/master/Core/include/Acts/Utilities/detail/DefaultParameterDefinitions.hpp
+// we use a macro so we dont need repetitive #[allow(_)] while not allowing them globally.
 macro_rules! def_constant {
     // most used branch. allows not specifying the type repetitvely for
     // each item

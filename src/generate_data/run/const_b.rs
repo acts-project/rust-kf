@@ -62,6 +62,7 @@ pub fn runge_kutta_global_locations(data: &State) {
     store::write_csv(r".\data\rk_points.csv", step_results);
 }
 
+/// Checks the distribution of the residuals after runge-kutta to ensure they are gaussian.
 pub fn _residuals_after_steps(b_field: Vec3) {
     /*
         Initialzie constants
@@ -147,7 +148,7 @@ pub fn _residuals_after_steps(b_field: Vec3) {
 }
 
 // residuals between truth vs smeared values
-fn test_generated_residuals() -> () {
+pub fn test_generated_residuals() -> () {
     let state = State::default_const_b(
         r".\data\generated_truth_smear_residuals",
         "_truth_smear_residuals.png",
@@ -156,13 +157,13 @@ fn test_generated_residuals() -> () {
 }
 
 // residuals between truth and sensor (pred/  filt/ smth) at each sensor
-fn test_initial_predictions() -> () {
+pub fn test_initial_predictions() -> () {
     let state = State::default_const_b(r".\data\rk_initial_prediction_data\", "_.png");
 
     general::fetch_separated_kf_data(&state);
 }
 
-fn residuals_after_steps_b_field() {
+pub fn residuals_after_steps_b_field() {
     let b_magnitude: Real = 2.;
     let indiv_field = (b_magnitude.powf(2.) / 3.).sqrt();
     let b_field = Vec3::new(indiv_field, indiv_field, indiv_field);
@@ -170,18 +171,19 @@ fn residuals_after_steps_b_field() {
     _residuals_after_steps(b_field);
 }
 
-/// Does runge-kutta through 3d space and
-fn global_prop_zero_field() {
+/// Does runge-kutta through 3d space and exports the predicted point at each step
+/// to a csv
+pub fn global_prop_zero_field() {
     let mut state = State::default_const_b("_", "_");
     state.b_field = Vec3::zeros();
 
     runge_kutta_global_locations(&state);
 }
 
-/// Sensor-separated data of doing runge-kutta with no b-field
+/// Sensor-separated data of doing runge-kutta with no b-field (not pull plot)
 /// This tests if runge-kutta produces a strighat line when there
 /// is no  b_field
-fn zero_field_sensor_sep_data() {
+pub fn zero_field_sensor_sep_data() {
     let mut state = State::default_const_b(r".\data\zero_field_rk", "_");
     // make a very small field so that statistics::collect_stats still treats it
     // as a requiring runge-kutta
@@ -191,22 +193,18 @@ fn zero_field_sensor_sep_data() {
     general::fetch_separated_kf_data(&state);
 }
 
-fn pull_data_all() {
+/// Pull distribution over all sensors of the default `structs::State` parameters
+pub fn pull_distribution() {
     let state = State::default_const_b(r".\data\pull_data", "_");
 
     general::pull_distribution(&state, false);
 }
 
-fn pull_data_all_zero() {
+/// Pull distribution over all sensors for runge-kutta in a zero b-field
+pub fn pull_distribution_zero() {
     let mut state = State::default(r".\data\pull_data\", "pull_data.png");
 
     state.b_field = Vec3::new(0., 0., 0.00000000000000000000000000000000001);
-
-    general::pull_distribution(&state, false);
-}
-
-fn pull_data_all_non_zero() {
-    let state = State::default_const_b(r".\data\pull_data_bfield\", "_");
 
     general::pull_distribution(&state, false);
 }
@@ -220,6 +218,6 @@ pub fn run_all_stats() {
 
     // test_initial_predictions();
     // zero_field_sensor_sep_data();
-    pull_data_all();
-    pull_data_all_non_zero();
+    pull_distribution();
+    pull_distribution_zero();
 }

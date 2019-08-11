@@ -3,7 +3,7 @@ use super::super::geometry::traits::{Plane, Transform};
 use serde::Serialize;
 
 use rand::rngs::SmallRng;
-use rand::{thread_rng, Rng, SeedableRng};
+use rand::{thread_rng, Rng};
 use rand_distr::{Distribution, Normal};
 
 /// Holds x and y points from the kf, usually either the
@@ -230,10 +230,19 @@ impl Uncertainty {
         distr.sample(rng)
     }
 
-    pub fn corner_value(&self, rng: &mut SmallRng) -> Real {
+    pub fn corner_value(&self, _rng: &mut SmallRng) -> Real {
         // let distr=  Normal::new(self.corner_mean, self.corner_std).unwrap();
         // distr.sample(rng)
         0.
+    }
+
+    pub fn measurement_covariance(&self, rng: &mut SmallRng) -> Mat2 {
+        let diag_distr = Normal::new(self.diag_mean, self.diag_std).unwrap();
+        
+        let a = diag_distr.sample(rng);
+        let d = diag_distr.sample(rng);
+
+        return Mat2::new(a, 0., 0., d)
     }
 
     pub fn smear_hit(&self, rng: &mut SmallRng, point_val: Real) -> Real {

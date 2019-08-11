@@ -5,7 +5,7 @@ use krs::generate_data::{
     structs::{self, State},
 };
 
-use krs::{get_unchecked, print};
+use krs::{get_unchecked, print_};
 
 use rand::rngs::SmallRng;
 use rand::SeedableRng;
@@ -26,7 +26,7 @@ macro_rules! group_assert {
             let diff = right - left;
             let diff = diff.abs()
 
-            // print!{left, right, diff}
+            // print_!{left, right, diff}
 
             assert!{diff <= 0.15}
         )+

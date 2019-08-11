@@ -25,11 +25,11 @@ pub fn covariance_matrix(
     inverse_measurement_cov: &Mat2, // inv (V)
 ) -> Mat5 {
     let product = sensor_mapping_mat.transpose() * inverse_measurement_cov * sensor_mapping_mat;
-    let C_prevoius_inv = pred_covariance_mat
+    let c_prevoius_inv = pred_covariance_mat
         .try_inverse()
         .expect("could not invert previous covariance");
 
-    return (C_prevoius_inv + product)
+    return (c_prevoius_inv + product)
         .try_inverse()
         .expect("could not invert matrix product");
 }

@@ -1,23 +1,11 @@
 #[macro_export]
-/// Quickly create a repetitive value
+/// Quickly create a repeating iterator of values and `.take()` a specified number of them
 /// $name: name of variable to save to
 /// $value: the value that will be repeated $take times
 macro_rules! take {
     ($take:expr; $($name:ident , $value:expr),+) => {
         $(
             let $name = std::iter::repeat($value).take($take);
-        )+
-    };
-}
-
-#[macro_export]
-/// Quickly clone and push to make paths
-macro_rules! path {
-    ($base:ident; $($to_push:expr => $varname:ident),+) => {
-        $(
-            let mut $varname = $base.clone().to_string();
-            $varname.push_str(r"\");
-            $varname.push_str(&$to_push);
         )+
     };
 }
@@ -60,9 +48,4 @@ macro_rules! generate_data {
             });
 
     };
-}
-
-#[macro_export]
-macro_rules! residuals {
-    ($super_data:ident; $($sub_field:ident),+) => {};
 }

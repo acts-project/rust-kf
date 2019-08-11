@@ -2,7 +2,7 @@ use kalman_rs::config::*;
 use kalman_rs::filter::utils::seed_state_vec_from_points as seed_vec;
 use kalman_rs::geometry::Rectangle;
 use kalman_rs::get_unchecked;
-use kalman_rs::print;
+use kalman_rs::print_;
 use nalgebra::base::Unit;
 
 /**
@@ -145,7 +145,7 @@ fn gen_sensor(x_point: Real) -> Rectangle {
     let to_global = Aff3::from_matrix_unchecked(mat);
     let to_local = to_global.try_inverse().unwrap();
 
-    print! {"SENSOR CENTER WILL BE AT ", to_global * P3::origin() }
+    print_! {"SENSOR CENTER WILL BE AT ", to_global * P3::origin() }
 
     let p1 = P3::new(x_point, 1., 1.);
     let p2 = P3::new(x_point, 0., 1.);
@@ -165,7 +165,7 @@ fn seed_state_vec_sensor_1() {
 
     let filt_vec =
         kalman_rs::filter::utils::seed_state_vec_from_sensor(&start_location, &end_sensor, &hit);
-    print! {filt_vec};
+    print_! {filt_vec};
 
     get_unchecked! {vector;filt_vec;
         eLOC_0 => xhit,
@@ -189,7 +189,7 @@ fn seed_state_vec_sensor_2() {
 
     let filt_vec =
         kalman_rs::filter::utils::seed_state_vec_from_sensor(&start_location, &end_sensor, &hit);
-    print! {filt_vec};
+    print_! {filt_vec};
 
     get_unchecked! {vector;filt_vec;
         eLOC_0 => xhit,

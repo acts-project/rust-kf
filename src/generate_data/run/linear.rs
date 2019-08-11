@@ -45,7 +45,7 @@ pub fn scaling_sensor_count() -> () {
 }
 
 // residuals between truth vs smeared values
-fn test_generated_residuals() -> () {
+pub fn test_generated_residuals() -> () {
     let state = State::default(
         "generated_truth_smear_residuals",
         "_truth_smear_residuals.png",
@@ -54,18 +54,18 @@ fn test_generated_residuals() -> () {
 }
 
 // residuals between truth and sensor (pred/  filt/ smth) at each sensor
-fn test_initial_predictions() -> () {
+pub fn test_initial_predictions() -> () {
     let state = State::default(r".\data\initial_prediction_data\", "");
     general::fetch_separated_kf_data(&state);
 }
 
 // Runs a singular test with default State parameters
-fn run_one_test() -> () {
+pub fn run_one_test() -> () {
     let state = State::default(r"E:\kf_csvs\default_parameters", "default_parameters.png");
     general::run(state);
 }
 
-fn ridder_algo() -> () {
+pub fn ridder_algo() -> () {
     let mut state = State::default(r".\data\ridder_algo_data\", "ridder_data.png");
     state.num_sensors = 2;
     state.angles = (0., PI / 2.);

@@ -49,7 +49,7 @@ pub fn seed_state_vec_from_points(
     let vector_to_sensor = global_destination - global_start_location;
 
     // fetch local hit measurements
-    get_unchecked! {vector; vector_to_sensor;
+    get_unchecked! {vector;vector_to_sensor;
         eLOC_0 => x,
         eLOC_1 => y
     }

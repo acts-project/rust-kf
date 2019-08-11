@@ -56,20 +56,10 @@ pub fn generate_linear_track(state: &State, mut rng: SmallRng) -> KFData<Rectang
         })
         .collect::<Vec<_>>();
 
-    // TODO hold these constant  - Mr Paul
-
+    // make sensor hit covariances
     let covariance_vec = (0..sensor_vec.len())
         .into_iter()
-        .map(|_| {
-            let a = state.stdevs.diagonal_value(&mut rng).abs();
-            let d = state.stdevs.diagonal_value(&mut rng).abs();
-
-            let b = state.stdevs.corner_value(&mut rng).abs();
-            let c = state.stdevs.corner_value(&mut rng).abs();
-
-            let m = Mat2::new(a, b, c, d);
-            m
-        })
+        .map(|_| state.stdevs.measurement_covariance(&mut rng))
         .collect::<Vec<_>>();
 
     let smear_state_vec = smear_state_vector(&mut rng, &start_state_vec);
@@ -155,20 +145,10 @@ pub fn generate_const_b_track(state: &State, mut rng: SmallRng) -> KFData<Rectan
         })
         .collect::<Vec<_>>();
 
-    // TODO hold these constant  - Mr Paul
-
+    // make measurement covariances 
     let covariance_vec = (0..sensor_vec.len())
         .into_iter()
-        .map(|_| {
-            let a = state.stdevs.diagonal_value(&mut rng).abs();
-            let d = state.stdevs.diagonal_value(&mut rng).abs();
-
-            let b = state.stdevs.corner_value(&mut rng).abs();
-            let c = state.stdevs.corner_value(&mut rng).abs();
-
-            let m = Mat2::new(a, b, c, d);
-            m
-        })
+        .map(|_| state.stdevs.measurement_covariance(&mut rng))
         .collect::<Vec<_>>();
 
     let smear_state_vec = smear_state_vector(&mut rng, &start_state_vec);
