@@ -1,12 +1,14 @@
 use kalman_rs as krs;
 use krs::config::*;
-use krs::generate_data::setup::generate_track;
+use krs::generate_data::{
+    setup::generate_linear_track,
+    structs,
+};
 
-use krs::{print, get_unchecked};
+use krs::{get_unchecked, print_};
 
 use rand::rngs::SmallRng;
 use rand::SeedableRng;
-use rand_distr::{Normal, Distribution};
 
 /*
 
@@ -23,69 +25,54 @@ macro_rules! group_assert {
             let diff = right - left;
             let diff = diff.abs()
 
-            // print!{left, right, diff}
+            // print_!{left, right, diff}
 
             assert!{diff <= 0.15}
         )+
     };
 }
 
+/*
 
-// #[test]
+    TODO: Actually write tests that verify the locations of the points based on the standard deviations of
+            the predicted / smoothed / filtered results at each sensor. Currently these tests just set up
+            a future situation where this would be done
+
+            For the most part, tests are done based on manually examining graphs of KF-generated outputs
+
+*/
+
+#[test]
 fn linear_1() {
-    let distance_between_sensors: Real = 0.001;
-    let number_of_sensors: u32 = 20;
-    let diagonal_rng = Normal::new(3., 1.5).unwrap();
-    let corner_rng = Normal::new(0., 1.).unwrap();
-    let point_std_dev = 0.01;
-    let mut rng = SmallRng::from_entropy();
-
-    print!{ "TEST STATISTICS:",
-        distance_between_sensors,
-        number_of_sensors,
-        point_std_dev
-    }
-
-    let data = generate_track(
-        number_of_sensors, 
-        distance_between_sensors,
-        Some((0., PI/2.)),                // along the x axis
-        rng, 
-        point_std_dev, 
-        diagonal_rng,corner_rng
-    );
-    let kf_result = krs::filter::linear::run(&data.start, &data.cov, &data.smear_hits, &data.sensors);
-
-    
-}
-
-
-// generate track 
-#[test]                 
-fn linear_3() {
-    let distance_between_sensors: Real = 0.001;
-    let number_of_sensors: u32 = 20;
-    let diagonal_rng = Normal::new(3., 1.5).unwrap();
-    let corner_rng = Normal::new(0., 1.).unwrap();
-    let point_std_dev = 0.01;
+    let mut state = structs::State::default("_", "_");
     let rng = SmallRng::from_entropy();
 
-    print!{ "TEST STATISTICS:",
-        distance_between_sensors,
-        number_of_sensors,
-        point_std_dev
-    }
+    state.angles = (0., PI / 2.);
 
-    let data = generate_track(
-        number_of_sensors, 
-        distance_between_sensors,
+    let data = generate_linear_track(&state, rng);
+
+    let kf_result = krs::filter::linear::run(
+        &data.start,
+        &data.cov,
+        &data.smear_hits,
+        &data.sensors,
         None,
-        rng, 
-        point_std_dev, 
-        diagonal_rng,corner_rng
     );
-    let kf_result = krs::filter::linear::run(&data.start, &data.cov, &data.smear_hits, &data.sensors);
+}
+#[test]
+fn linear_2() {
+    let mut state = structs::State::default("_", "_");
+    let rng = SmallRng::from_entropy();
 
-    
+    state.angles = (0., PI / 2.);
 
+    let data = generate_linear_track(&state, rng);
+
+    let kf_result = krs::filter::linear::run(
+        &data.start,
+        &data.cov,
+        &data.smear_hits,
+        &data.sensors,
+        None,
+    );
 }
