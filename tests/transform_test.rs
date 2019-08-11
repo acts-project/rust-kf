@@ -3,7 +3,6 @@ use kalman_rs::{self, geometry};
 use geometry::traits::Transform;
 use geometry::{Rectangle, Trapezoid};
 use kalman_rs::config::*;
-use kalman_rs::error::*;
 
 /**
  * Tests for moving points local -> global and global -> local relative to a sensor
@@ -36,7 +35,7 @@ fn initialize_trap() -> Trapezoid {
 #[cfg(test)]
 mod _quadralateral_contains {
 
-    use super::{initialize_rect, initialize_trap, Rectangle, Transform, Trapezoid};
+    use super::{initialize_rect, initialize_trap, Transform};
     use kalman_rs::config::*;
 
     #[test]

@@ -46,7 +46,7 @@ fn estimation_1() {
 
     let mut angles = Angles::new_from_angles(phi, theta);
 
-    let (global_est, distance) =
+    let (global_est, _) =
         prediction::linear_global_hit_estimation(&normal, &global_start, &mut angles, &plane_const);
 
     group_assert! {global_est, sensor_center, x,y,z}
@@ -75,7 +75,7 @@ fn estimation_2() {
 
     let mut angles = Angles::new_from_angles(phi, theta);
 
-    let (global_est, distance) =
+    let (global_est, _) =
         prediction::linear_global_hit_estimation(&normal, &global_start, &mut angles, &plane_const);
 
     group_assert! {global_est, sensor_center, x,y,z}
@@ -102,7 +102,7 @@ fn estimation_3() {
 
     let mut angles = Angles::new_from_angles(phi, theta);
 
-    let (global_est, distance) =
+    let (global_est, _) =
         prediction::linear_global_hit_estimation(&normal, &global_start, &mut angles, &plane_const);
 
     group_assert! {global_est, sensor_center, x,y,z}
@@ -130,7 +130,7 @@ fn estimation_4() {
 
     let mut angles = Angles::new_from_angles(phi, theta);
 
-    let (global_est, distance) =
+    let (global_est, _) =
         prediction::linear_global_hit_estimation(&normal, &global_start, &mut angles, &plane_const);
 
     dbg! {angles};
@@ -162,7 +162,7 @@ fn estimation_5() {
 
     let mut angles = Angles::new_from_angles(phi, theta);
 
-    let (global_est, distance) =
+    let (global_est, _) =
         prediction::linear_global_hit_estimation(&normal, &global_start, &mut angles, &plane_const);
 
     dbg! {angles};
@@ -194,7 +194,7 @@ fn estimation_6() {
 
     let mut angles = Angles::new_from_angles(phi, theta);
 
-    let (global_est, distance) =
+    let (global_est, _) =
         prediction::linear_global_hit_estimation(&normal, &global_start, &mut angles, &plane_const);
 
     dbg! {angles};
@@ -226,7 +226,7 @@ fn estimation_7() {
 
     let mut angles = Angles::new_from_angles(phi, theta);
 
-    let (global_est, distance) =
+    let (global_est, _) =
         prediction::linear_global_hit_estimation(&normal, &global_start, &mut angles, &plane_const);
 
     dbg! {angles};
@@ -257,7 +257,7 @@ fn estimation_8() {
 
     let mut angles = Angles::new_from_angles(phi, theta);
 
-    let (global_est, distance) =
+    let (global_est, _) =
         prediction::linear_global_hit_estimation(&normal, &global_start, &mut angles, &plane_const);
 
     group_assert! {global_est, sensor_center, x,y,z}
@@ -284,7 +284,7 @@ fn estimation_9() {
 
     let mut angles = Angles::new_from_angles(phi, theta);
 
-    let (global_est, distance) =
+    let (global_est, _) =
         prediction::linear_global_hit_estimation(&normal, &global_start, &mut angles, &plane_const);
 
     group_assert! {global_est, sensor_center, x,y,z}
@@ -311,7 +311,7 @@ fn estimation_10() {
 
     let mut angles = Angles::new_from_angles(phi, theta);
 
-    let (global_est, distance) =
+    let (global_est, _) =
         prediction::linear_global_hit_estimation(&normal, &global_start, &mut angles, &plane_const);
 
     group_assert! {global_est, sensor_center, x,y,z}

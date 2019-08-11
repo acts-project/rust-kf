@@ -2,14 +2,13 @@ use kalman_rs as krs;
 use krs::config::*;
 use krs::generate_data::{
     setup::generate_linear_track,
-    structs::{self, State},
+    structs,
 };
 
 use krs::{get_unchecked, print_};
 
 use rand::rngs::SmallRng;
 use rand::SeedableRng;
-use rand_distr::{Distribution, Normal};
 
 /*
 
@@ -46,7 +45,7 @@ macro_rules! group_assert {
 #[test]
 fn linear_1() {
     let mut state = structs::State::default("_", "_");
-    let mut rng = SmallRng::from_entropy();
+    let rng = SmallRng::from_entropy();
 
     state.angles = (0., PI / 2.);
 
@@ -63,7 +62,7 @@ fn linear_1() {
 #[test]
 fn linear_2() {
     let mut state = structs::State::default("_", "_");
-    let mut rng = SmallRng::from_entropy();
+    let rng = SmallRng::from_entropy();
 
     state.angles = (0., PI / 2.);
 

@@ -1,7 +1,5 @@
 use kalman_rs::config::*;
 use kalman_rs::filter::angles::Angles;
-use std::cmp::PartialOrd;
-use std::ops::Sub;
 
 /*
 
@@ -31,7 +29,7 @@ fn local_1() {
     let theta = 5. * PI / 6.;
     let (tx, ty, tz) = calc_global(phi, theta);
 
-    let mut ang = Angles::new_from_angles(phi, theta);
+    let ang = Angles::new_from_angles(phi, theta);
     assert(ang.tx, tx);
     assert(ang.ty, ty);
     assert(ang.tz, tz);
@@ -52,7 +50,7 @@ fn local_2() {
     dbg! {ty};
     dbg! {tz};
 
-    let mut ang = Angles::new_from_angles(phi, theta);
+    let ang = Angles::new_from_angles(phi, theta);
     assert(ang.tx, tx);
     assert(ang.ty, ty);
     assert(ang.tz, tz);
@@ -73,7 +71,7 @@ fn local_3() {
     dbg! {ty};
     dbg! {tz};
 
-    let mut ang = Angles::new_from_angles(phi, theta);
+    let ang = Angles::new_from_angles(phi, theta);
     assert(ang.tx, tx);
     assert(ang.ty, ty);
     assert(ang.tz, tz);
@@ -90,7 +88,7 @@ fn global_1() {
     let theta = 5. * PI / 6.;
     let (tx, ty, tz) = calc_global(phi, theta);
 
-    let mut ang = Angles::new_from_angles(phi, theta);
+    let ang = Angles::new_from_angles(phi, theta);
     assert(ang.tx, tx);
     assert(ang.ty, ty);
     assert(ang.tz, tz);
@@ -107,7 +105,7 @@ fn global_2() {
     let theta = -1.2 * PI / 8.;
     let (tx, ty, tz) = calc_global(phi, theta);
 
-    let mut ang = Angles::new_from_angles(phi, theta);
+    let ang = Angles::new_from_angles(phi, theta);
     assert(ang.tx, tx);
     assert(ang.ty, ty);
     assert(ang.tz, tz);

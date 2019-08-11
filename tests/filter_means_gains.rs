@@ -57,14 +57,11 @@ fn run_state_vector() {
 }
 
 fn run_covariance_matrix() {
-    let filt_cov_mat = Mat5::new_random();
     let pred_cov_mat = Mat5::new_random();
     let sensor_map_mat = Mat2x5::new(1., 0., 0., 0., 0., 0., 1., 0., 0., 0.);
 
-    let measurement = Vec2::new_random();
     let v = Mat2::new_random();
 
-    let pred_state_vec = Vec5::new_random();
     let inv_v = v.try_inverse().expect("V not unwrappable");
 
     // gains

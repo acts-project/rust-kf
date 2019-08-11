@@ -80,7 +80,7 @@ pub fn run_all_stats() {
     // scaling_sensor_count();
 
     // test_generated_residuals();
-    test_initial_predictions();
+    // test_initial_predictions();
 
     // run_one_test();
 }

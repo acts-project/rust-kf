@@ -202,7 +202,7 @@ pub fn pull_distribution() {
 
 /// Pull distribution over all sensors for runge-kutta in a zero b-field
 pub fn pull_distribution_zero() {
-    let mut state = State::default(r".\data\pull_data\", "pull_data.png");
+    let mut state = State::default(r".\data\pull_data_zero\", "pull_data.png");
 
     state.b_field = Vec3::new(0., 0., 0.00000000000000000000000000000000001);
 
