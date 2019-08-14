@@ -6,12 +6,9 @@ extern "C"{
 #endif
 
     double make_array(double* arr_start, int arr_len);
-    // void ffi_test();   
-    // void float_test(double value);
-    // void int_test(double value);
-    // void float_ptr_test(double* value);
-
-    double add(double a, double b);
+    void eigen_to_nalgebra(double *matrix_ptr);
+    void eigen_hits_to_nalgebra_hits(double* first_element, int arr_len);
+    
 
 #ifdef __cplusplus
 }
