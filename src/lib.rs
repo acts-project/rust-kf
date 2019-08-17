@@ -18,4 +18,4 @@ pub use geometry::traits as sensor_traits;
 pub use geometry::trapezoid::Trapezoid;
 
 pub mod ffi;
-pub use ffi:: *;
+pub use ffi::*;

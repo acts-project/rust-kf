@@ -8,6 +8,7 @@ extern "C"{
     double make_array(double* arr_start, int arr_len);
     void eigen_to_nalgebra(double *matrix_ptr);
     void eigen_hits_to_nalgebra_hits(double* first_element, int arr_len);
+    void run_linear_kf(double* hits_ptr, double* meas_ptr, int sensor_count);
     
 
 #ifdef __cplusplus

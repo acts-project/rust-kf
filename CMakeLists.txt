@@ -32,4 +32,4 @@ target_link_libraries (rust_ffi Eigen3::Eigen)
 set_target_properties(rust_ffi PROPERTIES CXX_STANDARD 11 CXX_STANDARD_REQUIRED ON)
 
 
-# cd ..  && cargo b && cargo b --release && cd build && cmake .. -G "Visual Studio 15 2017 Win64" && msbuild ALL_BUILD.vcxproj
+# cd ..  && cargo b && cargo b --release && cd build && cmake .. -G "Visual Studio 15 2017 Win64" && msbuild ALL_BUILD.vcxproj && Debug\rust_ffi.exe

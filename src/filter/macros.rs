@@ -34,33 +34,33 @@ macro_rules! push {
 
 #[macro_export]
 /// Get a reference to an item in a vector using .get_unchecked(_)
-/// 
+///
 /// # Examples
-/// 
+///
 /// Same index from multiple vectors
 /// ```
 /// use kalman_rs::{config::*, get_unchecked};
-/// 
+///
 /// let one_two = Vec2::new(1., 2.);
 /// let two_three = Vec2::new(2., 3.);
 /// let three_four = Vec2::new(3., 4.);
-/// 
+///
 /// // get first index of each vector
 /// get_unchecked!{0;
 ///     one_two => one,
 ///     two_three => two,
 ///     three_four=> three
 /// }
-/// 
+///
 /// assert_eq!{one, &1.}
 /// assert_eq!{two, &2.}
 /// assert_eq!{three,&3.}
-/// 
+///
 /// ```
 /// different indexes from different matricies:
 /// ```
 /// use kalman_rs::{config::*, get_unchecked};
-/// 
+///
 /// let matrix = Mat3::identity();
 /// let matrix2 = Mat3::zeros();
 ///  
@@ -68,27 +68,27 @@ macro_rules! push {
 ///     matrix[0,0] => top_left_identity,
 ///     matrix2[1,1] => top_left_zero
 /// }
-/// 
+///
 /// assert_eq!{top_left_identity, &1.}
 /// assert_eq!{top_left_zero, &0.}
-/// 
+///
 /// ```
-/// Multiple indexes from the same matrix: 
+/// Multiple indexes from the same matrix:
 /// ```
 /// use kalman_rs::{config::*, get_unchecked};
-/// 
+///
 /// // | 1. 2. |
 /// // | 3. 4. |
-/// 
+///
 /// let matrix = Mat2::new(1., 2., 3., 4.);
-/// 
+///
 /// get_unchecked!{matrix;
 ///     [0, 0] => one,
 ///     [1, 0] => three,
 ///     [1, 1] => four
 ///     
 /// }
-/// 
+///
 /// assert_eq!{one, &1.}
 /// assert_eq!{three, &3.}
 /// assert_eq!{four, &4.}
@@ -96,19 +96,19 @@ macro_rules! push {
 /// Different indexes from the same vector
 /// ```
 /// use kalman_rs::{config::*, get_unchecked};
-/// 
+///
 /// let sample_vec = Vec5::new(1., 2., 3., 4., 5.);
-/// 
-/// // using `vector;` at the start removes the need for brackets 
+///
+/// // using `vector;` at the start removes the need for brackets
 /// // around the index
 /// get_unchecked!{vector; sample_vec;
 ///     3 => four
 /// }
-/// 
+///
 /// assert_eq!{four, &4.}
-/// 
+///
 /// ```
-/// 
+///
 macro_rules! get_unchecked {
     // get specific indexes from different vectors
     ($($matrix:ident[$row:expr, $column:expr] => $destination:ident),+) => {
@@ -232,47 +232,46 @@ macro_rules! reverse {
     };
 }
 
-
 #[macro_export]
 /// Edit a [row, column] index in a matrix with a given equality expression (= , /=, +=, ... etc)
-/// 
+///
 /// # Examples
-/// 
+///
 /// ```
 /// use kalman_rs as krs;
 /// use krs::config::*;
 /// use krs::edit_matrix;
-/// 
+///
 /// let mut matrix_zeros = Mat2::zeros();
 /// let id_matrix = Mat2::identity();
-/// 
-/// // fill the diagonal with 1's 
+///
+/// // fill the diagonal with 1's
 /// edit_matrix!{matrix_zeros;
 ///     [0,0] = 1.0,
 ///     [1,1] = 1.0
 /// }
-/// 
+///
 /// assert_eq!{matrix_zeros, id_matrix}
 /// ```
-/// 
+///
 /// ```
 /// use kalman_rs::{config::*, edit_matrix};
-/// 
+///
 /// let id_matrix = Mat2::identity();
-/// 
+///
 /// // create a matrix where the diagonals are all 5.
 /// let mut five_diagonal = Mat2::zeros();
 /// five_diagonal.fill_diagonal(5.);
-/// 
-/// 
+///
+///
 /// // divide all indexes by 5.
 /// edit_matrix!{five_diagonal;
 ///     [0,0] /= 5.,
 ///     [1,1] /= 5.
 /// }
-/// 
+///
 /// assert_eq!{id_matrix, five_diagonal}
-/// 
+///
 /// ```
 macro_rules! edit_matrix {
     ($matrix_name:ident; $([$row:expr, $col:expr] $operation:tt $new_value:expr),+) => {
@@ -304,22 +303,21 @@ macro_rules! edit_matrix {
     };
 }
 
-
 #[macro_export]
 /// Poor man's version of dbg!{...} to use `fmt::Display` instead of `Debug`. Prints matricies nicely  
-/// 
+///
 /// # Examples
-/// 
-/// ``` 
+///
+/// ```
 /// use kalman_rs::{print_, config::*};
-/// 
+///
 /// let matrix = Mat3::zeros();
 /// let other_mat = Mat2::identity();
-/// 
+///
 /// print_!{matrix, other_mat}
-/// 
+///
 /// // output:
-/// 
+///
 /// //[src\filter\macros.rs:9] matrix =
 /// //  ┌       ┐
 /// //  │ 0 0 0 │
@@ -333,7 +331,7 @@ macro_rules! edit_matrix {
 /// //  │ 1 0 │
 /// //  │ 0 1 │
 /// //  └     ┘
-/// 
+///
 /// ```
 macro_rules! print_ {
     ($($val:expr),*) => {

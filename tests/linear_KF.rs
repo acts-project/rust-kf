@@ -1,9 +1,6 @@
 use kalman_rs as krs;
 use krs::config::*;
-use krs::generate_data::{
-    setup::generate_linear_track,
-    structs,
-};
+use krs::generate_data::{setup::generate_linear_track, structs};
 
 use krs::{get_unchecked, print_};
 

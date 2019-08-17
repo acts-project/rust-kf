@@ -238,11 +238,11 @@ impl Uncertainty {
 
     pub fn measurement_covariance(&self, rng: &mut SmallRng) -> Mat2 {
         let diag_distr = Normal::new(self.diag_mean, self.diag_std).unwrap();
-        
+
         let a = diag_distr.sample(rng);
         let d = diag_distr.sample(rng);
 
-        return Mat2::new(a, 0., 0., d)
+        return Mat2::new(a, 0., 0., d);
     }
 
     pub fn smear_hit(&self, rng: &mut SmallRng, point_val: Real) -> Real {

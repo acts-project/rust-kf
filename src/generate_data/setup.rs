@@ -145,7 +145,7 @@ pub fn generate_const_b_track(state: &State, mut rng: SmallRng) -> KFData<Rectan
         })
         .collect::<Vec<_>>();
 
-    // make measurement covariances 
+    // make measurement covariances
     let covariance_vec = (0..sensor_vec.len())
         .into_iter()
         .map(|_| state.stdevs.measurement_covariance(&mut rng))
@@ -189,7 +189,7 @@ fn smear_state_vector(rng: &mut SmallRng, state_vec: &Vec5) -> Vec5 {
 }
 
 /// Creates a rectangular sensor along the x-axis
-fn gen_sensor(x_point: Real) -> Rectangle {
+pub fn gen_sensor(x_point: Real) -> Rectangle {
     // sensor dimensions
     let base = 1000.;
     let height = 1000.;
