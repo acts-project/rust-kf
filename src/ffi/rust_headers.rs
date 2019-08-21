@@ -7,6 +7,9 @@ use nalgebra as na;
 use std::ffi::c_void;
 use std::os::raw::{c_double, c_uint};
 
+// prevent Rust from destructing the data before returning to cpp
+use std::mem::ManuallyDrop;
+
 #[no_mangle]
 /// Takes a poitner to the start of an array and its length and converts it to a &[f64]
 /// to be used in the kf operations
@@ -65,20 +68,91 @@ pub unsafe extern "C" fn eigen_hits_to_nalgebra_hits(
 }
 
 #[no_mangle]
+// Performs KF operations for linear beam experiments
 pub unsafe extern "C" fn run_linear_kf(
     hits_ptr: *const c_double,
     measurement_covariance_ptr: *const c_double,
     sensor_number: c_uint,
 ) {
-    // convert to rust types
-    let hits_ptr = hits_ptr as *const Real;
-    let meas_cov_ptr = measurement_covariance_ptr as *const Real;
     let sensor_number = sensor_number as usize;
 
-    let mut hits: Vec<Vec2> = Vec::with_capacity(sensor_number);
-    let mut meas: Vec<Mat2> = Vec::with_capacity(sensor_number);
+    let (hits, meas) =
+        measurement_and_hits_from_ptrs(hits_ptr, measurement_covariance_ptr, sensor_number);
+    let start_location = P3::origin();
 
-    for i in 0..sensor_number as isize {
+    // make a sensor along the x axis every 0.001 units
+    let sensors = (0..)
+        .take(sensor_number + 1)
+        .map(|x| setup::gen_sensor(x as Real / 1000.))
+        .collect::<Vec<_>>();
+
+    let kf_outputs = linear::run(
+        &start_location, // starting position in R3
+        &meas,           // vector of measurement covariances
+        &hits,           // vector of hits of sensors
+        &sensors,        // vector of sensors
+        None,            // initial track parameters
+    );
+
+    // ffi to c++ here
+}
+
+#[no_mangle]
+/// Performs KF operations for constant magnetic fields
+pub unsafe extern "C" fn run_const_b_kf(
+    hits_ptr: *const c_double,
+    measurement_covariance_ptr: *const c_double,
+    b_field_ptr: *const c_double,
+    sensor_number: c_uint,
+) {
+    // convert to rust types
+    let sensor_number = sensor_number as usize;
+    let b_field_ptr = b_field_ptr as *const Real;
+
+    // get nalgebra hits and measurement covariances from pointers
+    let (hits, meas) =
+        measurement_and_hits_from_ptrs(hits_ptr, measurement_covariance_ptr, sensor_number);
+
+    let start_location = P3::origin();
+
+    // serialize the Eigen b_field vector into nalgebra b_field vector
+    let b_field = ManuallyDrop::new(
+        na::MatrixSlice3x1::from_slice(std::slice::from_raw_parts(b_field_ptr, 3)).into(),
+    );
+
+    // make a sensor along the x axis every 0.001 units
+    let sensors = (0..)
+        .take(sensor_number + 1) // +1 since we use a virual sensor at the global starting position to make things nice
+        .map(|x| setup::gen_sensor(x as Real / 1000.))
+        .collect::<Vec<_>>();
+
+    let kf_outputs = constant_magnetic_field::run(
+        &start_location, // starting position in R3
+        &meas,           // vector of measurement covariances
+        &hits,           // vector of hits of sensors
+        &sensors,        // vector of sensors
+        None,            // initial track parameters,
+        &b_field,
+    );
+
+    // ffi to c++ here
+}
+
+// utility function to convert C++ Eigen hits / measurement covariances into Rust matricies
+unsafe fn measurement_and_hits_from_ptrs(
+    hits_ptr: *const c_double,
+    measurement_cov_ptr: *const c_double,
+    sensor_count: usize,
+) -> (ManuallyDrop<Vec<Vec2>>, ManuallyDrop<Vec<Mat2>>) {
+    // convert to rust types
+    let hits_ptr = hits_ptr as *const Real;
+    let meas_cov_ptr = measurement_cov_ptr as *const Real;
+
+    // sensor hits and measurement hits
+    let mut hits: Vec<Vec2> = Vec::with_capacity(sensor_count);
+    let mut meas: Vec<Mat2> = Vec::with_capacity(sensor_count);
+
+    for i in 0..sensor_count as isize {
         // get pointers to the current position in memory
         let curr_hits_ptr = hits_ptr.offset(i * 2);
         let curr_meas_cov_ptr = meas_cov_ptr.offset(i * 4);
@@ -100,21 +174,6 @@ pub unsafe extern "C" fn run_linear_kf(
         }
     }
 
-    let start_location = P3::origin();
-
-    // make a sensor along the x axis every 0.001 units
-    let sensors = (0..)
-        .take(sensor_number)
-        .map(|x| setup::gen_sensor(x as Real / 1000.))
-        .collect::<Vec<_>>();
-
-    let kf_outputs = linear::run(
-        &start_location, // starting position in R3
-        &meas,           // vector of measurement covariances
-        &hits,           // vector of hits of sensors
-        &sensors,        // vector of sensors
-        None,            // initial track parameters
-    );
-
-    // ffi to c++ here
+    // wrap types in `Manually Drop` to prevent destructors
+    (ManuallyDrop::new(hits), ManuallyDrop::new(meas))
 }

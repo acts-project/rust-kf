@@ -12,6 +12,7 @@ void vector_of_hits();
 void pass_array();
 void pass_matrix();
 void run_linear_kf();
+void run_const_b_kf();
 
 int main() {
     // vector_of_hits();
@@ -19,7 +20,7 @@ int main() {
     run_linear_kf();
 }
 
-
+// converting c++ matricies to rust matricies
 void vector_of_hits() {
 
     vector<Vector2d> hits_vector;
@@ -43,6 +44,7 @@ void vector_of_hits() {
     eigen_hits_to_nalgebra_hits(start, length);
 }
 
+// example for sending an array of data to rust
 void pass_array() {
     const int arr_len = 4;
     double array[arr_len] = {1, 2, 3 ,4};
@@ -61,6 +63,7 @@ void pass_matrix() {
     eigen_to_nalgebra(ptr);
 }
 
+// running a linear beam experiment using measurement covariances and hits
 void run_linear_kf() {
     vector<Vector2d> hits_vector;
     vector<Matrix2d> meas_vector;
@@ -83,4 +86,32 @@ void run_linear_kf() {
 
 
     run_linear_kf(hits_ptr, meas_ptr, number_of_sensors);
+}
+
+void run_const_b_kf() {
+
+    vector<Vector2d> hits_vector;
+    vector<Matrix2d> meas_vector;
+
+    const int number_of_sensors = 3;
+
+    for (int i =0; i < number_of_sensors; i++) {
+        Vector2d random_hit = Vector2d::Random();
+        Matrix2d random_cov = Matrix2d::Random();
+
+        cout << random_hit << "\n\n" << random_cov << "\n\n";
+
+        hits_vector.push_back(random_hit);
+        meas_vector.push_back(random_cov);
+
+    }
+    
+    Vector3d b_field = Vector3d::Random();
+
+    double* hits_ptr = hits_vector[0].data();
+    double* meas_ptr = meas_vector[0].data();
+    double* field_ptr = b_field.data();
+
+    run_const_b_kf(hits_ptr, meas_ptr, field_ptr, number_of_sensors);
+    
 }
