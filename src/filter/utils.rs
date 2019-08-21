@@ -90,6 +90,8 @@ pub fn seed_state_vec_from_points(
 
 // TODO Name is similar to other structs. figure out a new one
 #[derive(Debug, Clone)]
+#[no_mangle]
+#[repr(C)]
 pub struct Data {
     pub state_vec: Vec<Vec5>,
     pub cov_mat: Vec<Mat5>,
@@ -111,6 +113,25 @@ impl Data {
             res_vec: res_vec,
         };
     }
+
+    pub fn ptrs(&self) -> DataPtr{
+        DataPtr{
+            state_vec: self.state_vec.as_ptr(),
+            cov_mat: self.cov_mat.as_ptr(),
+            res_mat: self.res_mat.as_ptr(),
+            res_vec: self.res_vec.as_ptr(),
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+#[no_mangle]
+#[repr(C)]
+pub struct DataPtr{
+    pub state_vec: *const Vec5,
+    pub cov_mat: *const Mat5,
+    pub res_mat: *const Mat2,
+    pub res_vec: *const Vec2
 }
 
 /// For every row in a 3x3 matrix equal to the cross product of that row
@@ -182,6 +203,8 @@ pub fn angles_from_rk_state(rk_staete_vec: &Vec8) -> angles::Angles {
 
 // TODO: come up with a better name for this
 #[derive(Debug, Clone)]
+#[no_mangle]
+#[repr(C)]
 pub struct SuperData {
     pub smth: Data,
     pub filt: Data,

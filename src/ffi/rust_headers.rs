@@ -1,5 +1,7 @@
 use super::super::config::*;
 use super::super::filter::{constant_magnetic_field, linear};
+// containers for KF output data
+use super::super::filter::utils::{DataPtr, Data, SuperData};
 use super::super::generate_data::{setup, structs};
 
 use nalgebra as na;
@@ -73,7 +75,7 @@ pub unsafe extern "C" fn run_linear_kf(
     hits_ptr: *const c_double,
     measurement_covariance_ptr: *const c_double,
     sensor_number: c_uint,
-) {
+) -> DataPtr{
     let sensor_number = sensor_number as usize;
 
     let (hits, meas) =
@@ -93,6 +95,12 @@ pub unsafe extern "C" fn run_linear_kf(
         &sensors,        // vector of sensors
         None,            // initial track parameters
     );
+
+    let kf_outputs = ManuallyDrop::new(kf_outputs);
+
+    println!{"test"}
+    
+    kf_outputs.smth.ptrs()
 
     // ffi to c++ here
 }
