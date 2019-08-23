@@ -98,11 +98,8 @@ pub unsafe extern "C" fn run_linear_kf(
 
     let kf_outputs = ManuallyDrop::new(kf_outputs);
 
-    println!{"test"}
-    
+    // return struct of poitners to the matricies
     kf_outputs.smth.ptrs()
-
-    // ffi to c++ here
 }
 
 #[no_mangle]
@@ -112,7 +109,7 @@ pub unsafe extern "C" fn run_const_b_kf(
     measurement_covariance_ptr: *const c_double,
     b_field_ptr: *const c_double,
     sensor_number: c_uint,
-) {
+) -> DataPtr{
     // convert to rust types
     let sensor_number = sensor_number as usize;
     let b_field_ptr = b_field_ptr as *const Real;
@@ -142,6 +139,8 @@ pub unsafe extern "C" fn run_const_b_kf(
         None,            // initial track parameters,
         &b_field,
     );
+
+    kf_outputs.smth.ptrs()
 
     // ffi to c++ here
 }

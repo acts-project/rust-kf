@@ -115,23 +115,54 @@ impl Data {
     }
 
     pub fn ptrs(&self) -> DataPtr{
-        DataPtr{
-            state_vec: self.state_vec.as_ptr(),
-            cov_mat: self.cov_mat.as_ptr(),
-            res_mat: self.res_mat.as_ptr(),
-            res_vec: self.res_vec.as_ptr(),
-        }
+        DataPtr::from_real(&self)
     }
 }
+
+use std::os::raw::c_double;
 
 #[derive(Debug, Clone)]
 #[no_mangle]
 #[repr(C)]
 pub struct DataPtr{
-    pub state_vec: *const Vec5,
-    pub cov_mat: *const Mat5,
-    pub res_mat: *const Mat2,
-    pub res_vec: *const Vec2
+    pub state_vec: *const c_double,
+    pub cov_mat: *const c_double,
+    pub res_mat: *const c_double,
+    pub res_vec: *const c_double
+}
+impl DataPtr {
+    fn from_real(data: &Data) -> Self {
+        let state_vec = data.state_vec.get(0).expect("state_vector length error").as_ptr() as *const c_double;
+        let cov_mat   = data.cov_mat.get(0).expect("state_vector length error").as_ptr() as *const c_double;
+        let res_mat   = data.res_mat.get(0).expect("state_vector length error").as_ptr() as *const c_double;
+        let res_vec   = data.res_vec.get(0).expect("state_vector length error").as_ptr() as *const c_double;
+
+        Self{
+            state_vec: state_vec,
+            cov_mat: cov_mat,
+            res_mat: res_mat,
+            res_vec: res_vec
+        }
+    }
+}
+
+// TODO: come up with a better name for this
+#[derive(Debug, Clone)]
+#[no_mangle]
+#[repr(C)]
+pub struct SuperData {
+    pub smth: Data,
+    pub filt: Data,
+    pub pred: Data,
+}
+impl SuperData {
+    pub fn new(smth: Data, filt: Data, pred: Data) -> Self {
+        SuperData {
+            smth: smth,
+            filt: filt,
+            pred: pred,
+        }
+    }
 }
 
 /// For every row in a 3x3 matrix equal to the cross product of that row
@@ -201,24 +232,6 @@ pub fn angles_from_rk_state(rk_staete_vec: &Vec8) -> angles::Angles {
     angles::Angles::new_from_unit_direction(*tx, *ty, *tz)
 }
 
-// TODO: come up with a better name for this
-#[derive(Debug, Clone)]
-#[no_mangle]
-#[repr(C)]
-pub struct SuperData {
-    pub smth: Data,
-    pub filt: Data,
-    pub pred: Data,
-}
-impl SuperData {
-    pub fn new(smth: Data, filt: Data, pred: Data) -> Self {
-        SuperData {
-            smth: smth,
-            filt: filt,
-            pred: pred,
-        }
-    }
-}
 
 /// Transform a 8-row rk state vector in global coordinates to a
 /// 5-row vector in local coordinates relative to a destination sensor

@@ -19,3 +19,5 @@ pub use geometry::trapezoid::Trapezoid;
 
 pub mod ffi;
 pub use ffi::*;
+
+pub use filter::utils::{Data, DataPtr, SuperData};
