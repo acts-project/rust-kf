@@ -114,7 +114,7 @@ impl Data {
         };
     }
 
-    pub fn ptrs(&self) -> DataPtr{
+    pub fn ptrs(&self) -> DataPtr {
         DataPtr::from_real(&self)
     }
 }
@@ -124,24 +124,40 @@ use std::os::raw::c_double;
 #[derive(Debug, Clone)]
 #[no_mangle]
 #[repr(C)]
-pub struct DataPtr{
+pub struct DataPtr {
     pub state_vec: *const c_double,
     pub cov_mat: *const c_double,
     pub res_mat: *const c_double,
-    pub res_vec: *const c_double
+    pub res_vec: *const c_double,
 }
 impl DataPtr {
     fn from_real(data: &Data) -> Self {
-        let state_vec = data.state_vec.get(0).expect("state_vector length error").as_ptr() as *const c_double;
-        let cov_mat   = data.cov_mat.get(0).expect("state_vector length error").as_ptr() as *const c_double;
-        let res_mat   = data.res_mat.get(0).expect("state_vector length error").as_ptr() as *const c_double;
-        let res_vec   = data.res_vec.get(0).expect("state_vector length error").as_ptr() as *const c_double;
+        let state_vec = data
+            .state_vec
+            .get(0)
+            .expect("state_vector length error")
+            .as_ptr() as *const c_double;
+        let cov_mat = data
+            .cov_mat
+            .get(0)
+            .expect("state_vector length error")
+            .as_ptr() as *const c_double;
+        let res_mat = data
+            .res_mat
+            .get(0)
+            .expect("state_vector length error")
+            .as_ptr() as *const c_double;
+        let res_vec = data
+            .res_vec
+            .get(0)
+            .expect("state_vector length error")
+            .as_ptr() as *const c_double;
 
-        Self{
+        Self {
             state_vec: state_vec,
             cov_mat: cov_mat,
             res_mat: res_mat,
-            res_vec: res_vec
+            res_vec: res_vec,
         }
     }
 }
@@ -231,7 +247,6 @@ pub fn angles_from_rk_state(rk_staete_vec: &Vec8) -> angles::Angles {
 
     angles::Angles::new_from_unit_direction(*tx, *ty, *tz)
 }
-
 
 /// Transform a 8-row rk state vector in global coordinates to a
 /// 5-row vector in local coordinates relative to a destination sensor

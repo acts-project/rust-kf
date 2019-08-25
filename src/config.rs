@@ -50,7 +50,8 @@ def_constant! {usize;
 
 // f64 constants
 def_constant! {Real;
-    DOT_PRODUCT_EPSILON = 0.0005
+    DOT_PRODUCT_EPSILON = 0.0005,
+    MAX_CHI_SQUARED = 1.0000
 }
 
 def_constant! {&str;

@@ -1,12 +1,11 @@
 use super::super::config::*;
 use super::super::filter::{constant_magnetic_field, linear};
 // containers for KF output data
-use super::super::filter::utils::{DataPtr, Data, SuperData};
+use super::super::filter::utils::{Data, DataPtr, SuperData};
 use super::super::generate_data::{setup, structs};
 
 use nalgebra as na;
 
-use std::ffi::c_void;
 use std::os::raw::{c_double, c_uint};
 
 // prevent Rust from destructing the data before returning to cpp
@@ -75,7 +74,7 @@ pub unsafe extern "C" fn run_linear_kf(
     hits_ptr: *const c_double,
     measurement_covariance_ptr: *const c_double,
     sensor_number: c_uint,
-) -> DataPtr{
+) -> DataPtr {
     let sensor_number = sensor_number as usize;
 
     let (hits, meas) =
@@ -109,7 +108,7 @@ pub unsafe extern "C" fn run_const_b_kf(
     measurement_covariance_ptr: *const c_double,
     b_field_ptr: *const c_double,
     sensor_number: c_uint,
-) -> DataPtr{
+) -> DataPtr {
     // convert to rust types
     let sensor_number = sensor_number as usize;
     let b_field_ptr = b_field_ptr as *const Real;
@@ -145,7 +144,8 @@ pub unsafe extern "C" fn run_const_b_kf(
     // ffi to c++ here
 }
 
-// utility function to convert C++ Eigen hits / measurement covariances into Rust matricies
+/// utility function to convert C++ Eigen hits / measurement covariances into Rust matricies
+/// NOTE: this function is not zero-copy. All matrix data must 
 unsafe fn measurement_and_hits_from_ptrs(
     hits_ptr: *const c_double,
     measurement_cov_ptr: *const c_double,

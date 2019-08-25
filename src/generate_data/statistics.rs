@@ -53,12 +53,12 @@ pub fn collect_stats(state: &State) -> Vec<(KFData<Rectangle>, SuperData)> {
 
 /// Helper function for running linear kf
 fn stats_linear(state: &State, rng: SmallRng) -> (KFData<Rectangle>, SuperData) {
-    let data = setup::generate_linear_track(&state, rng);
+    let mut data = setup::generate_linear_track(&state, rng);
     let kf_outs = linear::run(
-        &data.start,
-        &data.cov,
-        &data.smear_hits,
-        &data.sensors,
+        &mut data.start,
+        &mut data.cov,
+        &mut data.smear_hits,
+        &mut data.sensors,
         Some(&data.smear_initial_vector),
     );
     (data, kf_outs)
