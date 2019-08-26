@@ -1,8 +1,8 @@
 use super::super::config::*;
 use super::super::filter::{constant_magnetic_field, linear};
 // containers for KF output data
-use super::super::filter::utils::{Data, DataPtr, SuperData};
-use super::super::generate_data::{setup, structs};
+use super::super::filter::utils::DataPtr;
+use super::super::generate_data::setup;
 
 use nalgebra as na;
 

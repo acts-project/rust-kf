@@ -80,7 +80,6 @@ def_constant! {Real;
     MAX_CHI_SQUARED = 1.0000
 }
 
-/// Location of CSV output for data generation / histograms
 def_constant! {&str;
     CSV_SAVE_LOCATION = r"E:\kf_csvs\"
 }

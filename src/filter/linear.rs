@@ -3,8 +3,6 @@
 use super::super::config::*;
 use super::{filter_gain, jacobian, prediction, smoothing, utils};
 
-use super::super::geometry::Rectangle;
-
 use super::utils::{Data, SuperData};
 
 use super::super::geometry::traits::{Plane, Transform};
