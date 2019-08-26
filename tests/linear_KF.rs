@@ -54,7 +54,7 @@ fn linear_1() {
         point_std_dev, 
         diagonal_rng,corner_rng
     );
-    let kf_result = krs::filter::linear::run(&data.start, &data.cov, &data.smear_hits, &data.sensors);
+    let kf_result = krs::filter::linear::run(&data.start, &data.cov, &data.smear_hits, &data.sensors, None);
 
     
 }
@@ -84,7 +84,7 @@ fn linear_3() {
         point_std_dev, 
         diagonal_rng,corner_rng
     );
-    let kf_result = krs::filter::linear::run(&data.start, &data.cov, &data.smear_hits, &data.sensors);
+    let kf_result = krs::filter::linear::run(&data.start, &data.cov, &data.smear_hits, &data.sensors, None);
 
     
 

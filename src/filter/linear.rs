@@ -167,6 +167,7 @@ pub fn run(
     }
 
 
+    // print!{"\n"}
 
     for i in (0..input_length).rev() {
         
@@ -197,6 +198,8 @@ pub fn run(
             smoothed_cov_mat_iter => prev_smth_cov_mat
         }
 
+        // print!{i, input_length-(i+1)}
+
         // 
         // smoothing calculations
         //
@@ -224,10 +227,10 @@ pub fn run(
 
     // put all data into a struct that will contain all the methods to return 
     // the data back to c++
-    let smth =  Data::new(smoothed_state_vec_iter,
-                                smoothed_cov_mat_iter,
-                                smoothed_res_mat_iter,
-                                smoothed_res_vec_iter);
+    let smth =  Data::new(smoothed_state_vec_iter.into_iter().rev().collect(),
+                                smoothed_cov_mat_iter.into_iter().rev().collect(),
+                                smoothed_res_mat_iter.into_iter().rev().collect(),
+                                smoothed_res_vec_iter.into_iter().rev().collect());
 
     let filt = Data::new(
         filter_state_vec_iter,
