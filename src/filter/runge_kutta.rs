@@ -1,9 +1,11 @@
+//! Runge Kutta for constant magnetic fields
 const ERR_TOLERANCE: Real = 0.001;
 
 use super::super::config::*;
 
 use super::{angles, utils};
 
+/// Data from a single RK step
 #[derive(Debug)]
 pub struct RungeKuttaStep {
     pub k1: Vec3,
@@ -14,6 +16,7 @@ pub struct RungeKuttaStep {
 }
 
 impl RungeKuttaStep {
+    /// Constructor from base RK data
     fn new(k1: Vec3, k2: Vec3, k3: Vec3, k4: Vec3, step_size: Real) -> Self {
         RungeKuttaStep {
             k1: k1,
@@ -24,6 +27,7 @@ impl RungeKuttaStep {
         }
     }
 
+    /// Calculate a new step size
     pub fn adaptive_step_size(&self, max_distance: Real) -> Real {
         let error = self.h.powf(2.) * (self.k1 - self.k2 - self.k3 + self.k4).norm();
 

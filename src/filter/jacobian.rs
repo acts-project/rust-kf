@@ -1,3 +1,4 @@
+//! calculations of jacobian matrices
 use super::super::{
     config::*,
     geometry::traits::{Plane, Transform},
@@ -66,7 +67,7 @@ fn derivative_factors(
 }
 
 /// Local => global jacobian used for both linear and constant magnetic field situaitons
-/// https://gitlab.cern.ch/acts/acts-core/blob/master/Core/include/Acts/Surfaces/detail/Surface.ipp#L82-106
+//  https://gitlab.cern.ch/acts/acts-core/blob/master/Core/include/Acts/Surfaces/detail/Surface.ipp#L82-106
 fn global_to_local_jac(trig_angles: &angles::Angles, rotation_mat: &Mat4) -> Mat5x8 {
     let mut global_to_local_jacobian = Mat5x8::zeros();
 
@@ -96,7 +97,7 @@ fn global_to_local_jac(trig_angles: &angles::Angles, rotation_mat: &Mat4) -> Mat
 }
 
 /// global => local jacobian used for both linear and constant magnetic field situaitons
-/// https://gitlab.cern.ch/acts/acts-core/blob/master/Core/include/Acts/Surfaces/detail/Surface.ipp#L46-80
+// https://gitlab.cern.ch/acts/acts-core/blob/master/Core/include/Acts/Surfaces/detail/Surface.ipp#L46-80
 fn local_to_global_jac(trig_angles: &angles::Angles, rotation_mat: &Mat4) -> Mat8x5 {
     let mut local_to_global_jacobian = Mat8x5::zeros();
 
@@ -134,11 +135,10 @@ fn linear_transport_jac(trig_angles: &mut angles::Angles, distance: Real) -> Mat
     return transport_jac + secondary;
 }
 
-// This is a secondary function for calculating the linear jacobian to test different implementations.
-
-/// Mirrors https://gitlab.cern.ch/acts/acts-core/blob/master/Core/include/Acts/Propagator/StraightLineStepper.hpp#L307
-/// Does not include shift from state derivative calculated https://gitlab.cern.ch/acts/acts-core/blob/master/Core/include/Acts/Propagator/StraightLineStepper.hpp#L353
-/// Transport is handled outside of function.
+// Mirrors https://gitlab.cern.ch/acts/acts-core/blob/master/Core/include/Acts/Propagator/StraightLineStepper.hpp#L307
+// Does not include shift from state derivative calculated https://gitlab.cern.ch/acts/acts-core/blob/master/Core/include/Acts/Propagator/StraightLineStepper.hpp#L353
+// Transport is handled outside of function.
+/// This is a secondary function for calculating the linear jacobian to test different implementations.
 pub fn linear_state_derivative(prev_state_vec: &Vec5, distance: Real) -> Mat5 {
     get_unchecked! {
         prev_state_vec[ePHI] => phi,
@@ -212,6 +212,7 @@ pub fn linear_state_derivative(prev_state_vec: &Vec5, distance: Real) -> Mat5 {
     return full_jacobian;
 }
 
+/// Calculates a 5x5 jacobian for a constant magnetic field situation
 pub fn constant_field<T: Transform + Plane>(
     prev_filt_state_vec: &Vec5,
     b_field: &Vec3,

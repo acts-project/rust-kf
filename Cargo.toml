@@ -7,9 +7,9 @@ license = "MIT"
 description = "Kalman filter implementation in rust (WIP)"
 
 
-[lib]
-name = "kalman_rs"
-crate-type = ["staticlib"]
+# [lib]
+# name = "kalman_rs"
+# crate-type = ["staticlib"]
 
 
 [dependencies]

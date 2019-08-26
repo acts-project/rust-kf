@@ -1,3 +1,5 @@
+//! basic utility functions for the KF
+//!
 use super::super::config::*;
 use super::super::geometry::traits::{Plane, Transform};
 use super::angles;

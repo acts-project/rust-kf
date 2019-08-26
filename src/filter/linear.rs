@@ -1,3 +1,5 @@
+//! KF for zero magnetic field (linear)
+
 use super::super::config::*;
 use super::{filter_gain, jacobian, prediction, smoothing, utils};
 
@@ -5,10 +7,10 @@ use super::super::geometry::Rectangle;
 
 use super::utils::{Data, SuperData};
 
-use super::super::geometry::traits::{Transform, Plane};
+use super::super::geometry::traits::{Plane, Transform};
 
 /// Monolithic function to handle linear KF calculations
-pub fn run <T: Clone + Transform + Plane>(
+pub fn run<T: Clone + Transform + Plane>(
     start_location: &P3, // start loc used to predict initial filtered state vec
     measurement_noise_covariance_vector: &Vec<Mat2>, // vector of V from fruhwirth paper
     measurements_vector: &Vec<Vec2>, // vector of all the measurements that were registered
@@ -111,7 +113,7 @@ pub fn run <T: Clone + Transform + Plane>(
             filter_gain::chi_squared_increment(&filter_residual_vec, &filter_residual_mat);
 
         // If the chi squared value is too high we recursively call run() with the current data point removed
-        // We clone the data here to avoid future indirections of mutating the C++ data. 
+        // We clone the data here to avoid future indirections of mutating the C++ data.
         // A more complex solution of also entering indexes to skip may be explored for speed optimizaitons
         if chi_squared_inc > MAX_CHI_SQUARED {
             let mut new_measurement_cov = measurement_noise_covariance_vector.clone();
@@ -128,8 +130,8 @@ pub fn run <T: Clone + Transform + Plane>(
                 &new_measurement_cov,
                 &new_measurement,
                 &new_sensor,
-                initial_seed_vec
-            )
+                initial_seed_vec,
+            );
         }
 
         // store all the filtered values in their respective iterators

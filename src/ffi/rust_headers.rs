@@ -36,7 +36,7 @@ pub unsafe extern "C" fn eigen_to_nalgebra(matrix_ptr: *const c_double) {
 
     let slice = std::slice::from_raw_parts(float_ptr, 9);
 
-    let matrix : Mat3 = na::MatrixSlice3::from_slice(slice).into();
+    let matrix: Mat3 = na::MatrixSlice3::from_slice(slice).into();
 
     print_! {matrix};
 }
@@ -68,7 +68,7 @@ pub unsafe extern "C" fn eigen_hits_to_nalgebra_hits(
 }
 
 #[no_mangle]
-// Performs KF operations for linear beam experiments
+/// Performs KF operations for linear beam experiments
 pub unsafe extern "C" fn run_linear_kf(
     hits_ptr: *const c_double,
     measurement_covariance_ptr: *const c_double,
@@ -144,7 +144,7 @@ pub unsafe extern "C" fn run_const_b_kf(
 }
 
 /// utility function to convert C++ Eigen hits / measurement covariances into Rust matricies
-/// NOTE: this function is not zero-copy. All matrix data must 
+/// NOTE: this function is not zero-copy. All matrix data must
 unsafe fn measurement_and_hits_from_ptrs(
     hits_ptr: *const c_double,
     measurement_cov_ptr: *const c_double,

@@ -1,3 +1,5 @@
+//! raw KF operations for smoothing equations
+//!
 use super::super::config::*;
 
 #[inline(always)]

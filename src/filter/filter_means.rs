@@ -1,3 +1,4 @@
+//! raw filter operations with means formalism
 use super::super::config::*;
 
 #[inline(always)]

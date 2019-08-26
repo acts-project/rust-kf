@@ -1,5 +1,18 @@
+//! general helper macros for filter operations. These are all exported to the crate root
+
 #[macro_export]
-// macro to initialize vectors with a given capacity to reduce copy / paste
+/// macro to initialize vectors with a given capacity to reduce copy / paste
+///
+/// Examples:
+///
+/// ```
+/// use kalman_rs::{config::*, store_vec};
+/// store_vec!{
+///     10;
+///     vec_matricies: Mat2,
+///     vec_vec : Vec2
+/// }
+/// ```
 macro_rules! store_vec {
     // $name: the name of the variable
     // $type: Type of data stored in vector (Mat5 / Vec5)
@@ -13,8 +26,29 @@ macro_rules! store_vec {
 }
 
 #[macro_export]
-/// Push a value into an iterator. Saves repeating vec.push(asdad)
+/// Push a value into an iterator. Saves repeating vec.push(_)
 /// Easier to read this way.
+///
+/// This:
+/// ```
+/// let mut a = Vec::new();
+/// let mut b = Vec::new();
+///
+/// a.push(5);
+/// b.push(6);
+/// ```
+/// can be replaced with:
+/// ```
+/// use kalman_rs::push;
+///
+/// let mut a = Vec::new();
+/// let mut b = Vec::new();
+///
+/// push!{
+///     5 => a,
+///     6 => b
+/// }
+/// ```
 macro_rules! push {
     ($($item:expr => $location:ident),*) => {
         $(

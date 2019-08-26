@@ -1,3 +1,4 @@
+//! raw filter operations with the gain formalism.
 use super::super::config::*;
 
 #[inline(always)]

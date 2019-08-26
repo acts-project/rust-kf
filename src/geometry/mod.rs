@@ -1,3 +1,5 @@
+//! Sensor structs and traits used in the kalman filter steps
+
 pub mod rectangle;
 pub mod traits;
 pub mod trapezoid;

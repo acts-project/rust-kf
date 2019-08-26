@@ -1,3 +1,4 @@
+//! Kalman filter raw operations, linear and constant magnetic field run functions
 #[macro_use]
 pub mod macros;
 

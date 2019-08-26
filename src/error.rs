@@ -1,3 +1,5 @@
+//! Mostly unused error types kept for extensibility
+
 /// Implement `From` trait for user-specified enums
 ///
 /// Calling impl_from!(empty: ... ) implements for a C-like enum
@@ -41,17 +43,20 @@ macro_rules! impl_from {
 
 use super::config::*;
 
+/// General error holding error-specific information
 #[derive(Debug)]
 pub enum Error {
     Matrix(MatrixError),
     Sensor(SensorError),
 }
 
+/// Errors pertaining to a Matrix
 #[derive(Debug)]
 pub enum MatrixError {
     NonInvertible,
 }
 
+/// Errors with sensors
 #[derive(Debug)]
 pub enum SensorError {
     OutsideSensorBounds(P2),
