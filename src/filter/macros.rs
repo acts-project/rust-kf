@@ -177,16 +177,16 @@ macro_rules! get_unchecked {
     // Main branch that all other branches of the macro will call
     (@VECTOR; $vector:ident[$index:expr] => $destination:ident ) => {
         let $destination =
-            // unsafe {
-                // $vector.get_unchecked($index)
-            // };
-                match $vector.get($index) {
-                    Some(val) => val,
-                    None=> {
-                        println!{"get unchecked out of bounds:\nfile:{}\tline:{}", file!{}, line!{}}
-                        panic!{""}
-                    }
-                };
+            unsafe {
+                $vector.get_unchecked($index)
+            };
+                // match $vector.get($index) {
+                //     Some(val) => val,
+                //     None=> {
+                //         println!{"get unchecked out of bounds:\nfile:{}\tline:{}", file!{}, line!{}}
+                //         panic!{""}
+                //     }
+                // };
     }
 }
 
@@ -313,17 +313,17 @@ macro_rules! edit_matrix {
             // indexing for get() methods is done linearly. Instead of .get(3,3) for the bottom right
             // corner of a 4x4 matrix we must do .get(15). This line calculates what that index is.
             let value =
-                // unsafe {
-                    // $matrix_name.get_unchecked_mut(($row, $col))
-                // };
+                unsafe {
+                    $matrix_name.get_unchecked_mut(($row, $col))
+                };
 
-                    match $matrix_name.get_mut(($row, $col)) {
-                        Some(val) => val,
-                        None=> {
-                            println!{"edit_matrix out of bounds:\nfile:{}\tline:{}", file!{}, line!{}}
-                            panic!{""}
-                        }
-                    };
+                    // match $matrix_name.get_mut(($row, $col)) {
+                    //     Some(val) => val,
+                    //     None=> {
+                    //         println!{"edit_matrix out of bounds:\nfile:{}\tline:{}", file!{}, line!{}}
+                    //         panic!{""}
+                    //     }
+                    // };
             *value $operation $new_value;
 
         )+
