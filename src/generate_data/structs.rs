@@ -89,10 +89,10 @@ impl State{
 /// `diag` corresponds to "a" and "d" in the matrix below
 /// `corner` corresponds to "b" and "c" in the matrix below
 /// 
-/// ```
+/// 
 /// | a , b |
 /// | c , d |
-/// ```
+/// 
 #[derive(Serialize)]
 pub struct Uncertainty {
     pub point_std: Real,
