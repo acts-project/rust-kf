@@ -34,12 +34,11 @@ pub unsafe extern "C" fn eigen_to_nalgebra(matrix_ptr: *const c_double) {
     // convert to rust types
     let float_ptr = matrix_ptr as *const Real;
 
-    let array = std::slice::from_raw_parts(float_ptr, 9);
+    let slice = std::slice::from_raw_parts(float_ptr, 9);
 
-    let mut m = Mat3::zeros();
-    m.copy_from_slice(array);
+    let matrix : Mat3 = na::MatrixSlice3::from_slice(slice).into();
 
-    print_! {m};
+    print_! {matrix};
 }
 
 #[no_mangle]
